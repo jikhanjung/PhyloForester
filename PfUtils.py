@@ -22,6 +22,9 @@ if not os.path.exists(DEFAULT_DB_DIRECTORY):
 if not os.path.exists(DEFAULT_STORAGE_DIRECTORY):
     os.makedirs(DEFAULT_STORAGE_DIRECTORY)
 
+def value_to_bool(value):
+    return value.lower() == 'true' if isinstance(value, str) else bool(value)
+
 def resource_path(relative_path):
     try:
         base_path = sys._MEIPASS
