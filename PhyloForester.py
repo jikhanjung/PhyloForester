@@ -187,6 +187,8 @@ class PhyloForesterMainWindow(QMainWindow):
 
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
+        self.statusBar.showMessage(self.tr("Ready"))
+        self
 
 
     @pyqtSlot()
@@ -269,7 +271,24 @@ class PhyloForesterMainWindow(QMainWindow):
 
         self.treeView = PfTreeView()
         self.tabView = PfTabWidget()
-        #self.tabView.addTab(self.tableView, "DataMatrix")
+
+        self.empty_widget = QWidget()
+        #self.empty_table = PfTableView()
+        #datamatrix_model = PfItemModel()
+        #self.empty_table = PfTableView()
+        #self.empty_table.setModel(datamatrix_model)
+        #header_labels = ["Taxon Name", ]
+        #self.empty_table.setModel(self.proxy_model)
+        #self.empty_table.setColumnWidth(0, 200)
+
+        #datamatrix_model.setColumnCount(len(header_labels))
+        #datamatrix_model.setHorizontalHeaderLabels( header_labels ) 
+
+        self.tabView.addTab(self.empty_widget, "Datamatrix")
+        self.empty_widget.setAcceptDrops(True)
+        self.empty_widget.dropEvent = self.tableView_drop_event
+        self.empty_widget.dragEnterEvent = self.tableView_drag_enter_event
+        self.empty_widget.dragMoveEvent = self.tableView_drag_move_event
 
         #self.treeView = MyTreeView()
         self.hsplitter.addWidget(self.treeView)
@@ -376,6 +395,12 @@ class PhyloForesterMainWindow(QMainWindow):
         self.treeView.setAcceptDrops(True)
         self.treeView.setDropIndicatorShown(True)
         self.treeView.dropEvent = self.dropEvent
+        self.treeView.dropEvent = self.treeView_drop_event
+        self.treeView.dragEnterEvent = self.treeView_drag_enter_event
+        self.treeView.dragMoveEvent = self.treeView_drag_move_event
+
+
+
 
     def reset_tableView(self):
         #self.datamatrix_model = PfItemModel()
@@ -402,7 +427,11 @@ class PhyloForesterMainWindow(QMainWindow):
         #self.datamatrix_model.setSortRole(Qt.UserRole)
         #self.clear_object_view()
 
+    def treeView_drop_event(self, event):
+        print("treeView_drop_event")
+
     def tableView_drop_event(self, event):
+        print("tableView_drop_event")
         create_new_project = False
         if self.selected_project is None:
             msgBox = QMessageBox()
@@ -431,22 +460,10 @@ class PhyloForesterMainWindow(QMainWindow):
         if len(file_name_list) == 0:
             return
 
-        QApplication.setOverrideCursor(Qt.WaitCursor)
         total_count = len(file_name_list)
         current_count = 0
-        self.progress_dialog = ProgressDialog(self)
-        self.progress_dialog.setModal(True)
-
-        self.progress_dialog.lbl_text.setText("Importing datamatrix...")
-        self.progress_dialog.pb_progress.setValue(0)
-        self.progress_dialog.show()
-        #print("import")
 
         for file_name in file_name_list:
-            current_count += 1
-            self.progress_dialog.pb_progress.setValue(int((current_count/float(total_count))*100))
-            self.progress_dialog.update()
-            QApplication.processEvents()
 
             file_name = pu.process_dropped_file_name(file_name)
 
@@ -467,57 +484,34 @@ class PhyloForesterMainWindow(QMainWindow):
             dm.datamatrix_name = os.path.basename(file_name)
             dm.import_file(file_name)
             dm.save()
-            dm.project.taxa_str = ",".join(dm.taxa_list)
-            dm.project.save()
+            if dm.taxa_list is not None and dm.project.taxa_str is None:
+                dm.project.taxa_str = ",".join(dm.taxa_list)
+                dm.project.save()
 
-
-            # read the file
-            #self.statusBar.showMessage("Importing file...",2000)
-            #self.selected_project.import_file(file_name)
-            # read file text
-            #self.statusBar.showMessage("Importing file...",2000)
-            # check if 
-
-            '''
-            ext = file_name.split('.')[-1].lower()
-            if ext == 'nex':
-                self.statusBar.showMessage("Importing NEXUS file...",2000)
-                self.selected_dataset.import_nexus(file_name)
-            elif ext == 'csv':
-                self.statusBar.showMessage("Importing CSV file...",2000)
-                self.selected_dataset.import_csv(file_name)
-            elif ext == 'txt':
-                self.statusBar.showMessage("Importing TXT file...",2000)
-                self.selected_dataset.import_txt(file_name)
-            elif ext == 'xlsx':
-                self.statusBar.showMessage("Importing Excel file...",2000)
-                self.selected_dataset.import_excel(file_name)
-            elif ext == 'xls':
-                self.statusBar.showMessage("Importing Excel file...",2000)
-                self.selected_dataset.import_excel(file_name)
-            '''
             if os.path.isdir(file_name):
                 self.statusBar.showMessage("Cannot process directory...",2000)
-            #else:
-            #    self.statusBar.showMessage("Nothing to import.",2000)
-
-            #self.load_object()
-
-        self.progress_dialog.close()
 
         project = self.selected_project
         self.load_project()
         self.reset_tableView()
         self.select_project(project)
-        #self.load_object()
-        QApplication.restoreOverrideCursor()
-
 
     def tableView_drag_enter_event(self, event):
+        print("drag enter event")
         event.accept()
         return
 
     def tableView_drag_move_event(self, event):
+        print("tree view drag move event")
+        event.accept()
+        return
+
+    def treeView_drag_enter_event(self, event):
+        print("tree view drag enter event")
+        event.accept()
+        return
+
+    def treeView_drag_move_event(self, event):
         event.accept()
         return
 
@@ -593,7 +587,7 @@ class PhyloForesterMainWindow(QMainWindow):
 
             self.datamatrix_model_list.append(datamatrix_model)
             self.table_view_list.append(table_view)
-            table_view.setDragEnabled(True)
+            #table_view.setDragEnabled(True)
             table_view.setAcceptDrops(True)
             table_view.setDropIndicatorShown(True)
             table_view.dropEvent = self.tableView_drop_event

@@ -150,7 +150,7 @@ class PhyloDatafile():
         curr_block=None
         in_block = False
         for line in line_list:
-            print(line)
+            #print(line)
             begin_line = re.match(r"begin\s+(\w+)",line,flags=re.IGNORECASE)
             end_line = re.match(r"end\s*;",line,flags=re.IGNORECASE)
 
@@ -173,7 +173,7 @@ class PhyloDatafile():
     def parse_nexus_block(self,line_list):
         in_matrix = False
         for line in line_list:
-            print(line)
+            #print(line)
             matrix_begin = re.match(r"\s*matrix\s*",line,flags=re.IGNORECASE)
             if matrix_begin:
                 #self.taxa_list = []
@@ -184,7 +184,7 @@ class PhyloDatafile():
             elif in_matrix:
                 matrix_match = re.match(r"^\s*(\S+)\s+(.+);*",line)
                 if matrix_match:
-                    print("matrix:",line)
+                    #print("matrix:",line)
                     species_name = matrix_match.group(1)
                     data_line = matrix_match.group(2)
                     if species_name not in self.taxa_list:
