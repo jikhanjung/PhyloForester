@@ -13,11 +13,11 @@ from pathlib import Path
 import PfUtils as pu
 from PfModel import *
 
-class DatasetDialog(QDialog):
-    # NewDatasetDialog shows new dataset dialog.
+class ProjectDialog(QDialog):
+    # ProjectDialog shows new project dialog.
     def __init__(self,parent):
         super().__init__()
-        self.setWindowTitle("PhyloForester - Dataset Information")
+        self.setWindowTitle("PhyloForester - Project Information")
         self.parent = parent
         #print(self.parent.pos())
         #self.setGeometry(QRect(100, 100, 600, 400))
@@ -26,8 +26,8 @@ class DatasetDialog(QDialog):
         self.read_settings()
         #self.move(self.parent.pos()+QPoint(100,100))
 
-        self.edtDatasetName = QLineEdit()
-        self.edtDatasetDesc = QLineEdit()
+        self.edtProjectName = QLineEdit()
+        self.edtProjectDesc = QLineEdit()
 
         self.rbMorphology = QRadioButton("Morphology")
         self.rbMorphology.setChecked(True)
@@ -40,11 +40,47 @@ class DatasetDialog(QDialog):
         datatype_layout.addWidget(self.rbRNA)
         datatype_layout.addWidget(self.rbCombined)
 
+        # add listbox for taxa
+        self.lstTaxa = QListWidget()
+        self.lstTaxa.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.lstTaxa.setSortingEnabled(False)
+        self.lstTaxa.setAlternatingRowColors(True)
+        #self.lstTaxa.setDragDropMode(QAbstractItemView.InternalMove)
+        #self.lstTaxa.setDragEnabled(True)
+        #self.lstTaxa.setDropIndicatorShown(True)
+        #self.lstTaxa.setAcceptDrops(True)
+        #self.lstTaxa.setDragDropOverwriteMode(False)
+        # add textbox for taxa
+        self.edtTaxa = QLineEdit()
+        self.edtTaxa.setPlaceholderText("Enter taxa name")
+        self.btnAddTaxa = QPushButton()
+        self.btnAddTaxa.setText("Add")
+        self.btnAddTaxa.clicked.connect(self.on_btnAddTaxa_clicked)
+        self.btnRemoveTaxa = QPushButton()
+        self.btnRemoveTaxa.setText("Remove")
+        self.btnRemoveTaxa.clicked.connect(self.on_btnRemoveTaxa_clicked)
+        self.taxa_layout = QHBoxLayout()
+        self.taxa_layout.addWidget(self.edtTaxa)
+        self.taxa_layout.addWidget(self.btnAddTaxa)
+        self.taxa_layout.addWidget(self.btnRemoveTaxa)
+        self.taxa_widget = QWidget()
+        self.taxa_widget.setLayout(self.taxa_layout)
+        self.taxa_layout_widget = QWidget()
+        self.taxa_layout_widget.setLayout(QVBoxLayout())
+        self.taxa_layout_widget.layout().addWidget(self.lstTaxa)
+        self.taxa_layout_widget.layout().addWidget(self.taxa_widget)
+        self.taxa_layout_widget.layout().setContentsMargins(0,0,0,0)
+        self.taxa_layout_widget.layout().setSpacing(0)
+        self.taxa_layout_widget.layout().setAlignment(Qt.AlignTop)
+        self.taxa_layout_widget.layout().setStretch(0,1)
+        self.taxa_layout_widget.layout().setStretch(1,0)
+
         self.main_layout = QFormLayout()
         self.setLayout(self.main_layout)
-        self.main_layout.addRow("Dataset Name", self.edtDatasetName)
-        self.main_layout.addRow("Description", self.edtDatasetDesc)
+        self.main_layout.addRow("Project Name", self.edtProjectName)
+        self.main_layout.addRow("Description", self.edtProjectDesc)
         self.main_layout.addRow("Data Type", datatype_layout)
+        self.main_layout.addRow("Taxa", self.taxa_layout_widget)
 
         self.btnOkay = QPushButton()
         self.btnOkay.setText("Save")
@@ -64,12 +100,25 @@ class DatasetDialog(QDialog):
         btn_layout.addWidget(self.btnCancel)
         self.main_layout.addRow(btn_layout)
 
-        self.dataset = None
+        self.project = None
+    
+    def on_btnAddTaxa_clicked(self):
+        taxa_name = self.edtTaxa.text()
+        if taxa_name == "":
+            return
+        self.edtTaxa.setText("")
+        self.lstTaxa.addItem(taxa_name)
+    
+    def on_btnRemoveTaxa_clicked(self):
+        items = self.lstTaxa.selectedItems()
+        for item in items:
+            self.lstTaxa.takeItem(self.lstTaxa.row(item))
+
 
     def read_settings(self):
         self.remember_geometry = pu.value_to_bool(self.m_app.settings.value("WindowGeometry/RememberGeometry", True))
         if self.remember_geometry is True:
-            self.setGeometry(self.m_app.settings.value("WindowGeometry/DatasetDialog", QRect(100, 100, 600, 400)))
+            self.setGeometry(self.m_app.settings.value("WindowGeometry/ProjectDialog", QRect(100, 100, 600, 400)))
         else:
             self.setGeometry(QRect(100, 100, 600, 400))
             self.move(self.parent.pos()+QPoint(100,100))
@@ -77,66 +126,71 @@ class DatasetDialog(QDialog):
 
     def write_settings(self):
         if self.remember_geometry is True:
-            self.m_app.settings.setValue("WindowGeometry/DatasetDialog", self.geometry())
+            self.m_app.settings.setValue("WindowGeometry/ProjectDialog", self.geometry())
 
     def closeEvent(self, event):
         self.write_settings()
         event.accept()
 
-    def read_dataset(self, dataset_id):
+    def read_project(self, project_id):
         try:
-            dataset = PfDataset.get(dataset.id == dataset_id)
+            project = PfProject.get(project.id == project_id)
         except:
-            dataset = None
-        self.dataset = dataset
+            project = None
+        self.project = project
 
-    def set_dataset(self, dataset):
-        if dataset is None:
-            self.dataset = None
+    def set_project(self, project):
+        if project is None:
+            self.project = None
             self.cbxParent.setCurrentIndex(-1)
             return
 
-        self.dataset = dataset
+        self.project = project
 
-        self.edtDatasetName.setText(dataset.dataset_name)
-        self.edtDatasetDesc.setText(dataset.dataset_desc)
-        if dataset.datatype == "Morphology":
+        self.edtProjectName.setText(project.project_name)
+        self.edtProjectDesc.setText(project.project_desc)
+        if project.datatype == "Morphology":
             self.rbMorphology.setChecked(True)
-        elif dataset.datatype == "DNA":
+        elif project.datatype == "DNA":
             self.rbDNA.setChecked(True)
-        elif dataset.datatype == "RNA":
+        elif project.datatype == "RNA":
             self.rbRNA.setChecked(True)
-        elif dataset.datatype == "Combined":
+        elif project.datatype == "Combined":
             self.rbCombined.setChecked(True)
-        #print(dataset.dimension,self.dataset.objects)
+        self.lstTaxa.clear()
+        if project.taxa_str is not None:
+            taxa_list = project.taxa_str.split(",")
+            for taxa in taxa_list:
+                self.lstTaxa.addItem(taxa)
     
     def Okay(self):
-        if self.dataset is None:
-            self.dataset = PfDataset()
-        self.dataset.dataset_name = self.edtDatasetName.text()
-        self.dataset.dataset_desc = self.edtDatasetDesc.text()
+        if self.project is None:
+            self.project = PfProject()
+        self.project.project_name = self.edtProjectName.text()
+        self.project.project_desc = self.edtProjectDesc.text()
         if self.rbMorphology.isChecked():
-            self.dataset.datatype = "Morphology"
+            self.project.datatype = "Morphology"
         elif self.rbDNA.isChecked():
-            self.dataset.datatype = "DNA"
+            self.project.datatype = "DNA"
         elif self.rbRNA.isChecked():
-            self.dataset.datatype = "RNA"
+            self.project.datatype = "RNA"
         elif self.rbCombined.isChecked():
-            self.dataset.datatype = "Combined"
+            self.project.datatype = "Combined"
+        self.project.taxa_str = ""
+        for i in range(self.lstTaxa.count()):
+            self.project.taxa_str += self.lstTaxa.item(i).text()
+            if i < self.lstTaxa.count()-1:
+                self.project.taxa_str += ","
 
-        #self.data
-        #print(self.dataset.dataset_desc, self.dataset.dataset_name)
-        self.dataset.save()
+        self.project.save()
         self.accept()
 
     def Delete(self):
-        ret = QMessageBox.question(self, "", "Are you sure to delete this dataset?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        ret = QMessageBox.question(self, "", "Are you sure to delete this project?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         #print("ret:", ret)
         if ret == QMessageBox.Yes:
-            self.dataset.delete_instance()
-            self.parent.selected_dataset = None
-            #self.dataset.delete_dataset()
-        #self.delete_dataset()
+            self.project.delete_instance()
+            self.parent.selected_project = None
         self.accept()
 
     def Cancel(self):
@@ -303,3 +357,49 @@ class PreferencesDialog(QDialog):
         if folder:
             self.data_folder = Path(folder).resolve()
             self.edtDataFolder.setText(folder)
+
+class ProgressDialog(QDialog):
+    def __init__(self,parent):
+        super().__init__()
+        #self.setupUi(self)
+        #self.setGeometry(200, 250, 400, 250)
+        self.setWindowTitle("PhyloForester - Progress Dialog")
+        self.parent = parent
+        self.setGeometry(QRect(100, 100, 320, 180))
+        self.move(self.parent.pos()+QPoint(100,100))
+
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(50,50, 50, 50)
+
+        self.lbl_text = QLabel(self)
+        #self.lbl_text.setGeometry(50, 50, 320, 80)
+        #self.pb_progress = QProgressBar(self)
+        self.pb_progress = QProgressBar(self)
+        #self.pb_progress.setGeometry(50, 150, 320, 40)
+        self.pb_progress.setValue(0)
+        self.stop_progress = False
+        self.btnStop = QPushButton(self)
+        #self.btnStop.setGeometry(175, 200, 50, 30)
+        self.btnStop.setText("Stop")
+        self.btnStop.clicked.connect(self.set_stop_progress)
+        self.layout.addWidget(self.lbl_text)
+        self.layout.addWidget(self.pb_progress)
+        self.layout.addWidget(self.btnStop)
+        self.setLayout(self.layout)
+
+    def set_stop_progress(self):
+        self.stop_progress = True
+
+    def set_progress_text(self,text_format):
+        self.text_format = text_format
+
+    def set_max_value(self,max_value):
+        self.max_value = max_value
+
+    def set_curr_value(self,curr_value):
+        self.curr_value = curr_value
+        self.pb_progress.setValue(int((self.curr_value/float(self.max_value))*100))
+        self.lbl_text.setText(self.text_format.format(self.curr_value, self.max_value))
+        #self.lbl_text.setText(label_text)
+        self.update()
+        QApplication.processEvents()
