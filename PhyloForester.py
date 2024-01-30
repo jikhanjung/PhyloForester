@@ -19,6 +19,7 @@ from PfDialog import *
 ICON = {}
 ICON['new_project'] = pu.resource_path('icons/NewProject.png')
 ICON['project'] = pu.resource_path('icons/Project.png')
+ICON['datamatrix'] = pu.resource_path('icons/Datamatrix.png')
 ICON['preferences'] = pu.resource_path('icons/Preferences.png')
 ICON['about'] = pu.resource_path('icons/About.png')
 ICON['exit'] = pu.resource_path('icons/exit.png')
@@ -299,6 +300,8 @@ class PhyloForesterMainWindow(QMainWindow):
 
         self.treeView.doubleClicked.connect(self.on_treeView_doubleClicked)
         self.treeView.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.treeView.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.treeView.customContextMenuRequested.connect(self.open_project_menu)
 
         return
 
@@ -320,7 +323,71 @@ class PhyloForesterMainWindow(QMainWindow):
         #self.move(300, 300)
         #self.show(
 
-        
+    def open_project_menu(self, position):
+        indexes = self.treeView.selectedIndexes()
+        if len(indexes) > 0:
+
+
+            action_add_project = QAction("Add new project")
+            action_add_project.triggered.connect(self.on_action_new_project_triggered)
+            action_add_datamatrix = QAction("Add datamatrix")
+            action_add_datamatrix.triggered.connect(self.on_action_add_datamatrix_triggered)
+            action_delete_datamatrix = QAction("Delete datamatrix")
+            action_delete_datamatrix.triggered.connect(self.on_action_delete_datamatrix_triggered)
+            action_run_analysis = QAction("Run analysis")
+            action_run_analysis.triggered.connect(self.on_action_run_analysis_triggered)
+            action_refresh_tree = QAction("Reload")
+            action_refresh_tree.triggered.connect(self.load_project)
+
+            level = 0
+            index = indexes[0]
+            item1 =self.project_model.itemFromIndex(index)
+            ds = item1.data()
+
+            menu = QMenu()
+
+            if isinstance(ds, PfProject):
+                level = 1
+                menu.addAction(action_add_datamatrix)
+            elif isinstance(ds, PfDatamatrix):                
+                level = 2
+                menu.addAction(action_delete_datamatrix)
+                menu.addAction(action_run_analysis)
+
+
+            #menu.addAction(action_add_project)
+            menu.addAction(action_refresh_tree)
+            menu.exec_(self.treeView.viewport().mapToGlobal(position))
+
+    def on_action_run_analysis_triggered(self):
+        indexes = self.treeView.selectedIndexes()
+        index = indexes[0]
+        item1 =self.project_model.itemFromIndex(index)
+        dm = item1.data()
+        if isinstance(dm, PfDatamatrix):
+            self.run_analysis(dm)
+
+    def run_analysis(self, selected_datamatrix):
+        self.analysis_dialog = AnalysisDialog(self)
+        self.analysis_dialog.setModal(True)
+        self.analysis_dialog.set_datamatrix(selected_datamatrix)
+        self.analysis_dialog.show()
+
+    def on_action_add_datamatrix_triggered(self):
+        pass
+
+    def on_action_delete_datamatrix_triggered(self):
+        print("delete datamatrix")
+        indexes = self.treeView.selectedIndexes()
+        index = indexes[0]
+        item1 =self.project_model.itemFromIndex(index)
+        dm = item1.data()
+        if isinstance(dm, PfDatamatrix):
+            dm.delete_instance()
+            self.load_project()
+            self.reset_tableView()
+        #pass
+
     def on_treeView_doubleClicked(self, index):
         self.dlg = ProjectDialog(self)
         self.dlg.setModal(True)
@@ -368,7 +435,7 @@ class PhyloForesterMainWindow(QMainWindow):
                 dm_list = PfDatamatrix.select().where(PfDatamatrix.project == project)
                 for dm in dm_list:
                     item3 = QStandardItem(dm.datamatrix_name)
-                    item3.setIcon(QIcon(pu.resource_path(ICON['project'])))
+                    item3.setIcon(QIcon(pu.resource_path(ICON['datamatrix'])))
                     item3.setData(dm)
                     item1.appendRow([item3])
 
@@ -434,9 +501,9 @@ class PhyloForesterMainWindow(QMainWindow):
         print("tableView_drop_event")
         create_new_project = False
         if self.selected_project is None:
-            msgBox = QMessageBox()
+            msgBox = QMessageBox(self)
             msgBox.setIcon(QMessageBox.Warning)
-            msgBox.setText("Select a project first.")
+            msgBox.setText("No project is selected. Do you want to create a project with this file?")
             msgBox.setWindowTitle("Warning")
             msgBox.setWindowModality(Qt.ApplicationModal)
             msgBox.setWindowFlags(msgBox.windowFlags() | Qt.WindowStaysOnTopHint)
@@ -497,17 +564,17 @@ class PhyloForesterMainWindow(QMainWindow):
         self.select_project(project)
 
     def tableView_drag_enter_event(self, event):
-        print("drag enter event")
+        #print("drag enter event")
         event.accept()
         return
 
     def tableView_drag_move_event(self, event):
-        print("tree view drag move event")
+        #print("tree view drag move event")
         event.accept()
         return
 
     def treeView_drag_enter_event(self, event):
-        print("tree view drag enter event")
+        #print("tree view drag enter event")
         event.accept()
         return
 
@@ -680,15 +747,9 @@ class PhyloForesterMainWindow(QMainWindow):
         dm.save()            
     
     def on_btn_analyze_clicked(self):
-        print("analyze")
-        return
         if self.selected_datamatrix is None:
             return
-        dm = self.selected_datamatrix
-        self.analysis_dialog = AnalysisDialog(self)
-        self.analysis_dialog.setModal(True)
-        self.analysis_dialog.set_dm(dm)
-        self.analysis_dialog.show()
+        self.run_analysis(self.selected_datamatrix)
 
 
 if __name__ == "__main__":

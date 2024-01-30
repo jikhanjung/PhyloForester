@@ -13,6 +13,35 @@ from pathlib import Path
 import PfUtils as pu
 from PfModel import *
 
+class AnalysisDialog(QDialog):
+    def __init__(self,parent):
+        super().__init__()
+        self.setWindowTitle("PhyloForester - Run Analysis")
+        self.parent = parent
+        self.remember_geometry = True
+        self.m_app = QApplication.instance()
+        self.read_settings()
+
+    def read_settings(self):
+        self.remember_geometry = pu.value_to_bool(self.m_app.settings.value("WindowGeometry/RememberGeometry", True))
+        if self.remember_geometry is True:
+            self.setGeometry(self.m_app.settings.value("WindowGeometry/ProjectDialog", QRect(100, 100, 600, 400)))
+        else:
+            self.setGeometry(QRect(100, 100, 600, 400))
+            self.move(self.parent.pos()+QPoint(100,100))
+
+
+    def write_settings(self):
+        if self.remember_geometry is True:
+            self.m_app.settings.setValue("WindowGeometry/ProjectDialog", self.geometry())
+
+    def closeEvent(self, event):
+        self.write_settings()
+        event.accept()
+
+    def set_datamatrix(self, datamatrix):
+        self.datamatrix = datamatrix
+
 class ProjectDialog(QDialog):
     # ProjectDialog shows new project dialog.
     def __init__(self,parent):
