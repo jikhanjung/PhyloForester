@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import QMainWindow, QHeaderView, QApplication, QAbstractIte
                             QMessageBox, QTreeView, QTableView, QSplitter, QAction, QMenu, \
                             QStatusBar, QInputDialog, QToolBar, QTabWidget, QTabBar
 from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem, QKeySequence, QColor
-from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSettings, QSize, QTranslator, QModelIndex
+from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSettings, QSize, QTranslator, QModelIndex, QEvent
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 import re,os,sys
@@ -25,11 +25,9 @@ ICON['about'] = pu.resource_path('icons/About.png')
 ICON['exit'] = pu.resource_path('icons/exit.png')
 
 class PfTreeView(QTreeView):
+    mousePressed = pyqtSignal(QEvent)
     def mousePressEvent(self, event):
-        index = self.indexAt(event.pos())
-        if not index.isValid():  # Click is on empty space
-            self.clearSelection()
-            self.setCurrentIndex(QModelIndex())  # Deselect current item
+        self.mousePressed.emit(event)
         super().mousePressEvent(event)
 
 
@@ -285,11 +283,7 @@ class PhyloForesterMainWindow(QMainWindow):
         #datamatrix_model.setColumnCount(len(header_labels))
         #datamatrix_model.setHorizontalHeaderLabels( header_labels ) 
 
-        self.tabView.addTab(self.empty_widget, "Datamatrix")
-        self.empty_widget.setAcceptDrops(True)
-        self.empty_widget.dropEvent = self.tableView_drop_event
-        self.empty_widget.dragEnterEvent = self.tableView_drag_enter_event
-        self.empty_widget.dragMoveEvent = self.tableView_drag_move_event
+        self.add_empty_tabview()
 
         #self.treeView = MyTreeView()
         self.hsplitter.addWidget(self.treeView)
@@ -298,6 +292,7 @@ class PhyloForesterMainWindow(QMainWindow):
 
         self.setCentralWidget(self.hsplitter)
 
+        self.treeView.mousePressed.connect(self.on_treeView_clicked)
         self.treeView.doubleClicked.connect(self.on_treeView_doubleClicked)
         self.treeView.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.treeView.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -322,6 +317,22 @@ class PhyloForesterMainWindow(QMainWindow):
         #self.setMinimumSize(400, 300)
         #self.move(300, 300)
         #self.show(
+
+    def on_treeView_clicked(self, event):
+        index = self.treeView.indexAt(event.pos())
+        if not index.isValid():  # Click is on empty space
+            self.treeView.clearSelection()
+            self.treeView.setCurrentIndex(QModelIndex())  # Deselect current item
+            self.tabView.clear()
+            self.add_empty_tabview()
+            self.selected_project = None
+
+    def add_empty_tabview(self):
+        #self.tabView.addTab(self.empty_widget, "Datamatrix")
+        self.tabView.setAcceptDrops(True)
+        self.tabView.dropEvent = self.tableView_drop_event
+        self.tabView.dragEnterEvent = self.tableView_drag_enter_event
+        self.tabView.dragMoveEvent = self.tableView_drag_move_event
 
     def open_project_menu(self, position):
         indexes = self.treeView.selectedIndexes()
@@ -388,37 +399,6 @@ class PhyloForesterMainWindow(QMainWindow):
             self.reset_tableView()
         #pass
 
-    def on_treeView_doubleClicked(self, index):
-        self.dlg = ProjectDialog(self)
-        self.dlg.setModal(True)
-        self.dlg.set_project( self.selected_project )
-        ret = self.dlg.exec_()
-        if ret == 0:
-            return
-        elif ret == 1:
-            if self.selected_project is None: #deleted
-                self.load_project()
-                self.reset_tableView()
-            else:
-                project = self.selected_project
-                self.reset_treeView()
-                self.load_project()
-                self.reset_tableView()
-                self.select_project(project)
-
-    def select_project(self,project,node=None):
-        if project is None:
-            return
-        if node is None:
-            node = self.project_model.invisibleRootItem()   
-
-        for i in range(node.rowCount()):
-            item = node.child(i,0)
-            if item.data() == project:
-                self.treeView.setCurrentIndex(item.index())
-                break
-            self.select_project(project,node.child(i,0))
-
     def load_project(self):
         self.project_model.clear()
         self.selected_project = None
@@ -454,7 +434,7 @@ class PhyloForesterMainWindow(QMainWindow):
         self.treeView.setModel(self.project_model)
         self.treeView.setHeaderHidden(True)
         self.project_selection_model = self.treeView.selectionModel()
-        self.project_selection_model.selectionChanged.connect(self.on_project_selection_changed)
+        self.project_selection_model.selectionChanged.connect(self.on_treeview_selection_changed)
         header = self.treeView.header()
         #self.treeView.setSelectionBehavior(QTreeView.SelectRows)
 
@@ -496,9 +476,20 @@ class PhyloForesterMainWindow(QMainWindow):
 
     def treeView_drop_event(self, event):
         print("treeView_drop_event")
+        file_name_list = event.mimeData().text().strip().split("\n")
+        if len(file_name_list) == 0:
+            return
+        self.add_datamatrix(file_name_list)
 
     def tableView_drop_event(self, event):
         print("tableView_drop_event")
+        file_name_list = event.mimeData().text().strip().split("\n")
+        if len(file_name_list) == 0:
+            return
+        self.add_datamatrix(file_name_list)
+
+
+    def add_datamatrix(self, file_name_list):
         create_new_project = False
         if self.selected_project is None:
             msgBox = QMessageBox(self)
@@ -520,12 +511,9 @@ class PhyloForesterMainWindow(QMainWindow):
             elif msgBox.clickedButton() == cancelButton:
                 # Cancel logic or do nothing
                 #print("Cancelled")            
-                pass
+                return
             #QMessageBox.warning(self, "Warning", "Select a project first.")
             #return
-        file_name_list = event.mimeData().text().strip().split("\n")
-        if len(file_name_list) == 0:
-            return
 
         total_count = len(file_name_list)
         current_count = 0
@@ -583,7 +571,7 @@ class PhyloForesterMainWindow(QMainWindow):
         return
 
 
-    def on_project_selection_changed(self, selected, deselected):
+    def on_treeview_selection_changed(self, selected, deselected):
         #print("project selection changed")
         indexes = selected.indexes()
         #print(indexes)
@@ -591,9 +579,24 @@ class PhyloForesterMainWindow(QMainWindow):
             #self.object_model.clear()
             item1 =self.project_model.itemFromIndex(indexes[0])
             ds = item1.data()
+            while not isinstance( ds, PfProject ):
+                item1 = item1.parent()
+                ds = item1.data()
+            
+            if ds != self.selected_project:
+                self.selected_project = ds
+                self.load_datamatrices()
+            
+            
+            
+            if isinstance( ds, PfProject ) and ds == self.selected_project:
+                return
             # check if ds is PfProject instance
+
             if not isinstance(ds, PfProject):
                 ds = item1.parent().data()
+
+
             #if 
             self.selected_project = ds
             self.load_datamatrices()
@@ -606,6 +609,37 @@ class PhyloForesterMainWindow(QMainWindow):
             #self.actionNewObject.setEnabled(False)
             #self.actionExport.setEnabled(False)
             pass
+
+    def on_treeView_doubleClicked(self, index):
+        self.dlg = ProjectDialog(self)
+        self.dlg.setModal(True)
+        self.dlg.set_project( self.selected_project )
+        ret = self.dlg.exec_()
+        if ret == 0:
+            return
+        elif ret == 1:
+            if self.selected_project is None: #deleted
+                self.load_project()
+                self.reset_tableView()
+            else:
+                project = self.selected_project
+                self.reset_treeView()
+                self.load_project()
+                self.reset_tableView()
+                self.select_project(project)
+
+    def select_project(self,project,node=None):
+        if project is None:
+            return
+        if node is None:
+            node = self.project_model.invisibleRootItem()   
+
+        for i in range(node.rowCount()):
+            item = node.child(i,0)
+            if item.data() == project:
+                self.treeView.setCurrentIndex(item.index())
+                break
+            self.select_project(project,node.child(i,0))
 
     def on_data_selection_changed(self, selected, deselected):
         selected_data_list = self.get_selected_data_list()
@@ -645,12 +679,16 @@ class PhyloForesterMainWindow(QMainWindow):
         self.tabView.clear()
 
         if len(self.datamatrix_list) == 0:
+            self.add_empty_tabview()
             return
 
         for dm in self.datamatrix_list:
             datamatrix_model = PfItemModel()
             table_view = PfTableView()
             table_view.setModel(datamatrix_model)
+            if self.selected_datamatrix is None:
+                self.selected_datamatrix = dm
+                self.selected_tableview = table_view
 
             self.datamatrix_model_list.append(datamatrix_model)
             self.table_view_list.append(table_view)
@@ -710,13 +748,13 @@ class PhyloForesterMainWindow(QMainWindow):
 
     def on_btn_save_dm_clicked(self):
         idx = self.tabView.selected_index
-        print("save dm", idx)
+        #print("save dm", idx)
 
 
         self.selected_datamatrix = self.datamatrix_list[idx]
         self.selected_tableview = self.table_view_list[idx]
         # iterate through the tableview
-        print("dm:", self.selected_datamatrix.datamatrix_name)
+        #print("dm:", self.selected_datamatrix.datamatrix_name)
 
         data_list = []
 

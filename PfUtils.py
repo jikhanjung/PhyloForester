@@ -286,6 +286,7 @@ class PhyloDatafile():
         for species in self.taxa_list:
             data = self.data_hash[species]
             array_data = []
+            poly_char = ''
             #print(species, data)
             #print(species,len(data),data)
             is_poly = False
@@ -295,11 +296,16 @@ class PhyloDatafile():
                     is_poly = True
                     array_data.append([])
                 elif char in [ ')','}',']']:
+                    array_data[-1].append(poly_char)
+                    poly_char = ''
                     is_poly = False
                 else:
                     if is_poly:
-                        if char != ' ':
-                            array_data[-1].append(char)
+                        if char == ' ':
+                            array_data[-1].append(poly_char)
+                            poly_char = ''
+                        else:
+                            poly_char += char
                     else:
                         array_data.append(char)
 
