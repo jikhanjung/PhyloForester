@@ -15,6 +15,12 @@ import PfUtils as pu
 import shutil
 import copy
 import json
+from Bio import Phylo
+ANALYSIS_TYPE_ML = 'Maximum Likelihood'
+ANALYSIS_TYPE_PARSIMONY = 'Parsimony'
+ANALYSIS_TYPE_BAYESIAN = 'Bayesian'
+
+
 LINE_SEPARATOR = "\n"
 
 database_path = os.path.join(pu.DEFAULT_DB_DIRECTORY, 'PhyloForester.db')
@@ -47,6 +53,7 @@ class PfDatamatrix(Model):
     datamatrix_name = CharField()
     datamatrix_desc = CharField(null=True)
     datamatrix_index = IntegerField(default=1)
+    datatype = CharField(null=True)
     characters_str = CharField(null=True)
     n_taxa = IntegerField()
     n_chars = IntegerField()
@@ -62,6 +69,12 @@ class PfDatamatrix(Model):
 
     class Meta:
         database = gDatabase
+
+    def get_character_list(self):
+        if self.characters_str:
+            return self.characters_str.split(',')
+        else:
+            return []
 
     def datamatrix_as_list(self):
         if self.datamatrix_json:
@@ -112,12 +125,54 @@ class PfPackage(Model):
 
 class PfAnalysis(Model):
     project = ForeignKeyField(PfProject, backref='analyses', on_delete='CASCADE')
-    package = ForeignKeyField(PfPackage, backref='analyses')
+    datamatrix = ForeignKeyField(PfDatamatrix, backref='analyses', on_delete='CASCADE')
+    #package = ForeignKeyField(PfPackage, backref='analyses')
     analysis_type = CharField()
     analysis_name = CharField()
+    analysis_status = CharField(null=True)
+    result_directory = CharField(null=True)
+    datafile = CharField(null=True)
+    completion_percentage = IntegerField(default=0)
+    start_datetime = DateTimeField(default=datetime.datetime.now)
+    finish_datetime = DateTimeField(null=True)
+
+    ml_bootstrap = IntegerField(default=100)
+    ml_bootstrap_type = CharField(default='Normal')
+    ml_substitution_model = CharField(default='GTR')
+    mcmc_burnin = IntegerField(default=1000)
+    mcmc_relburnin = FloatField(default=0.25)
+    mcmc_burninfrac = FloatField(default=0.25)
+    mcmc_ngen = IntegerField(default=1000000)
+    mcmc_nrates = CharField(default='gamma')
+    mcmc_printfreq = IntegerField(default=1000)
+    mcmc_samplefreq = IntegerField(default=100)
+    mcmc_nruns = IntegerField(default=1)
+    mcmc_nchains = IntegerField(default=1)
 
     created_at = DateTimeField(default=datetime.datetime.now)
     modified_at = DateTimeField(default=datetime.datetime.now)
 
     class Meta:
         database = gDatabase
+
+    def has_tree(self):
+        run = self.run
+        data_filename = os.path.split( str(self.datafile) )[-1]
+        filename, fileext = os.path.splitext(data_filename.upper())
+        if self.analysis_type == ANALYSIS_TYPE_ML:
+            tree_filename = os.path.join( self.result_directory, filename + ".phy.treefile" )
+        elif self.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+            tree_filename = os.path.join( self.result_directory, filename + ".nex1.con.tre" )
+        elif self.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            tree_filename = os.path.join( self.result_directory, "aquickie.tre" )
+
+    def get_tree(self):
+        if self.analysis_type == ANALYSIS_TYPE_ML:
+            data_filename = os.path.split( str(self.datafile) )[-1]
+            filename, fileext = os.path.splitext(data_filename.upper())
+            tree_filename = os.path.join( self.result_directory, filename + ".phy.treefile" )
+            if os.path.exists( tree_filename ):
+                tree = Phylo.read( tree_filename, "newick" )
+                return Phylo.draw_ascii(tree)
+            else:
+                return tree_filename
