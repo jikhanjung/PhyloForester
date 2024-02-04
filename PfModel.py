@@ -20,6 +20,20 @@ ANALYSIS_TYPE_ML = 'Maximum Likelihood'
 ANALYSIS_TYPE_PARSIMONY = 'Parsimony'
 ANALYSIS_TYPE_BAYESIAN = 'Bayesian'
 
+ANALYSIS_STATUS_QUEUED = 'Queued'
+ANALYSIS_STATUS_RUNNING = 'Running'
+ANALYSIS_STATUS_FINISHED = 'Complete'
+ANALYSIS_STATUS_FAILED = 'Failed'
+
+DATATYPE_DNA = 'DNA'
+DATATYPE_RNA = 'RNA'
+DATATYPE_PROTEIN = 'Protein'
+DATATYPE_STANDARD = 'Standard'
+DATATYPE_MORPHOLOGY = 'Morphology'
+DATATYPE_COMBINED = 'Combined'
+
+BOOTSTRAP_TYPE_NORMAL = 'Normal'
+BOOTSTRAP_TYPE_ULTRAFAST = 'Ultrafast'
 
 LINE_SEPARATOR = "\n"
 
@@ -66,6 +80,7 @@ class PfDatamatrix(Model):
     taxa_list = []
     characters_list = []
     DEFAULTS = { 'gap': '-', 'missing': '?', 'datatype': 'standard' }
+    nexus_command_hash = None
 
     class Meta:
         database = gDatabase
@@ -97,6 +112,7 @@ class PfDatamatrix(Model):
             self.block_hash = datafile_obj.block_hash
             self.whole_text = datafile_obj.file_text
             self.formatted_data_list = datafile_obj.formatted_data_list
+            self.nexus_command_hash = datafile_obj.nexus_command_hash
             if len(self.formatted_data_list) > 0:
                 self.datamatrix_json = json.dumps(self.formatted_data_list,indent=4)
 
@@ -111,6 +127,70 @@ class PfDatamatrix(Model):
             return False
 
         return True
+
+    # when exporting as file
+    def matrix_as_string(self,parens=["(",")"],separator=" "):
+        matrix_string = ""
+        datamatrix = self.datamatrix_as_list()
+        for data in datamatrix:
+            taxon_string = ""
+            taxon_name = data.pop(0)
+            #print(formatted_data)
+            taxon_string += taxon_name + separator
+            for char_state in data:
+                #print("char:",char_state)
+                if type(char_state) is list:
+                    taxon_string += parens[0] + separator.join(char_state) + parens[1]
+                    #print("poly:",parens[0] + separator.join(char_state) + parens[1])
+                else:
+                    taxon_string += char_state
+            matrix_string += taxon_string + "\n"
+        return matrix_string
+
+
+    def as_phylip_format(self):
+        phylip_string = ""
+        data_string = self.matrix_as_string()
+        phylip_string += str(self.n_taxa) + " " + str(self.n_chars) + "\n"
+        phylip_string += data_string
+        return phylip_string
+
+    def as_tnt_format(self):
+        tnt_string = ""
+        data_string = self.matrix_as_string()
+        tnt_string += "xread '" + self.dataset_name + "' " + str(self.phylo_matrix.n_chars) + " " + str(self.phylo_matrix.n_taxa) + "\n"
+        tnt_string += data_string
+        tnt_string += ";\n"
+        return tnt_string
+
+    def as_nexus_format(self):
+        nexus_string = ""
+        data_string = self.matrix_as_string()
+        command_string = self.command_as_string()
+        nexus_string += "#NEXUS\n\n"
+        nexus_string += "begin data;\n"
+        nexus_string += command_string
+        nexus_string += "matrix\n"
+        nexus_string += data_string
+        nexus_string += ";\n"
+        nexus_string += "end;\n"
+        return nexus_string
+
+    def command_as_string(self):
+        command_string = ""
+        if self.nexus_command_hash:
+                
+            for key1 in self.nexus_command_hash.keys():
+                variable_list = []
+                for key2 in self.nexus_command_hash[key1].keys():
+                    variable_list.append( key2 + "=" + self.nexus_command_hash[key1][key2] )
+                command_string += key1 + " " + " ".join(variable_list) + ";\n"
+            #print(command_string)
+        else:
+            command_string += "dimensions ntax={ntax} nchar={nchar};\n".format(ntax=self.n_taxa, nchar=self.n_chars)
+            command_string += "format datatype={datatype} gap={gap} missing={missing};\n".format(datatype=self.DEFAULTS['datatype'], gap=self.DEFAULTS['gap'], missing=self.DEFAULTS['missing'])
+        return command_string
+
 
 class PfPackage(Model):
     package_name = CharField()
@@ -137,10 +217,10 @@ class PfAnalysis(Model):
     finish_datetime = DateTimeField(null=True)
 
     ml_bootstrap = IntegerField(default=100)
-    ml_bootstrap_type = CharField(default='Normal')
+    ml_bootstrap_type = CharField(default=BOOTSTRAP_TYPE_NORMAL)
     ml_substitution_model = CharField(default='GTR')
     mcmc_burnin = IntegerField(default=1000)
-    mcmc_relburnin = FloatField(default=0.25)
+    mcmc_relburnin = BooleanField(default=False)
     mcmc_burninfrac = FloatField(default=0.25)
     mcmc_ngen = IntegerField(default=1000000)
     mcmc_nrates = CharField(default='gamma')

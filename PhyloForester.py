@@ -2,14 +2,14 @@ from PyQt5.QtWidgets import QMainWindow, QHeaderView, QApplication, QAbstractIte
                             QMessageBox, QTreeView, QTableView, QSplitter, QAction, QMenu, \
                             QStatusBar, QInputDialog, QToolBar, QTabWidget, QTabBar
 from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem, QKeySequence, QColor
-from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSettings, QSize, QTranslator, QModelIndex, QEvent
+from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSettings, QSize, QTranslator, QModelIndex, QEvent, QProcess
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 import re,os,sys
 from pathlib import Path
 from peewee import *
 from PIL.ExifTags import TAGS
-import shutil
+import shutil, platform
 import copy
 import PfUtils as pu
 from PfModel import *
@@ -188,7 +188,13 @@ class PhyloForesterMainWindow(QMainWindow):
         self.statusBar = QStatusBar()
         self.setStatusBar(self.statusBar)
         self.statusBar.showMessage(self.tr("Ready"))
-        self
+
+        self.process = QProcess()
+        self.process.readyReadStandardOutput.connect(self.onReadyReadStandardOutput)
+        self.process.readyReadStandardError.connect(self.onReadyReadStandardError)
+        self.process.finished.connect(self.onProcessFinished)
+        self.process.errorOccurred.connect(self.handleError)
+        self.edtAnalysisOutput = QTextEdit()
 
 
     @pyqtSlot()
@@ -271,18 +277,7 @@ class PhyloForesterMainWindow(QMainWindow):
 
         self.treeView = PfTreeView()
         self.tabView = PfTabWidget()
-
         self.empty_widget = QWidget()
-        #self.empty_table = PfTableView()
-        #datamatrix_model = PfItemModel()
-        #self.empty_table = PfTableView()
-        #self.empty_table.setModel(datamatrix_model)
-        #header_labels = ["Taxon Name", ]
-        #self.empty_table.setModel(self.proxy_model)
-        #self.empty_table.setColumnWidth(0, 200)
-
-        #datamatrix_model.setColumnCount(len(header_labels))
-        #datamatrix_model.setHorizontalHeaderLabels( header_labels ) 
 
         self.add_empty_tabview()
 
@@ -318,6 +313,109 @@ class PhyloForesterMainWindow(QMainWindow):
         #self.setMinimumSize(400, 300)
         #self.move(300, 300)
         #self.show(
+
+    def startAnalysis(self):
+        # Command to run (example: list directory contents)
+        analysis_list = PfAnalysis.select().where(PfAnalysis.analysis_status == ANALYSIS_STATUS_QUEUED).order_by(PfAnalysis.created_at)
+        if len(analysis_list) == 0:
+            return
+        self.analysis = analysis_list[0]
+        print("analysis:", self.analysis.analysis_name)
+        datamatrix = self.analysis.datamatrix
+
+        if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            command = "D:/Phylogenetics/ZIPCHTNT/tnt.exe"
+            fileext = '.nex'
+            datamatrix_str = datamatrix.as_nexus_format()
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_ML:
+            command = "D:/Phylogenetics/iqtree-1.6.12-Windows/bin/iqtree.exe"
+            fileext = '.phy'
+            datamatrix_str = datamatrix.as_phylip_format()
+
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+            command = "D:/Phylogenetics/MrBayes-3.2.7-WINbin/mb.3.2.7-win64.exe"
+            fileext = '.nex'
+            datamatrix_str = datamatrix.as_nexus_format()
+
+        result_directory = self.analysis.result_directory.replace(" ","_")
+
+        if not os.path.isdir( result_directory ):
+            os.makedirs( result_directory )
+
+        data_filename = datamatrix.datamatrix_name + fileext
+        data_file_location = os.path.join( result_directory, data_filename ).replace(" ","_")
+        data_fd = open(data_file_location,mode='w')
+        print("writing data file:", data_file_location)
+        data_fd.write(datamatrix_str)
+        data_fd.close()
+
+        self.process.setWorkingDirectory(result_directory)
+        print("working directory:", self.process.workingDirectory())
+        print("result directory:", result_directory)        
+        
+        self.analysis.start_datetime = datetime.datetime.now()
+        self.analysis.analysis_status = ANALYSIS_STATUS_RUNNING
+        self.analysis.save()
+
+        if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            run_file_name = os.path.join( pu.resource_path("data/aquickie.run") )
+            shutil.copy( run_file_name, result_directory )
+            my_os = platform.system()
+            if my_os == 'Linux':
+                argument_separator = ","
+            else:
+                argument_separator = ";"
+            #run argument setting
+            run_argument_list = [ "proc", data_file_location, argument_separator, "aquickie", argument_separator ]
+
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_ML:
+            #run analysis - IQTree
+            #run argument setting
+            run_argument_list = [ "-s", data_file_location, "-nt", "AUTO"]
+            if datamatrix.datatype == DATATYPE_MORPHOLOGY:
+                run_argument_list.extend( ["-st", "MORPH"] )
+            if self.analysis.ml_bootstrap_type == BOOTSTRAP_TYPE_NORMAL:
+                run_argument_list.extend( ["-b", str(self.analysis.ml_bootstrap)] )
+            elif self.analysis.ml_bootstrap_type == BOOTSTRAP_TYPE_ULTRAFAST:
+                run_argument_list.extend( ["-bb", str(self.analysis.ml_bootstrap)] )
+            #print( run_argument_list )
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+            command_filename = self.create_mrbayes_command_file( data_filename, self.analysis.result_directory, self.analysis )
+            run_argument_list = [ command_filename ]
+
+        self.process.start(command, run_argument_list)
+        print("process started")
+        if self.process.state() == QProcess.NotRunning:
+            print("Failed to start the process")
+
+    def onReadyReadStandardOutput(self):
+        print("standard output")
+        output = self.process.readAllStandardOutput().data() #.decode()
+        print("output:",output)
+        #self.edtAnalysisOutput.append(output)
+    
+    def onReadyReadStandardError(self):
+        print("standard error")
+        output = self.process.readAllStandardError().data() #.decode()
+        print("error:", output)
+        #self.edtAnalysisOutput.append(output)
+
+    def onProcessFinished(self):
+        print("process finished")
+        # This method will be called when the external process finishes
+        self.edtAnalysisOutput.append("\nProcess Finished\n")
+        #print("Process Finished")
+        # Here, you can also handle process exit code and status
+        exitCode = self.process.exitCode()
+        self.analysis.analysis_status = ANALYSIS_STATUS_FINISHED
+        self.analysis.completion_percentage = 100
+        self.analysis.finish_datetime = datetime.datetime.now()
+        self.analysis.save()
+        self.edtAnalysisOutput.append(f"Exit Code: {exitCode}")
+
+    def handleError(self, error):
+        print("Error occurred:", error)
+        print("Error message:", self.process.errorString())
 
     def on_treeView_clicked(self, event):
         index = self.treeView.indexAt(event.pos())
@@ -428,21 +526,33 @@ class PhyloForesterMainWindow(QMainWindow):
             print(" analysis ret 0")
         elif ret == 1:
             print("analysis dialog ret 1")
+            self.startAnalysis()
 
+        project = self.selected_project
+        datamatrix = selected_datamatrix
+        self.load_treeview()
+        self.reset_tableView()
+        self.select_project(project)
+        self.load_datamatrices()
+        #self.select_datamatrix(datamatrix)
 
     def on_action_add_datamatrix_triggered(self):
         pass
 
     def on_action_delete_datamatrix_triggered(self):
-        print("delete datamatrix")
+        #print("delete datamatrix")
         indexes = self.treeView.selectedIndexes()
         index = indexes[0]
         item1 =self.project_model.itemFromIndex(index)
         dm = item1.data()
         if isinstance(dm, PfDatamatrix):
+            #print("deleting datamatrix:", dm.datamatrix_name)
+            selected_project = dm.project
             dm.delete_instance()
             self.load_treeview()
-            self.reset_tableView()
+            self.selected_project = selected_project
+            self.load_datamatrices()
+            #self.load_analyses()
         #pass
 
     def load_treeview(self):
@@ -721,6 +831,7 @@ class PhyloForesterMainWindow(QMainWindow):
 
         return selected_object_list
 
+
     def load_datamatrices(self):
         self.datamatrix_list = PfDatamatrix.select().where(PfDatamatrix.project == self.selected_project)
         taxa_list = self.selected_project.get_taxa_list()
@@ -797,6 +908,15 @@ class PhyloForesterMainWindow(QMainWindow):
                     #item1.setIcon(QIcon(pu.resource_path(ICON['project'])))
                     #item1.setData()
                     datamatrix_model.setItem(i,j,item1)
+
+    def load_analyses(self, datamatrix):
+        self.analysis_list = PfAnalysis.select().where(PfAnalysis.datamatrix == datamatrix)
+        #self.analysis_model.clear()
+        for analysis in self.analysis_list:
+            item1 = QStandardItem(analysis.analysis_name)
+            item1.setIcon(QIcon(pu.resource_path(ICON['analysis'])))
+            item1.setData(analysis)
+            #self.analysis_model.appendRow([item1])
 
     def on_btn_save_dm_clicked(self):
         idx = self.tabView.selected_index

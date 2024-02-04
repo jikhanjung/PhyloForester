@@ -91,16 +91,57 @@ class AnalysisDialog(QDialog):
         #self.lblAnalysisNameBayesian = QLabel("Analysis Name")
         
         self.edtAnalysisNameParsimony = QLineEdit(ANALYSIS_TYPE_PARSIMONY)
-
+        # bootstrap type: normal, ultrafast
         self.tabParsimony.layout().addRow("Name",self.edtAnalysisNameParsimony)
 
         self.edtAnalysisNameML = QLineEdit(ANALYSIS_TYPE_ML)
+        self.cbBootstrapType = QComboBox()
+        self.cbBootstrapType.addItem(BOOTSTRAP_TYPE_NORMAL)
+        self.cbBootstrapType.addItem(BOOTSTRAP_TYPE_ULTRAFAST)
+        self.edtBootstrapCount = QLineEdit("1000")
         self.tabML.layout().addRow("Name",self.edtAnalysisNameML)
+        self.tabML.layout().addRow("Bootstrap Type",self.cbBootstrapType)
+        self.tabML.layout().addRow("Bootstrap Count",self.edtBootstrapCount)
 
+        '''
+            mcmc_burnin = IntegerField(default=1000)
+            mcmc_relburnin = FloatField(default=0.25)
+            mcmc_burninfrac = FloatField(default=0.25)
+            mcmc_ngen = IntegerField(default=1000000)
+            mcmc_nrates = CharField(default='gamma')
+            mcmc_printfreq = IntegerField(default=1000)
+            mcmc_samplefreq = IntegerField(default=100)
+            mcmc_nruns = IntegerField(default=1)
+            mcmc_nchains = IntegerField(default=1)
+        '''
         self.edtAnalysisNameBayesian = QLineEdit(ANALYSIS_TYPE_BAYESIAN)
+        self.edtMCMCBurnin = QLineEdit("1000")
+        self.edtMCMCRelBurnin = QCheckBox("Relative Burnin")
+        self.edtMCMCBurninFrac = QLineEdit("0.25")
+        self.edtMCMCNGen = QLineEdit("1000000")
+        self.cbMCMCNRates = QComboBox()
+        self.cbMCMCNRates.addItem("gamma")
+        self.cbMCMCNRates.addItem("invgamma")
+        self.cbMCMCNRates.addItem("lognormal")
+        self.cbMCMCNRates.addItem("normal")
+        self.cbMCMCNRates.addItem("poisson")
+        self.cbMCMCNRates.addItem("uniform")
+        self.cbMCMCNRates.addItem("exponential")
+        self.edtPrintFreq = QLineEdit("1000")
+        self.edtSampleFreq = QLineEdit("100")
+        self.edtNRuns = QLineEdit("1")
+        self.edtNChains = QLineEdit("1")
+
         self.tabBayesian.layout().addRow("Name",self.edtAnalysisNameBayesian)
-        
-        #self.tabParsimony.layout().addWidget(self.edtAnalysisNameParsimony)
+        self.tabBayesian.layout().addRow("Burnin",self.edtMCMCBurnin)
+        self.tabBayesian.layout().addRow("Relative Burnin",self.edtMCMCRelBurnin)
+        self.tabBayesian.layout().addRow("Burnin Fraction",self.edtMCMCBurninFrac)
+        self.tabBayesian.layout().addRow("NGen",self.edtMCMCNGen)
+        self.tabBayesian.layout().addRow("NRates",self.cbMCMCNRates)
+        self.tabBayesian.layout().addRow("Print Freq",self.edtPrintFreq)
+        self.tabBayesian.layout().addRow("Sample Freq",self.edtSampleFreq)
+        self.tabBayesian.layout().addRow("NRuns",self.edtNRuns)
+        self.tabBayesian.layout().addRow("NChains",self.edtNChains)
         
         self.on_cbxParsimony_clicked()
 
@@ -121,8 +162,7 @@ class AnalysisDialog(QDialog):
             if self.tabView.indexOf(self.tabParsimony) == -1:
                 #self.tabParsimony = QWidget()
                 self.tabView.addTab(self.tabParsimony, ANALYSIS_TYPE_PARSIMONY)
-                
-
+            self.tabView.setCurrentWidget(self.tabParsimony)
         else:
             if self.tabView.indexOf(self.tabParsimony) != -1:
                 self.tabView.removeTab(self.tabView.indexOf(self.tabParsimony))
@@ -134,6 +174,7 @@ class AnalysisDialog(QDialog):
             if self.tabView.indexOf(self.tabML) == -1:
                 #self.tabML = QWidget()
                 self.tabView.addTab(self.tabML, ANALYSIS_TYPE_ML)
+            self.tabView.setCurrentWidget(self.tabML)
         else:
             if self.tabView.indexOf(self.tabML) != -1:
                 self.tabView.removeTab(self.tabView.indexOf(self.tabML))
@@ -144,6 +185,7 @@ class AnalysisDialog(QDialog):
             if self.tabView.indexOf(self.tabBayesian) == -1:
                 #self.tabBayesian = QWidget()
                 self.tabView.addTab(self.tabBayesian, ANALYSIS_TYPE_BAYESIAN)
+            self.tabView.setCurrentWidget(self.tabBayesian)
         else:
             if self.tabView.indexOf(self.tabBayesian) != -1:
                 self.tabView.removeTab(self.tabView.indexOf(self.tabBayesian))
@@ -152,7 +194,12 @@ class AnalysisDialog(QDialog):
     def Run (self):
         analysis_type_list = []
 
+
         result_directory_base = self.edtResultDirectory.text()
+        if result_directory_base == "":
+            # show warning
+            QMessageBox.warning(self, "Result Directory", "Please select a result directory.")
+            return
 
         if self.cbxParsimony.isChecked():
             analysis_type_list.append(ANALYSIS_TYPE_PARSIMONY)
@@ -170,15 +217,27 @@ class AnalysisDialog(QDialog):
             if analysis.datamatrix is None:
                 return
             if analysis_type == ANALYSIS_TYPE_PARSIMONY:
-                analysis_name = self.edtAnalysisNameParsimony.text()
+                analysis.analysis_name = self.edtAnalysisNameParsimony.text()
             elif analysis_type == ANALYSIS_TYPE_ML:
-                analysis_name = self.edtAnalysisNameML.text()
-            elif analysis_type == ANALYSIS_TYPE_BAYESIAN:
-                analysis_name = self.edtAnalysisNameBayesian.text()
+                analysis.analysis_name = self.edtAnalysisNameML.text()
+                analysis.ml_bootstrap_type = self.cbBootstrapType.currentText()
+                analysis.ml_bootstrap = int(self.edtBootstrapCount.text())
 
-            analysis.analysis_name = analysis_name
+            elif analysis_type == ANALYSIS_TYPE_BAYESIAN:
+                analysis.analysis_name = self.edtAnalysisNameBayesian.text()
+                analysis.mcmc_burnin = int(self.edtMCMCBurnin.text())
+                analysis.mcmc_relburnin = self.edtMCMCRelBurnin.isChecked()
+                analysis.mcmc_burninfrac = float(self.edtMCMCBurninFrac.text())
+                analysis.mcmc_ngen = int(self.edtMCMCNGen.text())
+                analysis.mcmc_nrates = self.cbMCMCNRates.currentText()
+                analysis.mcmc_printfreq = int(self.edtPrintFreq.text())
+                analysis.mcmc_samplefreq = int(self.edtSampleFreq.text())
+                analysis.mcmc_nruns = int(self.edtNRuns.text())
+                analysis.mcmc_nchains = int(self.edtNChains.text())
+
+            analysis.analysis_status = ANALYSIS_STATUS_QUEUED
             analysis.analysis_type = analysis_type
-            analysis.result_directory = os.path.join( result_directory_base, analysis_name )
+            analysis.result_directory = os.path.join( result_directory_base, analysis.analysis_name )
             analysis.save()
 
         self.accept()
@@ -227,11 +286,11 @@ class DatamatrixDialog(QDialog):
         self.edtProjectName = QLineEdit()
         self.edtDatamatrixName = QLineEdit()
         self.edtDatamatrixDesc = QLineEdit()
-        self.rbMorphology = QRadioButton("Morphology")
+        self.rbMorphology = QRadioButton(DATATYPE_MORPHOLOGY)
         self.rbMorphology.setChecked(True)
-        self.rbDNA = QRadioButton("DNA")
-        self.rbRNA = QRadioButton("RNA")
-        self.rbCombined = QRadioButton("Combined")
+        self.rbDNA = QRadioButton(DATATYPE_DNA)
+        self.rbRNA = QRadioButton(DATATYPE_RNA)
+        self.rbCombined = QRadioButton(DATATYPE_COMBINED)
         datatype_layout = QHBoxLayout()
         datatype_layout.addWidget(self.rbMorphology)
         datatype_layout.addWidget(self.rbDNA)
@@ -335,13 +394,13 @@ class DatamatrixDialog(QDialog):
 
         self.edtDatamatrixName.setText(datamatrix.datamatrix_name)
         self.edtDatamatrixDesc.setText(datamatrix.datamatrix_desc)
-        if datamatrix.datatype == "Morphology":
+        if datamatrix.datatype == DATATYPE_MORPHOLOGY:
             self.rbMorphology.setChecked(True)
-        elif datamatrix.datatype == "DNA":
+        elif datamatrix.datatype == DATATYPE_DNA:
             self.rbDNA.setChecked(True)
-        elif datamatrix.datatype == "RNA":
+        elif datamatrix.datatype == DATATYPE_RNA:
             self.rbRNA.setChecked(True)
-        elif datamatrix.datatype == "Combined":
+        elif datamatrix.datatype == DATATYPE_COMBINED:
             self.rbCombined.setChecked(True)
         self.lstCharacters.clear()
         character_list = datamatrix.get_character_list()
@@ -355,13 +414,13 @@ class DatamatrixDialog(QDialog):
         self.datamatrix.datamatrix_name = self.edtDatamatrixName.text()
         self.datamatrix.datamatrix_desc = self.edtDatamatrixDesc.text()
         if self.rbMorphology.isChecked():
-            self.datamatrix.datatype = "Morphology"
+            self.datamatrix.datatype = DATATYPE_MORPHOLOGY
         elif self.rbDNA.isChecked():
-            self.datamatrix.datatype = "DNA"
+            self.datamatrix.datatype = DATATYPE_DNA
         elif self.rbRNA.isChecked():
-            self.datamatrix.datatype = "RNA"
+            self.datamatrix.datatype = DATATYPE_RNA
         elif self.rbCombined.isChecked():
-            self.datamatrix.datatype = "Combined"
+            self.datamatrix.datatype = DATATYPE_COMBINED
         self.datamatrix.characters_str = ""
         for i in range(self.lstCharacters.count()):
             self.datamatrix.characters_str += self.lstCharacters.item(i).text()
