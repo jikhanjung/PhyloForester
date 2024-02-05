@@ -21,12 +21,13 @@ class AnalysisDialog(QDialog):
         self.remember_geometry = True
         self.m_app = QApplication.instance()
         self.read_settings()
+        self.datamatrix = None
         self.edtProjectName = QLineEdit()
         self.edtProjectDesc = QLineEdit()
         self.edtDatamatrixName = QLineEdit()
         self.result_directory_widget = QWidget()
         self.result_directory_layout = QHBoxLayout()
-        self.edtResultDirectory = QLineEdit()
+        self.edtResultDirectory = QLineEdit(self.result_directory_base)
         self.edtResultDirectory.setReadOnly(True)
         self.btnResultDirectory = QPushButton()
         self.btnResultDirectory.setText("Select")
@@ -54,7 +55,7 @@ class AnalysisDialog(QDialog):
 
         self.cbxParsimony = QCheckBox()
         self.cbxParsimony.setText(ANALYSIS_TYPE_PARSIMONY)
-        self.cbxParsimony.setChecked(True)
+        self.cbxParsimony.setChecked(False)
         self.cbxParsimony.clicked.connect(self.on_cbxParsimony_clicked)
 
         self.cbxML = QCheckBox()
@@ -119,6 +120,7 @@ class AnalysisDialog(QDialog):
         self.edtMCMCRelBurnin = QCheckBox("Relative Burnin")
         self.edtMCMCBurninFrac = QLineEdit("0.25")
         self.edtMCMCNGen = QLineEdit("1000000")
+        self.edtMCMCNst = QLineEdit("6")
         self.cbMCMCNRates = QComboBox()
         self.cbMCMCNRates.addItem("gamma")
         self.cbMCMCNRates.addItem("invgamma")
@@ -137,6 +139,7 @@ class AnalysisDialog(QDialog):
         self.tabBayesian.layout().addRow("Relative Burnin",self.edtMCMCRelBurnin)
         self.tabBayesian.layout().addRow("Burnin Fraction",self.edtMCMCBurninFrac)
         self.tabBayesian.layout().addRow("NGen",self.edtMCMCNGen)
+        self.tabBayesian.layout().addRow("NSt",self.edtMCMCNst)
         self.tabBayesian.layout().addRow("NRates",self.cbMCMCNRates)
         self.tabBayesian.layout().addRow("Print Freq",self.edtPrintFreq)
         self.tabBayesian.layout().addRow("Sample Freq",self.edtSampleFreq)
@@ -151,18 +154,26 @@ class AnalysisDialog(QDialog):
         self.main_layout.addRow(btn_layout)
 
     def select_result_directory(self):
-        result_directory = str(QFileDialog.getExistingDirectory(self, "Select a folder", str(self.result_directory)))
+        result_directory = str(QFileDialog.getExistingDirectory(self, "Select a folder", str(self.edtResultDirectory.text())))
         if result_directory:
             self.result_directory = Path(result_directory).resolve()
             self.edtResultDirectory.setText(result_directory)
 
     def on_cbxParsimony_clicked(self):
+        if self.datamatrix is None:
+            return
+
         # add parsimony tab if not exists
         if self.cbxParsimony.isChecked():
             if self.tabView.indexOf(self.tabParsimony) == -1:
                 #self.tabParsimony = QWidget()
                 self.tabView.addTab(self.tabParsimony, ANALYSIS_TYPE_PARSIMONY)
             self.tabView.setCurrentWidget(self.tabParsimony)
+            analysis_name = self.edtAnalysisNameParsimony.text() #.replace(" ", "_")
+            analysis_name_list = [analysis.analysis_name for analysis in self.datamatrix.analyses]
+            if analysis_name in analysis_name_list:
+                analysis_name = pu.get_unique_name(analysis_name, analysis_name_list)
+            self.edtAnalysisNameParsimony.setText(analysis_name)
         else:
             if self.tabView.indexOf(self.tabParsimony) != -1:
                 self.tabView.removeTab(self.tabView.indexOf(self.tabParsimony))
@@ -175,6 +186,11 @@ class AnalysisDialog(QDialog):
                 #self.tabML = QWidget()
                 self.tabView.addTab(self.tabML, ANALYSIS_TYPE_ML)
             self.tabView.setCurrentWidget(self.tabML)
+            analysis_name = self.edtAnalysisNameML.text()
+            analysis_name_list = [analysis.analysis_name for analysis in self.datamatrix.analyses]
+            if analysis_name in analysis_name_list:
+                analysis_name = pu.get_unique_name(analysis_name, analysis_name_list)
+            self.edtAnalysisNameML.setText(analysis_name)
         else:
             if self.tabView.indexOf(self.tabML) != -1:
                 self.tabView.removeTab(self.tabView.indexOf(self.tabML))
@@ -186,6 +202,11 @@ class AnalysisDialog(QDialog):
                 #self.tabBayesian = QWidget()
                 self.tabView.addTab(self.tabBayesian, ANALYSIS_TYPE_BAYESIAN)
             self.tabView.setCurrentWidget(self.tabBayesian)
+            analysis_name = self.edtAnalysisNameBayesian.text()
+            analysis_name_list = [analysis.analysis_name for analysis in self.datamatrix.analyses]
+            if analysis_name in analysis_name_list:
+                analysis_name = pu.get_unique_name(analysis_name, analysis_name_list)
+            self.edtAnalysisNameBayesian.setText(analysis_name)
         else:
             if self.tabView.indexOf(self.tabBayesian) != -1:
                 self.tabView.removeTab(self.tabView.indexOf(self.tabBayesian))
@@ -194,7 +215,6 @@ class AnalysisDialog(QDialog):
     def Run (self):
         analysis_type_list = []
 
-
         result_directory_base = self.edtResultDirectory.text()
         if result_directory_base == "":
             # show warning
@@ -202,6 +222,11 @@ class AnalysisDialog(QDialog):
             return
 
         if self.cbxParsimony.isChecked():
+            # check if the directory contains space
+            # tnt specific. so if package is not tnt, this should not be applied.            
+            if result_directory_base.find(" ") != -1:
+                QMessageBox.warning(self, "Result Directory", "Result directory should not contain space.")
+                return
             analysis_type_list.append(ANALYSIS_TYPE_PARSIMONY)
         if self.cbxML.isChecked():
             analysis_type_list.append(ANALYSIS_TYPE_ML)
@@ -217,11 +242,13 @@ class AnalysisDialog(QDialog):
             if analysis.datamatrix is None:
                 return
             if analysis_type == ANALYSIS_TYPE_PARSIMONY:
-                analysis.analysis_name = self.edtAnalysisNameParsimony.text()
+                analysis.analysis_name = self.edtAnalysisNameParsimony.text() #.replace(" ", "_") 
+                analysis.result_directory = os.path.join( result_directory_base, analysis.analysis_name.replace(" ","_") ) # TNT does not like space in file name
             elif analysis_type == ANALYSIS_TYPE_ML:
                 analysis.analysis_name = self.edtAnalysisNameML.text()
                 analysis.ml_bootstrap_type = self.cbBootstrapType.currentText()
                 analysis.ml_bootstrap = int(self.edtBootstrapCount.text())
+                analysis.result_directory = os.path.join( result_directory_base, analysis.analysis_name )
 
             elif analysis_type == ANALYSIS_TYPE_BAYESIAN:
                 analysis.analysis_name = self.edtAnalysisNameBayesian.text()
@@ -229,15 +256,16 @@ class AnalysisDialog(QDialog):
                 analysis.mcmc_relburnin = self.edtMCMCRelBurnin.isChecked()
                 analysis.mcmc_burninfrac = float(self.edtMCMCBurninFrac.text())
                 analysis.mcmc_ngen = int(self.edtMCMCNGen.text())
+                analysis.mcmc_nst = int(self.edtMCMCNst.text())
                 analysis.mcmc_nrates = self.cbMCMCNRates.currentText()
                 analysis.mcmc_printfreq = int(self.edtPrintFreq.text())
                 analysis.mcmc_samplefreq = int(self.edtSampleFreq.text())
                 analysis.mcmc_nruns = int(self.edtNRuns.text())
                 analysis.mcmc_nchains = int(self.edtNChains.text())
+                analysis.result_directory = os.path.join( result_directory_base, analysis.analysis_name )
 
             analysis.analysis_status = ANALYSIS_STATUS_QUEUED
             analysis.analysis_type = analysis_type
-            analysis.result_directory = os.path.join( result_directory_base, analysis.analysis_name )
             analysis.save()
 
         self.accept()
@@ -249,15 +277,16 @@ class AnalysisDialog(QDialog):
     def read_settings(self):
         self.remember_geometry = pu.value_to_bool(self.m_app.settings.value("WindowGeometry/RememberGeometry", True))
         if self.remember_geometry is True:
-            self.setGeometry(self.m_app.settings.value("WindowGeometry/ProjectDialog", QRect(100, 100, 600, 400)))
+            self.setGeometry(self.m_app.settings.value("WindowGeometry/AnalysisDialog", QRect(100, 100, 600, 400)))
         else:
             self.setGeometry(QRect(100, 100, 600, 400))
             self.move(self.parent.pos()+QPoint(100,100))
+        self.result_directory_base = self.m_app.settings.value("ResultPath", pu.USER_PROFILE_DIRECTORY)
 
 
     def write_settings(self):
         if self.remember_geometry is True:
-            self.m_app.settings.setValue("WindowGeometry/ProjectDialog", self.geometry())
+            self.m_app.settings.setValue("WindowGeometry/AnalysisDialog", self.geometry())
 
     def closeEvent(self, event):
         self.write_settings()
@@ -469,16 +498,13 @@ class ProjectDialog(QDialog):
         datatype_layout.addWidget(self.rbRNA)
         datatype_layout.addWidget(self.rbCombined)
 
+        '''
         # add listbox for taxa
         self.lstTaxa = QListWidget()
         self.lstTaxa.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.lstTaxa.setSortingEnabled(False)
         self.lstTaxa.setAlternatingRowColors(True)
-        #self.lstTaxa.setDragDropMode(QAbstractItemView.InternalMove)
-        #self.lstTaxa.setDragEnabled(True)
-        #self.lstTaxa.setDropIndicatorShown(True)
-        #self.lstTaxa.setAcceptDrops(True)
-        #self.lstTaxa.setDragDropOverwriteMode(False)
+
         # add textbox for taxa
         self.edtTaxa = QLineEdit()
         self.edtTaxa.setPlaceholderText("Enter taxa name")
@@ -503,13 +529,14 @@ class ProjectDialog(QDialog):
         self.taxa_layout_widget.layout().setAlignment(Qt.AlignTop)
         self.taxa_layout_widget.layout().setStretch(0,1)
         self.taxa_layout_widget.layout().setStretch(1,0)
+        '''
 
         self.main_layout = QFormLayout()
         self.setLayout(self.main_layout)
         self.main_layout.addRow("Project Name", self.edtProjectName)
         self.main_layout.addRow("Description", self.edtProjectDesc)
-        self.main_layout.addRow("Data Type", datatype_layout)
-        self.main_layout.addRow("Taxa", self.taxa_layout_widget)
+        #self.main_layout.addRow("Data Type", datatype_layout)
+        #self.main_layout.addRow("Taxa", self.taxa_layout_widget)
 
         self.btnOkay = QPushButton()
         self.btnOkay.setText("Save")
@@ -578,19 +605,19 @@ class ProjectDialog(QDialog):
 
         self.edtProjectName.setText(project.project_name)
         self.edtProjectDesc.setText(project.project_desc)
-        if project.datatype == "Morphology":
-            self.rbMorphology.setChecked(True)
-        elif project.datatype == "DNA":
-            self.rbDNA.setChecked(True)
-        elif project.datatype == "RNA":
-            self.rbRNA.setChecked(True)
-        elif project.datatype == "Combined":
-            self.rbCombined.setChecked(True)
-        self.lstTaxa.clear()
-        if project.taxa_str is not None:
-            taxa_list = project.taxa_str.split(",")
-            for taxa in taxa_list:
-                self.lstTaxa.addItem(taxa)
+        #if project.datatype == "Morphology":
+        #    self.rbMorphology.setChecked(True)
+        #elif project.datatype == "DNA":
+        #    self.rbDNA.setChecked(True)
+        #elif project.datatype == "RNA":
+        #    self.rbRNA.setChecked(True)
+        #elif project.datatype == "Combined":
+        #    self.rbCombined.setChecked(True)
+        #self.lstTaxa.clear()
+        #if project.taxa_str is not None:
+        #    taxa_list = project.taxa_str.split(",")
+        #    for taxa in taxa_list:
+        #        self.lstTaxa.addItem(taxa)
     
     def Okay(self):
         if self.project is None:
@@ -715,6 +742,15 @@ class PreferencesDialog(QDialog):
         self.gbSoftwarePaths.layout().addWidget(self.gbIQTreePath)
         self.gbSoftwarePaths.layout().addWidget(self.gbMrBayesPath)
 
+        self.edtResultPath = QLineEdit()
+        self.edtResultPath.setText(str(self.m_app.result_path))
+        self.btnResultPath = QPushButton("Select Path")
+        self.gbResultPath = QGroupBox("IQTree")
+        self.gbResultPath.setLayout(QHBoxLayout())
+        self.gbResultPath.layout().addWidget(self.edtResultPath)
+        self.gbResultPath.layout().addWidget(self.btnResultPath)
+        self.btnResultPath.clicked.connect(self.select_result_path)
+
         self.lang_layout = QHBoxLayout()
         self.comboLang = QComboBox()
         self.comboLang.addItem(self.tr("English"))
@@ -737,10 +773,17 @@ class PreferencesDialog(QDialog):
         self.main_layout.addRow("Remember Geometry", self.gbRememberGeomegry)
         self.main_layout.addRow("Toolbar Icon Size", self.gbToolbarIconSize)
         self.main_layout.addRow("Language", self.lang_widget)
+        self.main_layout.addRow("Result Path", self.gbResultPath)
         self.main_layout.addRow("Softwares", self.gbSoftwarePaths)
         self.main_layout.addRow("", self.btnOkay)
 
         self.read_settings()
+
+    def select_result_path(self):
+        result_path = str(QFileDialog.getExistingDirectory(self, "Select a folder", str(self.m_app.result_path)))
+        if result_path:
+            self.edtResultPath.setText(result_path)
+            self.m_app.result_path = Path(result_path).resolve()
 
     def select_tnt_path(self):
         tnt_path = str(QFileDialog.getOpenFileName(self, "Select TNT", str(self.m_app.tnt_path))[0])
@@ -772,6 +815,7 @@ class PreferencesDialog(QDialog):
         self.m_app.tnt_path = Path(self.m_app.settings.value("SoftwarePath/TNT", ""))
         self.m_app.iqtree_path = Path(self.m_app.settings.value("SoftwarePath/IQTree", ""))
         self.m_app.mrbayes_path = Path(self.m_app.settings.value("SoftwarePath/MrBayes", ""))
+        self.m_app.result_path = Path(self.m_app.settings.value("ResultPath", ""))
         self.m_app.language = self.m_app.settings.value("Language", "en")
 
         #print("toolbar_icon_size:", self.m_app.toolbar_icon_size)
@@ -800,6 +844,7 @@ class PreferencesDialog(QDialog):
         self.m_app.settings.setValue("SoftwarePath/TNT", str(self.m_app.tnt_path))
         self.m_app.settings.setValue("SoftwarePath/IQTree", str(self.m_app.iqtree_path))
         self.m_app.settings.setValue("SoftwarePath/MrBayes", str(self.m_app.mrbayes_path))
+        self.m_app.settings.setValue("ResultPath", str(self.m_app.result_path))
         self.m_app.settings.setValue("Language", self.m_app.language)
 
         if self.m_app.remember_geometry is True:

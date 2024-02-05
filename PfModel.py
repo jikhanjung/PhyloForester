@@ -49,8 +49,8 @@ def setup_database_location(database_dir):
 class PfProject(Model):
     project_name = CharField()
     project_desc = CharField(null=True)
-    datatype = CharField(null=True)
-    taxa_str = CharField(null=True)
+    #datatype = CharField(null=True)
+    #taxa_str = CharField(null=True)
     created_at = DateTimeField(default=datetime.datetime.now)
     modified_at = DateTimeField(default=datetime.datetime.now)
     class Meta:
@@ -67,12 +67,12 @@ class PfDatamatrix(Model):
     datamatrix_name = CharField()
     datamatrix_desc = CharField(null=True)
     datamatrix_index = IntegerField(default=1)
-    datatype = CharField(null=True)
-    characters_str = CharField(null=True)
+    datatype = CharField(default=DATATYPE_MORPHOLOGY)
     n_taxa = IntegerField()
     n_chars = IntegerField()
-    datamatrix_json = CharField(null=True)
     taxa_list_json = CharField(null=True)
+    character_list_json = CharField(null=True)
+    datamatrix_json = CharField(null=True)
     whole_text = CharField(null=True)
     created_at = DateTimeField(default=datetime.datetime.now)
     modified_at = DateTimeField(default=datetime.datetime.now)
@@ -87,8 +87,8 @@ class PfDatamatrix(Model):
         database = gDatabase
 
     def get_character_list(self):
-        if self.characters_str:
-            return self.characters_str.split(',')
+        if self.character_list_json:
+            return json.loads(self.character_list_json)
         else:
             return []
 
@@ -145,9 +145,13 @@ class PfDatamatrix(Model):
     def matrix_as_string(self,parens=["(",")"],separator=" "):
         matrix_string = ""
         datamatrix = self.datamatrix_as_list()
-        for data in datamatrix:
+        taxa_list = json.loads(self.taxa_list_json)
+        print("datamatrix:",datamatrix)
+        for idx, data in enumerate(datamatrix):
+            print("data:",data)
             taxon_string = ""
-            taxon_name = data.pop(0)
+            taxon_name = taxa_list[idx]
+            print("taxon:",taxon_name)
             #print(formatted_data)
             taxon_string += taxon_name + separator
             for char_state in data:
@@ -209,17 +213,17 @@ class PfPackage(Model):
     package_name = CharField()
     package_version = CharField()
     package_desc = CharField(null=True)
+    package_type = CharField(default=ANALYSIS_TYPE_PARSIMONY)
     run_path = CharField(null=True)
     created_at = DateTimeField(default=datetime.datetime.now)
     modified_at = DateTimeField(default=datetime.datetime.now)
     class Meta:
         database = gDatabase
 
-
 class PfAnalysis(Model):
     project = ForeignKeyField(PfProject, backref='analyses', on_delete='CASCADE')
     datamatrix = ForeignKeyField(PfDatamatrix, backref='analyses', on_delete='CASCADE')
-    #package = ForeignKeyField(PfPackage, backref='analyses')
+    package = ForeignKeyField(PfPackage, backref='analyses', null=True)
     analysis_type = CharField()
     analysis_name = CharField()
     analysis_status = CharField(null=True)
@@ -236,6 +240,7 @@ class PfAnalysis(Model):
     mcmc_relburnin = BooleanField(default=False)
     mcmc_burninfrac = FloatField(default=0.25)
     mcmc_ngen = IntegerField(default=1000000)
+    mcmc_nst = IntegerField(default=6)
     mcmc_nrates = CharField(default='gamma')
     mcmc_printfreq = IntegerField(default=1000)
     mcmc_samplefreq = IntegerField(default=100)

@@ -25,6 +25,23 @@ if not os.path.exists(DEFAULT_STORAGE_DIRECTORY):
 def value_to_bool(value):
     return value.lower() == 'true' if isinstance(value, str) else bool(value)
 
+def get_unique_name(name, name_list):
+    if name not in name_list:
+        return name
+    else:
+        i = 1
+        # get last index of current name which is in the form of "name (i)" using regular expression
+        match = re.match(r"(.+)\s+\((\d+)\)",name)
+        if match:
+            name = match.group(1)
+            i = int(match.group(2))
+            i += 1
+        while True:
+            new_name = name + " ("+str(i)+")"
+            if new_name not in name_list:
+                return new_name
+            i += 1
+
 def resource_path(relative_path):
     try:
         base_path = sys._MEIPASS
@@ -325,4 +342,5 @@ class PhyloDatafile():
             #else:
 
         #print(data_hash)
-        #print(self.command_hash)            
+        #print(self.command_hash)
+            

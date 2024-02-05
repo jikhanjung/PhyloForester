@@ -147,6 +147,7 @@ class PhyloForesterMainWindow(QMainWindow):
         super().__init__()
         self.setWindowIcon(QIcon(pu.resource_path('icons/PhyloForester.png')))
         self.setWindowTitle("{} v{}".format(self.tr("PhyloForester"), pu.PROGRAM_VERSION))
+        self.data_storage = { 'project': {}, 'datamatrix': {}, 'analysis': {} }
 
         self.toolbar = QToolBar("Main Toolbar")
         self.toolbar.setIconSize(QSize(32,32))
@@ -242,6 +243,12 @@ class PhyloForesterMainWindow(QMainWindow):
     def read_settings(self):
         #self.m_app.settings = QSettings(QSettings.IniFormat, QSettings.UserScope,pu.COMPANY_NAME, pu.PROGRAM_NAME)
         self.m_app.storage_directory = os.path.abspath(pu.DEFAULT_STORAGE_DIRECTORY)
+        self.m_app.tnt_path = self.m_app.settings.value("SoftwarePath/TNT", "")
+        self.m_app.iqtree_path = self.m_app.settings.value("SoftwarePath/IQTree", "")
+        self.m_app.mrbayes_path = self.m_app.settings.value("SoftwarePath/MrBayes", "")
+        #print("tnt path:", self.m_app.tnt_path)
+        #print("iqtree path:", self.m_app.iqtree_path)
+        #print("mrbayes path:", self.m_app.mrbayes_path)
         self.m_app.toolbar_icon_size = self.m_app.settings.value("ToolbarIconSize", "Medium")
         self.m_app.remember_geometry = pu.value_to_bool(self.m_app.settings.value("WindowGeometry/RememberGeometry", True))
         if self.m_app.remember_geometry is True:
@@ -262,7 +269,7 @@ class PhyloForesterMainWindow(QMainWindow):
             return
             print(tables)
         else:
-            gDatabase.create_tables([PfProject, PfDatamatrix,PfAnalysis])
+            gDatabase.create_tables([PfProject, PfDatamatrix,PfAnalysis,PfPackage])
 
     def closeEvent(self, event):
         self.write_settings()
@@ -279,16 +286,20 @@ class PhyloForesterMainWindow(QMainWindow):
 
 
         self.treeView = PfTreeView()
-        self.tabView = PfTabWidget()
-        self.tabView.main_window = self
+        #self.tabView = PfTabWidget()
+        #self.tabView.main_window = self
 
         self.empty_widget = QWidget()
+        self.empty_widget.setAcceptDrops(True)
+        self.empty_widget.dropEvent = self.tableView_drop_event
+        self.empty_widget.dragEnterEvent = self.tableView_drag_enter_event
+        self.empty_widget.dragMoveEvent = self.tableView_drag_move_event
 
-        self.add_empty_tabview()
+        #self.add_empty_tabview()
 
         #self.treeView = MyTreeView()
         self.hsplitter.addWidget(self.treeView)
-        self.hsplitter.addWidget(self.tabView)
+        self.hsplitter.addWidget(self.empty_widget)
         self.hsplitter.setSizes([300, 800])
 
         self.setCentralWidget(self.hsplitter)
@@ -319,21 +330,140 @@ class PhyloForesterMainWindow(QMainWindow):
         #self.move(300, 300)
         #self.show(
 
+    def startAnalysis(self):
+        # Command to run (example: list directory contents)
+        analysis_list = PfAnalysis.select().where(PfAnalysis.analysis_status == ANALYSIS_STATUS_QUEUED).order_by(PfAnalysis.created_at)
+        if len(analysis_list) == 0:
+            return
+        self.analysis = analysis_list[0]
+        print("analysis:", self.analysis.analysis_name)
+        datamatrix = self.analysis.datamatrix
+
+        if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            command = self.m_app.tnt_path
+            fileext = '.nex'
+            datamatrix_str = datamatrix.as_nexus_format()
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_ML:
+            command = self.m_app.iqtree_path
+            fileext = '.phy'
+            datamatrix_str = datamatrix.as_phylip_format()
+
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+            command = self.m_app.mrbayes_path
+            #command = "D:/Phylogenetics/MrBayes-3.2.7-WINbin/mb.3.2.7-win64.exe"
+            fileext = '.nex'
+            datamatrix_str = datamatrix.as_nexus_format()
+
+        print("command:", command)
+
+        result_directory = self.analysis.result_directory#.replace(" ","_")
+        print("result directory:", result_directory)        
+
+        if not os.path.isdir( result_directory ):
+            os.makedirs( result_directory )
+
+        data_filename = datamatrix.datamatrix_name + fileext
+        data_file_location = os.path.join( result_directory, data_filename )#.replace(" ","_")
+        data_fd = open(data_file_location,mode='w')
+        print("writing data file:", data_file_location)
+        data_fd.write(datamatrix_str)
+        data_fd.close()
+
+        self.process.setWorkingDirectory(result_directory)
+        print("working directory:", self.process.workingDirectory())
+        print("result directory:", result_directory)        
+
+        self.analysis.start_datetime = datetime.datetime.now()
+        self.analysis.analysis_status = ANALYSIS_STATUS_RUNNING
+        self.analysis.save()
+
+        if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            run_file_name = os.path.join( pu.resource_path("data/aquickie.run") )
+            shutil.copy( run_file_name, result_directory )
+            my_os = platform.system()
+            if my_os == 'Linux':
+                argument_separator = ","
+            else:
+                argument_separator = ";"
+            #run argument setting
+            run_argument_list = [ "proc", data_file_location, argument_separator, "aquickie", argument_separator ]
+
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_ML:
+            #run analysis - IQTree
+            #run argument setting
+            run_argument_list = [ "-s", data_file_location, "-nt", "AUTO"]
+            if datamatrix.datatype == DATATYPE_MORPHOLOGY:
+                run_argument_list.extend( ["-st", "MORPH"] )
+            if self.analysis.ml_bootstrap_type == BOOTSTRAP_TYPE_NORMAL:
+                run_argument_list.extend( ["-b", str(self.analysis.ml_bootstrap)] )
+            elif self.analysis.ml_bootstrap_type == BOOTSTRAP_TYPE_ULTRAFAST:
+                run_argument_list.extend( ["-bb", str(self.analysis.ml_bootstrap)] )
+            #print( run_argument_list )
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+            command_filename = self.create_mrbayes_command_file( data_filename, self.analysis.result_directory, self.analysis )
+            run_argument_list = [ command_filename ]
+
+        self.process.start(command, run_argument_list)
+        print("process started")
+        if self.process.state() == QProcess.NotRunning:
+            print("Failed to start the process")
+
+    def create_mrbayes_command_file(self, data_filename, result_directory, analysis):
+        command_filename = "run.nex"
+        command_text = """begin mrbayes;
+   set autoclose=yes nowarn=yes;
+   execute {dfname};
+   lset nst={nst} rates={nrates};
+   mcmc nruns={nruns} ngen={ngen} samplefreq={samplefreq} file={dfname}1 burnin={burnin} Savebrlens=No;
+   sump burnin={burnin};
+   sumt burnin={burnin} Showtreeprobs=No;
+end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcmc_nrates, nruns=analysis.mcmc_nruns, ngen=analysis.mcmc_ngen, samplefreq=analysis.mcmc_samplefreq,burnin=analysis.mcmc_burnin)
+        #print(command_text)
+
+        command_filepath = os.path.join(result_directory,command_filename)
+        f = open(command_filepath, "w")
+        f.write(command_text)
+        f.close()
+        return command_filepath
+
+    def onReadyReadStandardOutput(self):
+        print("standard output")
+        output = self.process.readAllStandardOutput().data() #.decode()
+        print("output:",output)
+        #self.edtAnalysisOutput.append(output)
+
+    def onReadyReadStandardError(self):
+        print("standard error")
+        output = self.process.readAllStandardError().data() #.decode()
+        print("error:", output)
+        #self.edtAnalysisOutput.append(output)
+
+    def onProcessFinished(self):
+        print("process finished")
+        # This method will be called when the external process finishes
+        self.edtAnalysisOutput.append("\nProcess Finished\n")
+        #print("Process Finished")
+        # Here, you can also handle process exit code and status
+        exitCode = self.process.exitCode()
+        self.analysis.analysis_status = ANALYSIS_STATUS_FINISHED
+        self.analysis.completion_percentage = 100
+        self.analysis.finish_datetime = datetime.datetime.now()
+        self.analysis.save()
+        self.edtAnalysisOutput.append(f"Exit Code: {exitCode}")
+        self.startAnalysis()
+
+    def handleError(self, error):
+        print("Error occurred:", error)
+        print("Error message:", self.process.errorString())
+
     def on_treeView_clicked(self, event):
         index = self.treeView.indexAt(event.pos())
         if not index.isValid():  # Click is on empty space
             self.treeView.clearSelection()
             self.treeView.setCurrentIndex(QModelIndex())  # Deselect current item
-            self.tabView.clear()
-            self.add_empty_tabview()
+            #self.tabView.clear()
+            self.hsplitter.replaceWidget(1,self.empty_widget)
             self.selected_project = None
-
-    def add_empty_tabview(self):
-        #self.tabView.addTab(self.empty_widget, "Datamatrix")
-        self.tabView.setAcceptDrops(True)
-        self.tabView.dropEvent = self.tableView_drop_event
-        self.tabView.dragEnterEvent = self.tableView_drag_enter_event
-        self.tabView.dragMoveEvent = self.tableView_drag_move_event
 
     def open_treeview_menu(self, position):
         indexes = self.treeView.selectedIndexes()
@@ -352,6 +482,8 @@ class PhyloForesterMainWindow(QMainWindow):
             action_edit_datamatrix.triggered.connect(self.on_action_edit_datamatrix_triggered)
             action_run_analysis = QAction("Run analysis")
             action_run_analysis.triggered.connect(self.on_action_run_analysis_triggered)
+            action_delete_analysis = QAction("Delete analysis")
+            action_delete_analysis.triggered.connect(self.on_action_delete_analysis_triggered)
             action_refresh_tree = QAction("Reload")
             action_refresh_tree.triggered.connect(self.load_treeview)
 
@@ -371,6 +503,9 @@ class PhyloForesterMainWindow(QMainWindow):
                 menu.addAction(action_edit_datamatrix)
                 menu.addAction(action_delete_datamatrix)
                 menu.addAction(action_run_analysis)
+            elif isinstance(ds, PfAnalysis):
+                level = 3
+                menu.addAction(action_delete_analysis)
 
 
             #menu.addAction(action_add_project)
@@ -419,8 +554,8 @@ class PhyloForesterMainWindow(QMainWindow):
 
     def run_analysis(self, selected_datamatrix):
         self.analysis_dialog = AnalysisDialog(self)
-        self.analysis_dialog.setModal(True)
         self.analysis_dialog.set_datamatrix(selected_datamatrix)
+        self.analysis_dialog.setModal(True)
         #self.analysis_dialog.show()
 
         ret = self.analysis_dialog.exec_()
@@ -435,7 +570,7 @@ class PhyloForesterMainWindow(QMainWindow):
         self.load_treeview()
         self.reset_tableView()
         self.select_project(project)
-        self.load_datamatrices()
+        #self.load_datamatrices()
         #self.select_datamatrix(datamatrix)
 
     def on_action_add_datamatrix_triggered(self):
@@ -453,40 +588,42 @@ class PhyloForesterMainWindow(QMainWindow):
             dm.delete_instance()
             self.load_treeview()
             self.selected_project = selected_project
-            self.load_datamatrices()
-            #self.load_analyses()
-        #pass
+            self.load_datamatrices(selected_project)
 
-    def load_treeview(self):
-        self.project_model.clear()
-        self.selected_project = None
-        project_list = PfProject.select()
-        for project in project_list:
-            #rec.unpack_wireframe()
-            item1 = QStandardItem(project.project_name)# + " (" + str(rec.object_list.count()) + ")")
-            item2 = QStandardItem(str(project.id))
-            item1.setIcon(QIcon(pu.resource_path(ICON['project'])))
-            item1.setData(project)
-            
-            self.project_model.appendRow([item1,item2])#,item2,item3] )
-            if project.datamatrices.count() > 0:
-                dm_list = PfDatamatrix.select().where(PfDatamatrix.project == project)
-                for dm in dm_list:
-                    item3 = QStandardItem(dm.datamatrix_name)
-                    item3.setIcon(QIcon(pu.resource_path(ICON['datamatrix'])))
-                    item3.setData(dm)
-                    item1.appendRow([item3])
-                    if dm.analyses.count() > 0:
-                        for analysis in dm.analyses:
-                            item4 = QStandardItem(analysis.analysis_name)
-                            item4.setIcon(QIcon(pu.resource_path(ICON['analysis'])))
-                            item4.setData(analysis)
-                            item3.appendRow([item4])
+    def on_action_delete_analysis_triggered(self):
+        indexes = self.treeView.selectedIndexes()
+        index = indexes[0]
+        item1 =self.project_model.itemFromIndex(index)
+        analysis = item1.data()
+        if isinstance(analysis, PfAnalysis):
+            #print("deleting datamatrix:", dm.datamatrix_name)
+            self.selected_datamatrix = analysis.datamatrix
+            self.selected_project = self.selected_datamatrix.project
+            an_id = analysis.id
+            analysis.delete_instance()
+            self.load_treeview()
+            return
 
-            #if rec.children.count() > 0:
-            #    self.load_subproject(item1,item1.data())
-        self.treeView.expandAll()
-        self.treeView.hideColumn(1)
+            self.data_storage['analysis'][an_id]['widget'].close()
+            self.data_storage['analysis'][an_id]['object'] = None
+            self.data_storage['analysis'][an_id]['widget'] = None
+            self.data_storage['datamatrix'][self.selected_datamatrix.id]['analyses'].remove(an_id)
+
+            # remove from treeview
+            parent_item = item1.parent()
+            self.project_model.removeRow(item1.row())
+
+            self.selected_project = self.selected_datamatrix.project
+            if len(self.data_storage['datamatrix'][self.selected_datamatrix.id]['analyses']) > 0:
+                an_id = self.data_storage['datamatrix'][self.selected_datamatrix.id]['analyses'][0]
+                self.selected_analysis = self.data_storage['analysis'][an_id]['object']
+                self.hsplitter.replaceWidget(1, self.data_storage['analysis'][an_id]['widget'])
+            else:
+                # select parent item
+                self.treeView.setCurrentIndex(parent_item.index())
+                self.hsplitter.replaceWidget(1,self.empty_widget)
+            #self.selected_datamatrix = selected
+
 
     def reset_views(self):
         self.reset_treeView()
@@ -603,9 +740,9 @@ class PhyloForesterMainWindow(QMainWindow):
             dm.datamatrix_name = os.path.basename(file_name)
             dm.import_file(file_name)
             dm.save()
-            if dm.taxa_list is not None and dm.project.taxa_str is None:
-                dm.project.taxa_str = ",".join(dm.taxa_list)
-                dm.project.save()
+            #if dm.taxa_list is not None and dm.project.taxa_str is None:
+            #    dm.project.taxa_str = ",".join(dm.taxa_list)
+            #    dm.project.save()
 
             if os.path.isdir(file_name):
                 self.statusBar.showMessage("Cannot process directory...",2000)
@@ -634,6 +771,223 @@ class PhyloForesterMainWindow(QMainWindow):
         event.accept()
         return
 
+    def update_analysis_view(self):
+        if self.selected_analysis is None:
+            return
+        if self.selected_analysis.id in self.data_storage['analysis']:
+            self.data_storage['analysis'][self.selected_analysis.id]['widget'] = self.create_analysis_widget(self.selected_analysis)
+        #else:
+        #    self.data_storage['analysis'][self.selected_analysis.id] = { 'object': self.selected_analysis, 'widget': self.create_analysis_widget(self.selected_analysis) }
+
+    def update_datamatrix_table(self):
+        #print("update_datamatrix_table", self.selected_datamatrix.id)
+        if self.selected_datamatrix is None:
+            return
+        print(self.data_storage['datamatrix'])
+        if self.selected_datamatrix.id in self.data_storage['datamatrix']:
+            #print("datamatrix exists")
+            #print("taxa list", self.selected_datamatrix.taxa_list)
+            self.data_storage['datamatrix'][self.selected_datamatrix.id]['widget'] = self.create_datamatrix_table(self.selected_datamatrix)
+        #else:
+        #    self.data_storage['analysis'][self.selected_analysis.id] = { 'object': self.selected_analysis, 'widget': self.create_analysis_widget(self.selected_analysis) }
+
+    def create_datamatrix_table(self, dm):
+        #print("create datamatrix table", dm.datamatrix_name, dm.get_taxa_list())
+        dm_widget = QWidget()
+        table_view = PfTableView()
+        self.data_storage['datamatrix'][dm.id]['widget'] = dm_widget
+        self.data_storage['datamatrix'][dm.id]['table'] = table_view
+        
+        dm_layout = QVBoxLayout()
+        button_layout = QHBoxLayout()
+        btn_add_character = QPushButton("Add Character")
+        btn_add_character.clicked.connect(self.on_btn_add_character_clicked)
+        btn_add_taxon = QPushButton("Add Taxon")
+        btn_add_taxon.clicked.connect(self.on_btn_add_taxon_clicked)
+        btn_analyze = QPushButton("Analyze")
+        btn_analyze.clicked.connect(self.on_btn_analyze_clicked)
+        btn_save_dm = QPushButton("Save")
+        btn_save_dm.clicked.connect(self.on_btn_save_dm_clicked)
+        button_layout.addWidget(btn_add_character)
+        button_layout.addWidget(btn_add_taxon)
+        button_layout.addWidget(btn_analyze)
+        button_layout.addWidget(btn_save_dm)
+        dm_layout.addWidget(table_view)
+        dm_layout.addLayout(button_layout)
+        dm_widget.setLayout(dm_layout)
+
+        datamatrix_model = PfItemModel()
+        table_view.setModel(datamatrix_model)
+        if self.selected_datamatrix is None:
+            self.selected_datamatrix = dm
+            self.selected_tableview = table_view
+
+        self.datamatrix_model_list.append(datamatrix_model)
+        self.table_view_list.append(table_view)
+        #table_view.setDragEnabled(True)
+        table_view.setAcceptDrops(True)
+        table_view.setDropIndicatorShown(True)
+        table_view.dropEvent = self.tableView_drop_event
+        table_view.dragEnterEvent = self.tableView_drag_enter_event
+        table_view.dragMoveEvent = self.tableView_drag_move_event
+        table_view.setSortingEnabled(False)
+
+        data_list = dm.datamatrix_as_list()
+        if data_list is None:
+            return dm_widget
+        header_labels = []
+        character_list = dm.get_character_list()
+        character_list_len = max( dm.n_chars, len(data_list[0] ) )
+        if len(character_list) == 0:
+            character_list = [""] * character_list_len
+        #character_list_len = len(data_list[0])
+        for i in range(len(character_list)):
+            header_labels.append("{}".format(i+1))
+            #if character_list[i] == "":
+            #    header_labels.append("{}".format(i+1))
+            #else:
+            #    header_labels.append("{}".format(character_list[i]))
+            #header_labels.append("{}".format(i+1))
+
+        datamatrix_model.setColumnCount(len(header_labels))
+        datamatrix_model.setHorizontalHeaderLabels( header_labels )
+
+        vheader = dm.get_taxa_list()
+        datamatrix_model.setVerticalHeaderLabels( vheader )
+
+        for i in range(character_list_len):
+            table_view.setColumnWidth(i, 30)
+
+        for i, row in enumerate(data_list):
+            for j, col in enumerate(row):
+                if isinstance(col, list):
+                    col = " ".join(col)
+                item1 = QStandardItem(col)
+                item1.setTextAlignment(Qt.AlignCenter)
+                datamatrix_model.setItem(i,j,item1)
+
+        return dm_widget
+
+
+
+    def create_analysis_widget(self, analysis):
+        an = analysis
+        an_widget = QWidget()
+        self.data_storage['analysis'][an.id]['widget'] = an_widget
+        # show analysis information
+        # analysis type, analysis package, analysis status, analysis directory
+        edtAnalysisName = QLineEdit()
+        edtAnalysisName.setText(an.analysis_name)
+        edtAnalysisName.setReadOnly(True)
+        edtAnalysisType = QLineEdit()
+        edtAnalysisType.setText(an.analysis_type)
+        edtAnalysisType.setReadOnly(True)
+        edtAnalysisPackage = QLineEdit()
+        #edtAnalysisPackage.setText(an.analysis_package)
+        edtAnalysisPackage.setReadOnly(True)
+        edtAnalysisStatus = QLineEdit()
+        edtAnalysisStatus.setText(an.analysis_status)
+        edtAnalysisStatus.setReadOnly(True)
+
+        an_layout = QFormLayout()
+        an_widget.setLayout(an_layout)
+        an_layout.addRow("Analysis Name", edtAnalysisName)
+        an_layout.addRow("Analysis Type", edtAnalysisType)
+        an_layout.addRow("Analysis Package", edtAnalysisPackage)
+        an_layout.addRow("Analysis Status", edtAnalysisStatus)
+
+
+        '''
+        ml_bootstrap = IntegerField(default=100)
+        ml_bootstrap_type = CharField(default=BOOTSTRAP_TYPE_NORMAL)
+        ml_substitution_model = CharField(default='GTR')
+        mcmc_burnin = IntegerField(default=1000)
+        mcmc_relburnin = BooleanField(default=False)
+        mcmc_burninfrac = FloatField(default=0.25)
+        mcmc_ngen = IntegerField(default=1000000)
+        mcmc_nrates = CharField(default='gamma')
+        mcmc_printfreq = IntegerField(default=1000)
+        mcmc_samplefreq = IntegerField(default=100)
+        mcmc_nruns = IntegerField(default=1)
+        mcmc_nchains = IntegerField(default=1)
+        '''
+        if an.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            pass
+        elif an.analysis_type == ANALYSIS_TYPE_ML:
+            edtBootstrapCount = QLineEdit()
+            edtBootstrapCount.setText(str(an.ml_bootstrap))
+            edtBootstrapCount.setReadOnly(True)
+            edtBootstrapType = QLineEdit()
+            edtBootstrapType.setText(an.ml_bootstrap_type)
+            edtBootstrapType.setReadOnly(True)
+            edtSubstitutionModel = QLineEdit()
+            edtSubstitutionModel.setText(an.ml_substitution_model)
+            edtSubstitutionModel.setReadOnly(True)
+            an_layout.addRow("Bootstrap Count", edtBootstrapCount)
+            an_layout.addRow("Bootstrap Type", edtBootstrapType)
+            an_layout.addRow("Substitution Model", edtSubstitutionModel)
+
+        elif an.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+            edtMCMCBurnin = QLineEdit()
+            edtMCMCBurnin.setText(str(an.mcmc_burnin))
+            edtMCMCBurnin.setReadOnly(True)
+            edtMCMCRelBurnin = QLineEdit()
+            edtMCMCRelBurnin.setText(str(an.mcmc_relburnin))
+            edtMCMCRelBurnin.setReadOnly(True)
+            edtMCMCBurninFrac = QLineEdit()
+            edtMCMCBurninFrac.setText(str(an.mcmc_burninfrac))
+            edtMCMCBurninFrac.setReadOnly(True)
+            edtMCMCNGen = QLineEdit()
+            edtMCMCNGen.setText(str(an.mcmc_ngen))
+            edtMCMCNGen.setReadOnly(True)
+            edtMCMCNRates = QLineEdit()
+            edtMCMCNRates.setText(an.mcmc_nrates)
+            edtMCMCNRates.setReadOnly(True)
+            edtMCMCPrintFreq = QLineEdit()
+            edtMCMCPrintFreq.setText(str(an.mcmc_printfreq))
+            edtMCMCPrintFreq.setReadOnly(True)                    
+            edtMCMCSampleFreq = QLineEdit()
+            edtMCMCSampleFreq.setText(str(an.mcmc_samplefreq))
+            edtMCMCSampleFreq.setReadOnly(True)
+            edtMCMCNRuns = QLineEdit()
+            edtMCMCNRuns.setText(str(an.mcmc_nruns))
+            edtMCMCNRuns.setReadOnly(True)
+            edtMCMCNChains = QLineEdit()
+            edtMCMCNChains.setText(str(an.mcmc_nchains))
+            edtMCMCNChains.setReadOnly(True)
+            an_layout.addRow("MCMC Burnin", edtMCMCBurnin)
+            an_layout.addRow("MCMC Rel Burnin", edtMCMCRelBurnin)
+            an_layout.addRow("MCMC Burnin Frac", edtMCMCBurninFrac)
+            an_layout.addRow("MCMC NGen", edtMCMCNGen)
+            an_layout.addRow("MCMC NRates", edtMCMCNRates)
+            an_layout.addRow("MCMC Print Freq", edtMCMCPrintFreq)
+            an_layout.addRow("MCMC Sample Freq", edtMCMCSampleFreq)
+            an_layout.addRow("MCMC NRuns", edtMCMCNRuns)
+            an_layout.addRow("MCMC NChains", edtMCMCNChains)                    
+
+        edtAnalysisOutput = QTextEdit()
+        edtAnalysisOutput.setReadOnly(True)
+        edtAnalysisResultDirectory = QLineEdit()
+        edtAnalysisResultDirectory.setText(an.result_directory)
+        edtAnalysisResultDirectory.setReadOnly(True)
+        edtAnalysisStartDatetime = QLineEdit()
+        edtAnalysisStartDatetime.setText(an.start_datetime.strftime("%Y-%m-%d %H:%M:%S"))
+        edtAnalysisStartDatetime.setReadOnly(True)
+        edtAnalysisFinishDatetime = QLineEdit()
+        if an.finish_datetime is not None:
+            edtAnalysisFinishDatetime.setText(an.finish_datetime.strftime("%Y-%m-%d %H:%M:%S"))
+        edtAnalysisFinishDatetime.setReadOnly(True)
+        edtAnalysisCompletionPercentage = QLineEdit()
+        edtAnalysisCompletionPercentage.setText(str(an.completion_percentage))
+        edtAnalysisCompletionPercentage.setReadOnly(True)
+
+        an_layout.addRow("Analysis Output", edtAnalysisOutput)
+        an_layout.addRow("Analysis Result Directory", edtAnalysisResultDirectory)
+        an_layout.addRow("Start Datetime", edtAnalysisStartDatetime)
+        an_layout.addRow("Finish Datetime", edtAnalysisFinishDatetime)
+        an_layout.addRow("Completion Percentage", edtAnalysisCompletionPercentage)
+        return an_widget
+
 
     def on_treeview_selection_changed(self, selected, deselected):
         #print("project selection changed")
@@ -644,37 +998,28 @@ class PhyloForesterMainWindow(QMainWindow):
             item1 =self.project_model.itemFromIndex(indexes[0])
             data = item1.data()
 
+            if isinstance(data, PfAnalysis):
+                #self.selected_analysis = 
+                self.selected_analysis = PfAnalysis.get_by_id(data.id)
+                self.update_analysis_view()
+                self.selected_datamatrix = self.selected_analysis.datamatrix
+                self.selected_project = self.selected_datamatrix.project
+                self.hsplitter.replaceWidget(1, self.data_storage['analysis'][self.selected_analysis.id]['widget'])
+
             if isinstance(data, PfDatamatrix):
-                dm_item = item1
-                dm = dm_item.data()
-                prj_item = item1.parent()
-                prj = prj_item.data()
-                print("dm:", dm.datamatrix_name, dm.id)
-                if prj_item.hasChildren():
-                    dm_idx = 0
-                    for i in range(prj_item.rowCount()):                    
-                        print(i, prj_item.child(i,0).data())
-                        item = prj_item.child(i,0)
-                        if item.data().id == dm.id:
-                            print("found", item.data().id)
-                            dm_idx = i
-                            break
                 self.selected_datamatrix = data
-                self.selected_project = prj
-                self.load_datamatrices()
-                self.tabView.setCurrentIndex(dm_idx)
+                self.selected_project = self.selected_datamatrix.project
+                self.hsplitter.replaceWidget(1, self.data_storage['datamatrix'][self.selected_datamatrix.id]['widget'])
 
             elif isinstance(data, PfProject):
-                prj_item = item1
                 self.selected_project = data
-                if prj_item.hasChildren():
-                    dm_item = prj_item.child(0,0)
-                    dm = dm_item.data()
-                    self.selected_datamatrix = dm
-                    self.load_datamatrices()
+                self.selected_datamatrix = None
+                if len(self.data_storage['project'][data.id]['datamatrices']) > 0 :
+                    dm_id = self.data_storage['project'][data.id]['datamatrices'][0]
+                    self.selected_datamatrix = self.data_storage['datamatrix'][dm_id]['object']
+                    self.hsplitter.replaceWidget(1, self.data_storage['datamatrix'][dm_id]['widget'])
                 else:
-                    self.tabView.clear()
-                    self.add_empty_tabview()
+                    self.hsplitter.replaceWidget(1,self.empty_widget)
             #self.actionAnalyze.setEnabled(True)
             #self.actionNewObject.setEnabled(True)
             #self.actionExport.setEnabled(True)
@@ -743,94 +1088,117 @@ class PhyloForesterMainWindow(QMainWindow):
 
         return selected_object_list
 
+    def load_treeview(self):
+        self.project_model.clear()
+        self.selected_project = None
+        project_list = PfProject.select()
+        for project in project_list:
+            #rec.unpack_wireframe()
+            item1 = QStandardItem(project.project_name)# + " (" + str(rec.object_list.count()) + ")")
+            item2 = QStandardItem(str(project.id))
+            item1.setIcon(QIcon(pu.resource_path(ICON['project'])))
+            item1.setData(project)
+            self.data_storage['project'][project.id] = { 'object': project, 'item': item1, 'datamatrices': []}
+            
+            self.project_model.appendRow([item1,item2])#,item2,item3] )
+            if project.datamatrices.count() > 0:
+                dm_list = PfDatamatrix.select().where(PfDatamatrix.project == project)
+                for dm in dm_list:
+                    item3 = QStandardItem(dm.datamatrix_name)
+                    item3.setIcon(QIcon(pu.resource_path(ICON['datamatrix'])))
+                    item3.setData(dm)
+                    item1.appendRow([item3])
+                    self.data_storage['datamatrix'][dm.id] = { 'object': dm, 'item': item3, 'analyses': [], 'widget': None}
+                    self.data_storage['project'][project.id]['datamatrices'].append(dm.id)
+                    if dm.analyses.count() > 0:
+                        for analysis in dm.analyses:
+                            item4 = QStandardItem(analysis.analysis_name)
+                            item4.setIcon(QIcon(pu.resource_path(ICON['analysis'])))
+                            item4.setData(analysis)
+                            item3.appendRow([item4])
+                            self.data_storage['analysis'][analysis.id] = { 'object': analysis, 'item': item4, 'widget': None}
+                            self.data_storage['datamatrix'][dm.id]['analyses'].append(analysis.id)
 
-    def load_datamatrices(self):
-        self.datamatrix_list = PfDatamatrix.select().where(PfDatamatrix.project == self.selected_project)
-        taxa_list = self.selected_project.get_taxa_list()
+            self.selected_project = project
+            self.load_datamatrices(project)
+
+            #if rec.children.count() > 0:
+            #    self.load_subproject(item1,item1.data())
+        self.treeView.expandAll()
+        self.treeView.hideColumn(1)
+
+    def load_datamatrices(self, project=None):
+        if project is None:
+            return
+        self.datamatrix_list = project.datamatrices #PfDatamatrix.select().where(PfDatamatrix.project == self.selected_project)
+        #taxa_list = self.selected_project.get_taxa_list()
 
         self.datamatrix_model_list = []
         self.table_view_list = []
         self.selected_datamatrix = None
-        self.tabView.clear()
+        #self.tabView.clear()
 
         if len(self.datamatrix_list) == 0:
-            self.add_empty_tabview()
+            #self.add_empty_tabview()
             return
 
         for dm in self.datamatrix_list:
-            datamatrix_model = PfItemModel()
-            table_view = PfTableView()
-            table_view.setModel(datamatrix_model)
-            if self.selected_datamatrix is None:
-                self.selected_datamatrix = dm
-                self.selected_tableview = table_view
+            if self.data_storage['datamatrix'][dm.id]['widget'] is None:
 
-            self.datamatrix_model_list.append(datamatrix_model)
-            self.table_view_list.append(table_view)
-            #table_view.setDragEnabled(True)
-            table_view.setAcceptDrops(True)
-            table_view.setDropIndicatorShown(True)
-            table_view.dropEvent = self.tableView_drop_event
-            table_view.dragEnterEvent = self.tableView_drag_enter_event
-            table_view.dragMoveEvent = self.tableView_drag_move_event
-            table_view.setSortingEnabled(False)
+                self.data_storage['datamatrix'][dm.id]['widget'] = self.create_datamatrix_table(dm)
+                #dm_widget = self.create_datamatrix_table(dm)
+                self.load_analyses(dm)
 
-            dm_widget = QWidget()
-            dm_layout = QVBoxLayout()
-            button_layout = QHBoxLayout()
-            btn_analyze = QPushButton("Analyze")
-            btn_analyze.clicked.connect(self.on_btn_analyze_clicked)
-            btn_save_dm = QPushButton("Save")
-            btn_save_dm.clicked.connect(self.on_btn_save_dm_clicked)
-            button_layout.addWidget(btn_analyze)
-            button_layout.addWidget(btn_save_dm)
-            dm_layout.addWidget(table_view)
-            dm_layout.addLayout(button_layout)
-            dm_widget.setLayout(dm_layout)
+                #self.tabView.addTab(dm_widget, dm.datamatrix_name)
+
+    def on_btn_add_taxon_clicked(self):
+        if self.selected_datamatrix is None:
+            return
+        text, ok = QInputDialog.getText(self, 'Input Dialog', 'Enter new taxon name', text="")
+        dm = self.selected_datamatrix
+        dm.taxa_list = dm.get_taxa_list()
+        print("taxa_list 1", dm.taxa_list)
+        dm.taxa_list.append(text)
+        dm.taxa_list_json = json.dumps(dm.taxa_list)
+        print("taxa_list 2", dm.taxa_list)
+        dm.save()
+        self.update_datamatrix_table()
+        self.hsplitter.replaceWidget(1, self.data_storage['datamatrix'][self.selected_datamatrix.id]['widget'])
+        #self.load_datamatrices(self.selected_project)
+
+    def on_btn_add_character_clicked(self):
+        if self.selected_datamatrix is None:
+            return
+        text, ok = QInputDialog.getText(self, 'Input Dialog', 'Enter new character name', text="")
+        dm = self.selected_datamatrix
+
+        dm.characters_list = dm.get_character_list()
+        if len(dm.characters_list) == 0:
+            dm.characters_list = [''] * dm.n_chars
+        dm.characters_list.append(text)
+        dm.character_list_json = json.dumps(dm.characters_list)
+        dm.n_chars = len(dm.characters_list)
+        dm.save()
+        self.update_datamatrix_table()
+        self.hsplitter.replaceWidget(1, self.data_storage['datamatrix'][self.selected_datamatrix.id]['widget'])
+
+    def load_analyses(self, datamatrix=None):
+        if datamatrix is None:
+            return
+        self.analysis_list = datamatrix.analyses
+        if len(self.analysis_list) == 0:
+            return
+        
+        for an in self.analysis_list:
+            if self.data_storage['analysis'][an.id]['widget'] is None:
+                self.data_storage['analysis'][an.id]['widget'] = self.create_analysis_widget(an)
 
 
-            self.tabView.addTab(dm_widget, dm.datamatrix_name)
-            data_list = dm.datamatrix_as_list()
-            #print("data_list", data_list)
+                #self.hsplitter.replaceWidget(1, an_widget)
+                #an_layout.addWidget(self.edtAnalysisCompletionPercentage)
 
-            header_labels = []
-            character_list_len = len(data_list[0])
-            for i in range(character_list_len):
-                header_labels.append("{}".format(i+1))
 
-            datamatrix_model.setColumnCount(len(header_labels))
-            datamatrix_model.setHorizontalHeaderLabels( header_labels )
 
-            vheader = taxa_list
-            #for i, row in enumerate(taxa_list):
-            #    vheader.append(row[0])
-
-            datamatrix_model.setVerticalHeaderLabels( vheader )
-            #self.tableView.verticalHeader().setDefaultSectionSize(20)
-            #self.tableView.verticalHeader().setVisible(False)
-
-            for i in range(character_list_len):
-                #header_labels.append("{}".format(i+1))
-                table_view.setColumnWidth(i, 30)
-
-            #for dm in dm_list:
-            for i, row in enumerate(data_list):
-                #rec.unpack_wireframe()
-                #item1 = QStandardItem(row[0])
-                #item1.setIcon(QIcon(pu.resource_path(ICON['project'])))
-                #item1.setData()
-                for j, col in enumerate(row):
-                    if isinstance(col, list):
-                        col = " ".join(col)
-                    item1 = QStandardItem(col)
-                    item1.setTextAlignment(Qt.AlignCenter)
-
-                    #item1.setIcon(QIcon(pu.resource_path(ICON['project'])))
-                    #item1.setData()
-                    datamatrix_model.setItem(i,j,item1)
-
-    def load_analyses(self, datamatrix):
-        self.analysis_list = PfAnalysis.select().where(PfAnalysis.datamatrix == datamatrix)
         #self.analysis_model.clear()
         for analysis in self.analysis_list:
             item1 = QStandardItem(analysis.analysis_name)
@@ -839,12 +1207,17 @@ class PhyloForesterMainWindow(QMainWindow):
             #self.analysis_model.appendRow([item1])
 
     def on_btn_save_dm_clicked(self):
-        idx = self.tabView.selected_index
+        #idx = self.tabView.selected_index
         #print("save dm", idx)
 
+        #print("selected datamatrix", self.selected_datamatrix.datamatrix_name)
+        #print("current table:", self.selected_tableview)
+        #return
 
-        self.selected_datamatrix = self.datamatrix_list[idx]
-        self.selected_tableview = self.table_view_list[idx]
+        #self.selected_datamatrix 
+        dm = self.selected_datamatrix
+
+        self.selected_tableview = self.data_storage['datamatrix'][dm.id]['table']
         # iterate through the tableview
         #print("dm:", self.selected_datamatrix.datamatrix_name)
 
