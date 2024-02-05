@@ -150,23 +150,24 @@ class PhyloDatafile():
         curr_block=None
         in_block = False
         for line in line_list:
-            #print(line)
-            begin_line = re.match(r"begin\s+(\w+)",line,flags=re.IGNORECASE)
-            end_line = re.match(r"end\s*;",line,flags=re.IGNORECASE)
+            print(line)
+            begin_line = re.match(r"\s*begin\s+(\w+)",line,flags=re.IGNORECASE)
+            end_line = re.match(r"\s*end\s*;",line,flags=re.IGNORECASE)
 
             if begin_line:
-                #print(begin_line)
+                print("begin", begin_line)
                 curr_block = {}
                 curr_block['name'] = begin_line.group(1).upper()
                 curr_block['text'] = []
                 in_block = True
             elif end_line:
-                #print("end block")
+                print("end block")
                 self.block_list.append(curr_block)
                 #if curr_block['name'] == 'DATA':
                 self.block_hash[curr_block['name']] = curr_block['text']
                 in_block = False
             elif in_block:
+                #print(line)
                 curr_block['text'].append(line)
         return #block_list
     
