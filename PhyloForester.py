@@ -14,6 +14,7 @@ import copy
 import PfUtils as pu
 from PfModel import *
 from PfDialog import *
+import matplotlib.pyplot as plt
 
 
 ICON = {}
@@ -427,9 +428,11 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         return command_filepath
 
     def onReadyReadStandardOutput(self):
-        print("standard output")
+        #print("standard output")
         output = self.process.readAllStandardOutput().data() #.decode()
-        print("output:",output)
+        #print("output:",output)
+        self.progress_check(output)
+
         #self.edtAnalysisOutput.append(output)
 
     def onReadyReadStandardError(self):
@@ -449,8 +452,88 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         self.analysis.completion_percentage = 100
         self.analysis.finish_datetime = datetime.datetime.now()
         self.analysis.save()
+
+        '''Tree file Processing'''
+        if self.analysis.analysis_type == ANALYSIS_TYPE_ML:
+            tree_filename = os.path.join( self.analysis.result_directory, self.analysis.datamatrix.datamatrix_name + ".phy.treefile" )
+            tree = Phylo.read( tree_filename, "newick" )
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            tree_filename = os.path.join( self.analysis.result_directory, "aquickie.tre" )
+            #tree = Phylo.read( tree_filename, "nexus" )
+            tf = pu.PhyloTreefile()
+            tf.readtree(tree_filename,'Nexus')
+            #print(tf.block_hash)
+            tree = Phylo.read(io.StringIO(tf.tree_text_hash['tnt_1']), "newick")
+            for clade in tree.find_clades():
+                if clade.name:
+                    taxon_index = int(clade.name) - 1
+                    taxa_list = self.analysis.datamatrix.get_taxa_list()
+                    clade.name = taxa_list[taxon_index]
+                    #print(clade.name)
+                    #clade.name = tf.taxa_hash[clade.name]
+
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+            tree_filename = os.path.join( self.analysis.result_directory, self.analysis.analysis_name + ".nex1.con.tre" )
+            tf = pu.PhyloTreefile()
+            tf.readtree(tree_filename,'Nexus')
+            #print(tf.tree_text_hash)
+            #tree_text = tf.tree_text_hash['con_50_majrule']
+            #handle = 
+            tree = Phylo.read(io.StringIO(tf.tree_text_hash['con_50_majrule']), "newick")
+            for clade in tree.find_clades():
+                if clade.name and tf.taxa_hash[clade.name]:
+                    #print(clade.name)
+                    clade.name = tf.taxa_hash[clade.name]
+
+        fig = plt.figure(figsize=(10, 20), dpi=100)
+        axes = fig.add_subplot(1, 1, 1)
+        Phylo.draw(tree, axes=axes,do_show=False)
+        #plt.show()
+        #buffer = io.BytesIO()
+        #print(tree_filename)
+        tree_imagefile = os.path.join( self.analysis.result_directory, "concensus_tree.svg" )
+        plt.savefig(tree_imagefile, format='svg')
+
+
+
         self.edtAnalysisOutput.append(f"Exit Code: {exitCode}")
         self.startAnalysis()
+
+    def progress_check(self, output):
+        total_step = 0
+        curr_step = 0
+        if self.analysis.analysis_type == ANALYSIS_TYPE_ML:
+            total_step = self.analysis.ml_bootstrap
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+            total_step = self.analysis.mcmc_ngen
+
+        for line in output.decode().splitlines():
+            progress_found = False
+            if self.analysis.analysis_type == ANALYSIS_TYPE_ML:
+                progress_match = re.match("===> START BOOTSTRAP REPLICATE NUMBER (\d+)",line)
+
+                if progress_match:
+                    progress_found = True
+                    curr_step = progress_match.group(1)
+                    print("progress detected", curr_step, flush=True)
+                    print("<", line,">", flush=True,end='')
+
+            elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+                progress_match = re.match("^\s+(\d+).*(\d+:\d+:\d+)$",line)
+                #progress_match = re.match("(\d+)\s+-- .+ --\s+(\d+:\d+\d+)",line)
+                if progress_match:
+                    progress_found = True
+                    curr_step = progress_match.group(1)
+                    print("progress detected", curr_step, flush=True)
+                    
+            if progress_found:
+                percentage = float(round( ( float(curr_step) / float(total_step) ) * 1000 )) / 10.0
+                self.analysis.completion_percentage = percentage
+                self.analysis.save()
+                #progress_filename_fd.write(line)
+            #print(line,flush=True,end='')
+        #progress_filename_fd.close()
+
 
     def handleError(self, error):
         print("Error occurred:", error)
@@ -873,6 +956,33 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
     def create_analysis_widget(self, analysis):
         an = analysis
         an_widget = QWidget()
+        an_tabview = QTabWidget()
+        an_widget2 = QWidget()
+        tree_widget = QWidget()
+
+        edtAnalysisOutput = QTextEdit()
+        edtAnalysisOutput.setReadOnly(True)
+        an_layout2 = QVBoxLayout()
+        an_widget2.setLayout(an_layout2)
+        an_layout2.addWidget(edtAnalysisOutput)
+        an_tabview.addTab(an_widget, "Analysis Result")
+        an_tabview.addTab(an_widget2, "Output")
+        an_tabview.addTab(tree_widget, "Trees")
+
+        if an.completion_percentage == 100:
+            # get concensus tree file
+            tree_filename = os.path.join( an.result_directory, "concensus_tree.svg" )
+            if os.path.isfile(tree_filename):
+                tree_pixmap = QPixmap(tree_filename)
+                tree_label = QLabel()
+                tree_label.setPixmap(tree_pixmap)
+                tree_layout = QVBoxLayout()
+                tree_layout.addWidget(tree_label)
+                tree_widget.setLayout(tree_layout)
+
+            #an.result_directory
+
+
         self.data_storage['analysis'][an.id]['widget'] = an_widget
         # show analysis information
         # analysis type, analysis package, analysis status, analysis directory
@@ -965,8 +1075,6 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             an_layout.addRow("MCMC NRuns", edtMCMCNRuns)
             an_layout.addRow("MCMC NChains", edtMCMCNChains)                    
 
-        edtAnalysisOutput = QTextEdit()
-        edtAnalysisOutput.setReadOnly(True)
         edtAnalysisResultDirectory = QLineEdit()
         edtAnalysisResultDirectory.setText(an.result_directory)
         edtAnalysisResultDirectory.setReadOnly(True)
@@ -986,7 +1094,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         an_layout.addRow("Start Datetime", edtAnalysisStartDatetime)
         an_layout.addRow("Finish Datetime", edtAnalysisFinishDatetime)
         an_layout.addRow("Completion Percentage", edtAnalysisCompletionPercentage)
-        return an_widget
+        return an_tabview
 
 
     def on_treeview_selection_changed(self, selected, deselected):
