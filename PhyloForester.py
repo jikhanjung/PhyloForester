@@ -95,6 +95,9 @@ class PfTabWidget(QTabWidget):
     def onTabClicked(self, index):
         self.selected_index = index
         print(f"Tab {index} clicked in parent window")
+        self.main_window.tabView_changed(index)
+        #selected_datamatrix = self.main_window.datamatrix_list[index]
+
 
 
 class PfTableView(QTableView):
@@ -130,8 +133,8 @@ class PfItemModel(QStandardItemModel):
                     item.setBackground(QColor('white'))  # Or any default color
 
     def flags(self, index: QModelIndex) -> Qt.ItemFlags:
-        if index.column() == 0:  # Replace with your column number
-            return super().flags(index) & ~Qt.ItemIsEditable
+        #if index.column() == 0:  # Replace with your column number
+        #    return super().flags(index) & ~Qt.ItemIsEditable
         return super().flags(index)
 
     #def data(self, index: QModelIndex, role: Qt.ItemDataRole = Qt.DisplayRole):
@@ -270,6 +273,7 @@ class PhyloForesterMainWindow(QMainWindow):
 
         self.treeView = PfTreeView()
         self.tabView = PfTabWidget()
+        self.tabView.main_window = self
 
         self.empty_widget = QWidget()
         #self.empty_table = PfTableView()
@@ -318,6 +322,13 @@ class PhyloForesterMainWindow(QMainWindow):
         #self.move(300, 300)
         #self.show(
 
+    def tabView_changed(self, index):
+        print("tabView_changed", index)
+        if index <= len( self.datamatrix_list ):
+            self.selected_datamatrix = self.datamatrix_list[index]
+        self.selected_tableview = self.table_view_list[index]
+        self.tabView.selected_index = index
+    
     def on_treeView_clicked(self, event):
         index = self.treeView.indexAt(event.pos())
         if not index.isValid():  # Click is on empty space
@@ -578,29 +589,39 @@ class PhyloForesterMainWindow(QMainWindow):
         if indexes:
             #self.object_model.clear()
             item1 =self.project_model.itemFromIndex(indexes[0])
-            ds = item1.data()
-            while not isinstance( ds, PfProject ):
-                item1 = item1.parent()
-                ds = item1.data()
-            
-            if ds != self.selected_project:
-                self.selected_project = ds
+            data = item1.data()
+
+            if isinstance(data, PfDatamatrix):
+                dm_item = item1
+                dm = dm_item.data()
+                prj_item = item1.parent()
+                prj = prj_item.data()
+                print("dm:", dm.datamatrix_name, dm.id)
+                if prj_item.hasChildren():
+                    dm_idx = 0
+                    for i in range(prj_item.rowCount()):                    
+                        print(i, prj_item.child(i,0).data())
+                        item = prj_item.child(i,0)
+                        if item.data().id == dm.id:
+                            print("found", item.data().id)
+                            dm_idx = i
+                            break
+                self.selected_datamatrix = data
+                self.selected_project = prj
                 self.load_datamatrices()
-            
-            
-            
-            if isinstance( ds, PfProject ) and ds == self.selected_project:
-                return
-            # check if ds is PfProject instance
+                self.tabView.setCurrentIndex(dm_idx)
 
-            if not isinstance(ds, PfProject):
-                ds = item1.parent().data()
-
-
-            #if 
-            self.selected_project = ds
-            self.load_datamatrices()
-
+            elif isinstance(data, PfProject):
+                prj_item = item1
+                self.selected_project = data
+                if prj_item.hasChildren():
+                    dm_item = prj_item.child(0,0)
+                    dm = dm_item.data()
+                    self.selected_datamatrix = dm
+                    self.load_datamatrices()
+                else:
+                    self.tabView.clear()
+                    self.add_empty_tabview()
             #self.actionAnalyze.setEnabled(True)
             #self.actionNewObject.setEnabled(True)
             #self.actionExport.setEnabled(True)
@@ -718,16 +739,25 @@ class PhyloForesterMainWindow(QMainWindow):
             data_list = dm.datamatrix_as_list()
             #print("data_list", data_list)
 
-            header_labels = ["Taxon Name", ]
-            character_list_len = len(data_list[0]) - 1
+            header_labels = []
+            character_list_len = len(data_list[0])
             for i in range(character_list_len):
                 header_labels.append("{}".format(i+1))
 
             datamatrix_model.setColumnCount(len(header_labels))
             datamatrix_model.setHorizontalHeaderLabels( header_labels )
+
+            vheader = taxa_list
+            #for i, row in enumerate(taxa_list):
+            #    vheader.append(row[0])
+
+            datamatrix_model.setVerticalHeaderLabels( vheader )
+            #self.tableView.verticalHeader().setDefaultSectionSize(20)
+            #self.tableView.verticalHeader().setVisible(False)
+
             for i in range(character_list_len):
                 #header_labels.append("{}".format(i+1))
-                table_view.setColumnWidth(i+1, 30)
+                table_view.setColumnWidth(i, 30)
 
             #for dm in dm_list:
             for i, row in enumerate(data_list):
@@ -739,8 +769,7 @@ class PhyloForesterMainWindow(QMainWindow):
                     if isinstance(col, list):
                         col = " ".join(col)
                     item1 = QStandardItem(col)
-                    if j > 0:
-                        item1.setTextAlignment(Qt.AlignCenter)
+                    item1.setTextAlignment(Qt.AlignCenter)
 
                     #item1.setIcon(QIcon(pu.resource_path(ICON['project'])))
                     #item1.setData()

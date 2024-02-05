@@ -51,6 +51,7 @@ class PfDatamatrix(Model):
     n_taxa = IntegerField()
     n_chars = IntegerField()
     datamatrix_json = CharField(null=True)
+    taxa_list_json = CharField(null=True)
     whole_text = CharField(null=True)
     created_at = DateTimeField(default=datetime.datetime.now)
     modified_at = DateTimeField(default=datetime.datetime.now)
@@ -70,6 +71,13 @@ class PfDatamatrix(Model):
         else:
             return ""
 
+    def get_taxa_list(self):
+        if self.taxa_list_json:
+            #formatted_data_list = json.loads(self.datamatrix_json)
+            return json.loads(self.taxa_list_json)
+        else:
+            return []
+
     def import_file(self, file_path):
         datafile_obj = pu.PhyloDatafile()
         ret = datafile_obj.loadfile(file_path)
@@ -81,11 +89,16 @@ class PfDatamatrix(Model):
             self.n_taxa = datafile_obj.n_taxa
             self.n_chars = datafile_obj.n_chars
             self.taxa_list = datafile_obj.taxa_list
+            self.datamatrix = datafile_obj.datamatrix
             self.block_hash = datafile_obj.block_hash
             self.whole_text = datafile_obj.file_text
             self.formatted_data_list = datafile_obj.formatted_data_list
-            if len(self.formatted_data_list) > 0:
-                self.datamatrix_json = json.dumps(self.formatted_data_list,indent=4)
+            if len( self.taxa_list ) > 0:
+                self.taxa_list_json = json.dumps(self.taxa_list)
+            if len( self.datamatrix ) > 0:
+                self.datamatrix_json = json.dumps(self.datamatrix,indent=4)
+            #if len(self.formatted_data_list) > 0:
+            #    self.datamatrix_json = json.dumps(self.formatted_data_list,indent=4)
 
             #print("post load",self.formatted_data_list)
             

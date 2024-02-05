@@ -280,6 +280,41 @@ class PreferencesDialog(QDialog):
         self.gbToolbarIconSize.layout().addWidget(self.rbToolbarIconMedium)
         self.gbToolbarIconSize.layout().addWidget(self.rbToolbarIconLarge)
 
+
+        self.edtTNTPath = QLineEdit()
+        self.edtTNTPath.setText(str(self.m_app.tnt_path))
+
+        self.btnTNTPath = QPushButton("Select Path")
+        self.gbTNTPath = QGroupBox("TNT")
+        self.gbTNTPath.setLayout(QHBoxLayout())
+        self.gbTNTPath.layout().addWidget(self.edtTNTPath)
+        self.gbTNTPath.layout().addWidget(self.btnTNTPath)
+        self.btnTNTPath.clicked.connect(self.select_tnt_path)
+
+        self.edtIQTreePath = QLineEdit()
+        self.edtIQTreePath.setText(str(self.m_app.iqtree_path))
+        self.btnIQTreePath = QPushButton("Select Path")
+        self.gbIQTreePath = QGroupBox("IQTree")
+        self.gbIQTreePath.setLayout(QHBoxLayout())
+        self.gbIQTreePath.layout().addWidget(self.edtIQTreePath)
+        self.gbIQTreePath.layout().addWidget(self.btnIQTreePath)
+        self.btnIQTreePath.clicked.connect(self.select_iqtree_path)
+
+        self.edtMrBayesPath = QLineEdit()
+        self.edtMrBayesPath.setText(str(self.m_app.mrbayes_path))
+        self.btnMrBayesPath = QPushButton("Select Path")
+        self.gbMrBayesPath = QGroupBox("Mr.Bayes")
+        self.gbMrBayesPath.setLayout(QHBoxLayout())
+        self.gbMrBayesPath.layout().addWidget(self.edtMrBayesPath)
+        self.gbMrBayesPath.layout().addWidget(self.btnMrBayesPath)
+        self.btnMrBayesPath.clicked.connect(self.select_mrbayes_path)
+
+        self.gbSoftwarePaths = QGroupBox()
+        self.gbSoftwarePaths.setLayout(QVBoxLayout())
+        self.gbSoftwarePaths.layout().addWidget(self.gbTNTPath)
+        self.gbSoftwarePaths.layout().addWidget(self.gbIQTreePath)
+        self.gbSoftwarePaths.layout().addWidget(self.gbMrBayesPath)
+
         self.lang_layout = QHBoxLayout()
         self.comboLang = QComboBox()
         self.comboLang.addItem(self.tr("English"))
@@ -302,9 +337,28 @@ class PreferencesDialog(QDialog):
         self.main_layout.addRow("Remember Geometry", self.gbRememberGeomegry)
         self.main_layout.addRow("Toolbar Icon Size", self.gbToolbarIconSize)
         self.main_layout.addRow("Language", self.lang_widget)
+        self.main_layout.addRow("Softwares", self.gbSoftwarePaths)
         self.main_layout.addRow("", self.btnOkay)
 
         self.read_settings()
+
+    def select_tnt_path(self):
+        tnt_path = str(QFileDialog.getOpenFileName(self, "Select TNT", str(self.m_app.tnt_path))[0])
+        if tnt_path:
+            self.edtTNTPath.setText(tnt_path)
+            self.m_app.tnt_path = Path(tnt_path).resolve()
+
+    def select_iqtree_path(self):
+        iqtree_path = str(QFileDialog.getOpenFileName(self, "Select IQTree", str(self.m_app.iqtree_path))[0])
+        if iqtree_path:
+            self.edtIQTreePath.setText(iqtree_path)
+            self.m_app.iqtree_path = Path(iqtree_path).resolve()
+
+    def select_mrbayes_path(self):
+        mrbayes_path = str(QFileDialog.getOpenFileName(self, "Select Mr.Bayes", str(self.m_app.mrbayes_path))[0])
+        if mrbayes_path:
+            self.edtMrBayesPath.setText(mrbayes_path)
+            self.m_app.mrbayes_path = Path(mrbayes_path).resolve()
 
     def comboLangIndexChanged(self, index):
         if index == 0:
@@ -315,6 +369,11 @@ class PreferencesDialog(QDialog):
     def read_settings(self):
         self.m_app.remember_geometry = pu.value_to_bool(self.m_app.settings.value("WindowGeometry/RememberGeometry", True))
         self.m_app.toolbar_icon_size = self.m_app.settings.value("ToolbarIconSize", "Medium")
+        self.m_app.tnt_path = Path(self.m_app.settings.value("SoftwarePath/TNT", ""))
+        self.m_app.iqtree_path = Path(self.m_app.settings.value("SoftwarePath/IQTree", ""))
+        self.m_app.mrbayes_path = Path(self.m_app.settings.value("SoftwarePath/MrBayes", ""))
+        self.m_app.language = self.m_app.settings.value("Language", "en")
+
         #print("toolbar_icon_size:", self.m_app.toolbar_icon_size)
         if self.m_app.toolbar_icon_size.lower() == "small":
             self.toolbar_icon_small = True
@@ -338,6 +397,10 @@ class PreferencesDialog(QDialog):
     def write_settings(self):
         self.m_app.settings.setValue("ToolbarIconSize", self.m_app.toolbar_icon_size)
         self.m_app.settings.setValue("WindowGeometry/RememberGeometry", self.m_app.remember_geometry)
+        self.m_app.settings.setValue("SoftwarePath/TNT", str(self.m_app.tnt_path))
+        self.m_app.settings.setValue("SoftwarePath/IQTree", str(self.m_app.iqtree_path))
+        self.m_app.settings.setValue("SoftwarePath/MrBayes", str(self.m_app.mrbayes_path))
+        self.m_app.settings.setValue("Language", self.m_app.language)
 
         if self.m_app.remember_geometry is True:
             self.m_app.settings.setValue("WindowGeometry/PreferencesDialog", self.geometry())

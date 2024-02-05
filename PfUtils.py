@@ -283,6 +283,8 @@ class PhyloDatafile():
         self.format_datamatrix()
 
     def format_datamatrix(self):
+        self.datamatrix = []
+
         for species in self.taxa_list:
             data = self.data_hash[species]
             array_data = []
@@ -313,6 +315,7 @@ class PhyloDatafile():
             formatted_data = [species]
             formatted_data.extend(array_data)
             self.formatted_data_list.append( formatted_data )
+            self.datamatrix.append(array_data)
             #print(species, len(array_data),array_data)
 
             #formatted_data = data.split()
