@@ -380,13 +380,13 @@ class AnalysisDialog(QDialog):
             if analysis_type == ANALYSIS_TYPE_PARSIMONY:
                 analysis.analysis_name = self.edtAnalysisNameParsimony.text() #.replace(" ", "_") 
                 # add current time to the name
-                directory_name = analysis.analysis_name + " " + datetime.datetime.now().strftime("%H%M%S")
+                directory_name = analysis.datamatrix.datamatrix_name + " " + analysis.analysis_name + " " + datetime.datetime.now().strftime("%H%M%S")
                 analysis.result_directory = os.path.join( result_directory_base, directory_name.replace(" ","_") ) # TNT does not like space in file name
             elif analysis_type == ANALYSIS_TYPE_ML:
                 analysis.analysis_name = self.edtAnalysisNameML.text()
                 analysis.ml_bootstrap_type = self.cbBootstrapType.currentText()
                 analysis.ml_bootstrap = int(self.edtBootstrapCount.text())
-                directory_name = analysis.analysis_name + " " + datetime.datetime.now().strftime("%H%M%S")
+                directory_name = analysis.datamatrix.datamatrix_name + " " + analysis.analysis_name + " " + datetime.datetime.now().strftime("%H%M%S")
                 analysis.result_directory = os.path.join( result_directory_base, directory_name )
 
             elif analysis_type == ANALYSIS_TYPE_BAYESIAN:
@@ -401,8 +401,9 @@ class AnalysisDialog(QDialog):
                 analysis.mcmc_samplefreq = int(self.edtSampleFreq.text())
                 analysis.mcmc_nruns = int(self.edtNRuns.text())
                 analysis.mcmc_nchains = int(self.edtNChains.text())
-                directory_name = analysis.analysis_name + " " + datetime.datetime.now().strftime("%H%M%S")
-                analysis.result_directory = os.path.join( result_directory_base, directory_name )
+                directory_name = analysis.datamatrix.datamatrix_name + " " + analysis.analysis_name + " " + datetime.datetime.now().strftime("%H%M%S")
+                analysis.result_directory = os.path.join( result_directory_base, directory_name.replace(" ","_") )
+                #analysis.result_directory = os.path.join( result_directory_base, directory_name )
 
             analysis.analysis_status = ANALYSIS_STATUS_QUEUED
             analysis.analysis_type = analysis_type

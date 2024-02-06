@@ -38,28 +38,50 @@ class PfItemDelegate(QStyledItemDelegate):
 
         if index.column() == 1:  # Check if it's the progress bar column
             progress_value = index.model().data(index, Qt.UserRole + 10) or -1 # Access progress data
-            if progress_value < 0 or progress_value == 100:
-                return
             #print("progress value:", progress_value)
-
-            # Calculate progress bar dimensions and position
             rect = option.rect
-            bar_width = int(0.8 * rect.width())
-            bar_height = 10
-            bar_x = rect.x() + int((rect.width() - bar_width) / 2)
-            bar_y = rect.y() + int((rect.height() - bar_height) / 2)
 
-            # Draw background
-            painter.fillRect(rect, QColor(0xf0f0f0))  # Light gray background
+            if isinstance(progress_value, str):
+                text_x = rect.x() + 10
+                text_y = rect.y() + rect.height() - 5
+                painter.drawText(text_x, text_y, progress_value)
+                return
 
-            # Draw progress bar
-            progress_width = int(bar_width * progress_value / 100)
-            painter.fillRect(bar_x, bar_y, progress_width, bar_height, QColor(0x3399ff))  # Blue progress bar
 
-            # Optionally draw text label (adjust position as needed)
-            text_x = bar_x + progress_width + 5
-            text_y = bar_y + int((bar_height - painter.fontMetrics().height()) / 2)
-            painter.drawText(text_x, text_y, f"{progress_value}%")
+            if progress_value == 0:
+                text_x = rect.x() + 10
+                text_y = rect.y() + rect.height() - 5
+                painter.drawText(text_x, text_y, "Pending")
+            elif progress_value == -1:
+                text_x = rect.x() + 10
+                text_y = rect.y() + rect.height() - 5
+                painter.drawText(text_x, text_y, " ")
+                return
+            elif progress_value == 100:
+                # Draw background
+                #painter.fillRect(rect, QColor(0xf0f0f0))  # Light gray background
+                # Optionally draw a checkmark when the progress is complete
+                #checkmark = QIcon(pu.resource_path('icons/checkmark.png')).pixmap(16, 16)
+                text_x = rect.x() + 10
+                text_y = rect.y() + rect.height() - 5
+                painter.drawText(text_x, text_y, "✔")
+            else:
+                # Calculate progress bar dimensions and position
+                bar_width = int(0.8 * rect.width())
+                bar_height = 10
+                bar_x = rect.x() + int((rect.width() - bar_width) / 2)
+                bar_y = rect.y() + int((rect.height() - bar_height) / 2)
+
+                # Draw background
+                painter.fillRect(rect, QColor(0xf0f0f0))  # Light gray background
+
+                # Draw progress bar
+                progress_width = int(bar_width * progress_value / 100)
+                painter.fillRect(bar_x, bar_y, progress_width, bar_height, QColor(0x3399ff))  # Blue progress bar
+                # Optionally draw text label (adjust position as needed)
+                text_x = bar_x + progress_width + 5
+                text_y = bar_y + int((bar_height - painter.fontMetrics().height()) / 2)
+                painter.drawText(text_x, text_y, f"{progress_value}%")
 
 class PfTabBar(QTabBar):
     tabClicked = pyqtSignal(int)
@@ -462,16 +484,16 @@ class PhyloForesterMainWindow(QMainWindow):
         datamatrix = self.analysis.datamatrix
 
         if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
-            command = self.m_app.tnt_path
+            command = str(self.m_app.tnt_path)
             fileext = '.nex'
             datamatrix_str = datamatrix.as_nexus_format()
         elif self.analysis.analysis_type == ANALYSIS_TYPE_ML:
-            command = self.m_app.iqtree_path
+            command = str(self.m_app.iqtree_path)
             fileext = '.phy'
             datamatrix_str = datamatrix.as_phylip_format()
 
         elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
-            command = self.m_app.mrbayes_path
+            command = str(self.m_app.mrbayes_path)
             #command = "D:/Phylogenetics/MrBayes-3.2.7-WINbin/mb.3.2.7-win64.exe"
             fileext = '.nex'
             datamatrix_str = datamatrix.as_nexus_format()
@@ -524,6 +546,8 @@ class PhyloForesterMainWindow(QMainWindow):
         elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
             command_filename = self.create_mrbayes_command_file( data_filename, self.analysis.result_directory, self.analysis )
             run_argument_list = [ command_filename ]
+            #run_argument_list = [package.run_path, command_filename]
+            print(command, run_argument_list)
 
         self.process.start(command, run_argument_list)
         print("process started")
@@ -531,6 +555,7 @@ class PhyloForesterMainWindow(QMainWindow):
             print("Failed to start the process")
 
     def create_mrbayes_command_file(self, data_filename, result_directory, analysis):
+        data_filename = os.path.join( result_directory, data_filename )
         command_filename = "run.nex"
         command_text = """begin mrbayes;
    set autoclose=yes nowarn=yes;
@@ -594,7 +619,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                     #clade.name = tf.taxa_hash[clade.name]
 
         elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
-            tree_filename = os.path.join( self.analysis.result_directory, self.analysis.analysis_name + ".nex1.con.tre" )
+            tree_filename = os.path.join( self.analysis.result_directory, self.analysis.datamatrix.datamatrix_name + ".nex1.con.tre" )
             tf = pu.PhyloTreefile()
             tf.readtree(tree_filename,'Nexus')
             #print(tf.tree_text_hash)
@@ -1377,27 +1402,31 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             #item2 = QStandardItem(str(project.id))
             item1.setIcon(QIcon(pu.resource_path(ICON['project'])))
             item1.setData(project)
+            item2 = QStandardItem()
+            item2.setData(" ", Qt.UserRole + 10)
             self.data_storage['project'][project.id] = { 'object': project, 'item': item1, 'datamatrices': []}
             
-            self.project_model.appendRow([item1,QStandardItem()])#,item2,item3] )
+            self.project_model.appendRow([item1,item2])#,item2,item3] )
             if project.datamatrices.count() > 0:
                 dm_list = PfDatamatrix.select().where(PfDatamatrix.project == project)
                 for dm in dm_list:
                     item3 = QStandardItem(dm.datamatrix_name)
                     item3.setIcon(QIcon(pu.resource_path(ICON['datamatrix'])))
                     item3.setData(dm)
-                    item1.appendRow([item3,QStandardItem()])
+                    item4 = QStandardItem()
+                    item4.setData(dm.datatype, Qt.UserRole + 10)
+                    item1.appendRow([item3,item4])
                     self.data_storage['datamatrix'][dm.id] = { 'object': dm, 'item': item3, 'analyses': [], 'widget': None}
                     self.data_storage['project'][project.id]['datamatrices'].append(dm.id)
                     if dm.analyses.count() > 0:
                         for analysis in dm.analyses:
                             analysis = PfAnalysis.get_by_id(analysis.id)
-                            item4 = QStandardItem(analysis.analysis_name)
-                            item4.setIcon(QIcon(pu.resource_path(ICON['analysis'])))
-                            item4.setData(analysis)
-                            item5 = QStandardItem("")
-                            item5.setData(analysis.completion_percentage, Qt.UserRole + 10)
-                            item3.appendRow([item4,item5])
+                            item5 = QStandardItem(analysis.analysis_name)
+                            item5.setIcon(QIcon(pu.resource_path(ICON['analysis'])))
+                            item5.setData(analysis)
+                            item6 = QStandardItem("")
+                            item6.setData(analysis.completion_percentage, Qt.UserRole + 10)
+                            item3.appendRow([item5,item6])
                             self.data_storage['analysis'][analysis.id] = { 'object': analysis, 'item': item4, 'widget': None}
                             self.data_storage['datamatrix'][dm.id]['analyses'].append(analysis.id)
 
