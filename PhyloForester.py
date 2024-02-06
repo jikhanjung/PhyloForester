@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import QMainWindow, QHeaderView, QApplication, QAbstractItemView, \
                             QMessageBox, QTreeView, QTableView, QSplitter, QAction, QMenu, \
-                            QStatusBar, QInputDialog, QToolBar, QTabWidget, QTabBar
+                            QStatusBar, QInputDialog, QToolBar, QTabWidget, QTabBar,QStyledItemDelegate
 from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem, QKeySequence, QColor
-from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSettings, QSize, QTranslator, QModelIndex, QEvent, QProcess
+from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSettings, QSize, QTranslator, QModelIndex, QEvent, QProcess, QAbstractTableModel
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 import re,os,sys
@@ -32,6 +32,34 @@ class PfTreeView(QTreeView):
         self.mousePressed.emit(event)
         super().mousePressEvent(event)
 
+class PfItemDelegate(QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        super().paint(painter, option, index)  # Draw default item content
+
+        if index.column() == 1:  # Check if it's the progress bar column
+            progress_value = index.model().data(index, Qt.UserRole + 10) or -1 # Access progress data
+            if progress_value < 0 or progress_value == 100:
+                return
+            #print("progress value:", progress_value)
+
+            # Calculate progress bar dimensions and position
+            rect = option.rect
+            bar_width = int(0.8 * rect.width())
+            bar_height = 10
+            bar_x = rect.x() + int((rect.width() - bar_width) / 2)
+            bar_y = rect.y() + int((rect.height() - bar_height) / 2)
+
+            # Draw background
+            painter.fillRect(rect, QColor(0xf0f0f0))  # Light gray background
+
+            # Draw progress bar
+            progress_width = int(bar_width * progress_value / 100)
+            painter.fillRect(bar_x, bar_y, progress_width, bar_height, QColor(0x3399ff))  # Blue progress bar
+
+            # Optionally draw text label (adjust position as needed)
+            text_x = bar_x + progress_width + 5
+            text_y = bar_y + int((bar_height - painter.fontMetrics().height()) / 2)
+            painter.drawText(text_x, text_y, f"{progress_value}%")
 
 class PfTabBar(QTabBar):
     tabClicked = pyqtSignal(int)
@@ -112,7 +140,100 @@ class PfTableView(QTableView):
 
     def isPersistentEditorOpen(self, index):
         return self.indexWidget(index) is not None
-    
+
+class PfTableModel(QAbstractTableModel):
+    def __init__(self, data=None):
+        super().__init__()
+        self._data = data or []  # Initialize with provided data or an empty list
+        self._vheader_data = []
+        self._hheader_data = []
+
+    def rowCount(self, parent=QModelIndex()):
+        return len(self._data)
+
+    def columnCount(self, parent=QModelIndex()):
+        return len(self._data[0]) if self._data else 0
+
+    def data(self, index, role=Qt.DisplayRole):
+        if not index.isValid():
+            return None
+        d = self._data[index.row()][index.column()]
+        if role == Qt.DisplayRole or role == Qt.EditRole:
+            if isinstance(d, str):
+                return d #self._data[index.row()][index.column()]
+            elif isinstance(d, list):
+                return " ".join(d)
+            elif isinstance(d, dict) and 'value' in d:
+                return d['value']
+        if role == Qt.BackgroundRole:
+            # if d is str or list, return default color
+            if isinstance(d, (str, list)):
+                return None
+            elif isinstance(d, dict) and d.get('changed', False):
+                return QColor('yellow')
+        if role == Qt.ToolTipRole:
+            # Check if this is the cell you want a tooltip for
+            #if index.row() == 1 and index.column() == 2:
+            return "Tooltip for cell ({}, {})".format(index.row(), index.column())
+            #if isinstance(d, )#and self._data[index.row()][index.column()].get('changed', False):
+            #return QColor('yellow')  # Highlight changed cells
+        if role == Qt.TextAlignmentRole:
+            return Qt.AlignCenter | Qt.AlignVCenter
+        return None
+
+    def setData(self, index, value, role=Qt.EditRole):
+        if not index.isValid() or role != Qt.EditRole:
+            return False
+        if index.row() >= len(self._data) or index.column() >= len(self._data[0]):
+            return False
+
+        self._data[index.row()][index.column()] = {'value': value, 'changed': True}
+        self.dataChanged.emit(index, index, [role, Qt.BackgroundRole])
+        return True
+
+    def flags(self, index):
+        if not index.isValid():
+            return Qt.NoItemFlags
+        return super().flags(index) | Qt.ItemIsEditable
+
+    def resetColors(self):
+        for row in range(self.rowCount()):
+            for column in range(self.columnCount()):
+                d = self._data[row][column]
+                if isinstance(d, dict) and d.get('changed', False):
+                    d['changed'] = False
+                #if self._data[row][column].get('changed', False):
+                #    self._data[row][column]['changed'] = False
+        self.dataChanged.emit(self.index(0, 0), self.index(self.rowCount() - 1, self.columnCount() - 1), [Qt.BackgroundRole])
+
+    def load_data(self, data):
+        self.beginResetModel()
+        self._data = data
+        self.endResetModel()
+
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
+        if role == Qt.DisplayRole:
+            if orientation == Qt.Horizontal:
+                # Return the header text for the given horizontal section
+                return "{}".format(section)
+            elif orientation == Qt.Vertical:
+                # Return the header text for the given vertical section
+                if len( self._vheader_data ) == 0:
+                    return "{}".format(section)
+                else:
+                    return "{}".format(self._vheader_data[section])
+        if role == Qt.ToolTipRole and orientation == Qt.Vertical:
+            # Customize tooltip text based on section (row index)
+            return f"{self._vheader_data[section]}"
+        #return None
+
+    #def headerData(self, section, orientation, role=Qt.DisplayRole):
+
+    def setVerticalHeader(self, header_data):
+        self._vheader_data = header_data
+    def setHorizontalHeader(self, header_data):
+        self._hheader_data = header_data
+
 class PfItemModel(QStandardItemModel):
     def setData(self, index, value, role=Qt.EditRole):
         if index.isValid() and role == Qt.EditRole:
@@ -492,6 +613,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         #buffer = io.BytesIO()
         #print(tree_filename)
         tree_imagefile = os.path.join( self.analysis.result_directory, "concensus_tree.svg" )
+        self.treeView.update()
+
         plt.savefig(tree_imagefile, format='svg')
 
 
@@ -533,6 +656,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                 #progress_filename_fd.write(line)
             #print(line,flush=True,end='')
         #progress_filename_fd.close()
+        self.load_treeview()
 
 
     def handleError(self, error):
@@ -822,7 +946,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             dm.project = self.selected_project
             dm.datamatrix_name = os.path.basename(file_name)
             # print current time
-            print("importing file:", file_name, "at", datetime.datetime.now())
+            #print("importing file:", file_name, "at", datetime.datetime.now())
             dm.import_file(file_name)
             dm.save()
             #if dm.taxa_list is not None and dm.project.taxa_str is None:
@@ -833,7 +957,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                 self.statusBar.showMessage("Cannot process directory...",2000)
 
         project = self.selected_project
-        print("load treeview:", file_name, "at", datetime.datetime.now())
+        #print("load treeview:", file_name, "at", datetime.datetime.now())
         self.load_treeview()
         self.select_project(project)
 
@@ -878,7 +1002,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
 
     def create_datamatrix_table(self, dm):
         #print("create datamatrix table", dm.datamatrix_name, dm.get_taxa_list())
-        print("create datamatrix table begins at", datetime.datetime.now())
+        #print("create datamatrix table begins at", datetime.datetime.now())
         dm_widget = QWidget()
         table_view = PfTableView()
         self.data_storage['datamatrix'][dm.id]['widget'] = dm_widget
@@ -902,7 +1026,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         dm_layout.addLayout(button_layout)
         dm_widget.setLayout(dm_layout)
 
-        datamatrix_model = PfItemModel()
+        datamatrix_model = PfTableModel()
         table_view.setModel(datamatrix_model)
         if self.selected_datamatrix is None:
             self.selected_datamatrix = dm
@@ -917,37 +1041,51 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         table_view.dragEnterEvent = self.tableView_drag_enter_event
         table_view.dragMoveEvent = self.tableView_drag_move_event
         table_view.setSortingEnabled(False)
+        #verticalHeader = table_view.verticalHeader()
+        #verticalHeader.setSectionResizeMode(QHeaderView.Fixed)
+        #verticalHeader.setDefaultSectionSize(150)
+        #horizontalHeader = table_view.horizontalHeader()
+        #horizontalHeader.setSectionResizeMode(QHeaderView.Fixed)
+        #horizontalHeader.setDefaultSectionSize(20)
+        #horizontalHeader.resizeSection(0, 200)
+        #horizontalHeader.resizeSection(1, 50)
 
         data_list = dm.datamatrix_as_list()
         if data_list is None:
             return dm_widget
+
+        # setting headers
+        table_view.verticalHeader().setFixedWidth(200)
+        table_view.horizontalHeader().setDefaultSectionSize(20)
+
+        '''
         header_labels = []
         character_list = dm.get_character_list()
         character_list_len = max( dm.n_chars, len(data_list[0] ) )
         if len(character_list) == 0:
             character_list = [""] * character_list_len
-        #character_list_len = len(data_list[0])
+
         for i in range(len(character_list)):
             header_labels.append("{}".format(i+1))
-            #if character_list[i] == "":
-            #    header_labels.append("{}".format(i+1))
-            #else:
-            #    header_labels.append("{}".format(character_list[i]))
-            #header_labels.append("{}".format(i+1))
+        '''
 
-        datamatrix_model.setColumnCount(len(header_labels))
+        vheader = dm.get_taxa_list()
+        datamatrix_model.setVerticalHeader(vheader)
+        #datamatrix_model.setHorizontalHeader(header_labels)
+        '''
+        #datamatrix_model.setColumnCount(len(header_labels))
         datamatrix_model.setHorizontalHeaderLabels( header_labels )
 
         vheader = dm.get_taxa_list()
         datamatrix_model.setVerticalHeaderLabels( vheader )
-        table_view.verticalHeader().setFixedWidth(100)
 
         for i in range(character_list_len):
             table_view.setColumnWidth(i, 30)
+        '''
+        #print("datamatrix", dm.datamatrix_name, "table data setting from", datetime.datetime.now())
 
-
-        print("datamatrix", dm.datamatrix_name, "table data setting from", datetime.datetime.now())
-
+        datamatrix_model.load_data(data_list)
+        '''
         for i, row in enumerate(dm.get_taxa_list()):
             if i >= len(data_list):
                 for j in range(character_list_len):
@@ -966,7 +1104,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                         item1 = QStandardItem(col)
                         item1.setTextAlignment(Qt.AlignCenter)
                     datamatrix_model.setItem(i,j,item1)
-        print("datamatrix", dm.datamatrix_name, "table data setting ends at", datetime.datetime.now())
+        '''
+        #print("datamatrix", dm.datamatrix_name, "table data setting ends at", datetime.datetime.now())
         return dm_widget
 
     #def on_an_widget2_resize(self, event):
@@ -1227,7 +1366,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         return selected_object_list
 
     def load_treeview(self):
-        print("load treeview begins at", datetime.datetime.now())
+        #print("load treeview begins at", datetime.datetime.now())
 
         self.project_model.clear()
         self.selected_project = None
@@ -1235,27 +1374,30 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         for project in project_list:
             #rec.unpack_wireframe()
             item1 = QStandardItem(project.project_name)# + " (" + str(rec.object_list.count()) + ")")
-            item2 = QStandardItem(str(project.id))
+            #item2 = QStandardItem(str(project.id))
             item1.setIcon(QIcon(pu.resource_path(ICON['project'])))
             item1.setData(project)
             self.data_storage['project'][project.id] = { 'object': project, 'item': item1, 'datamatrices': []}
             
-            self.project_model.appendRow([item1,item2])#,item2,item3] )
+            self.project_model.appendRow([item1,QStandardItem()])#,item2,item3] )
             if project.datamatrices.count() > 0:
                 dm_list = PfDatamatrix.select().where(PfDatamatrix.project == project)
                 for dm in dm_list:
                     item3 = QStandardItem(dm.datamatrix_name)
                     item3.setIcon(QIcon(pu.resource_path(ICON['datamatrix'])))
                     item3.setData(dm)
-                    item1.appendRow([item3])
+                    item1.appendRow([item3,QStandardItem()])
                     self.data_storage['datamatrix'][dm.id] = { 'object': dm, 'item': item3, 'analyses': [], 'widget': None}
                     self.data_storage['project'][project.id]['datamatrices'].append(dm.id)
                     if dm.analyses.count() > 0:
                         for analysis in dm.analyses:
+                            analysis = PfAnalysis.get_by_id(analysis.id)
                             item4 = QStandardItem(analysis.analysis_name)
                             item4.setIcon(QIcon(pu.resource_path(ICON['analysis'])))
                             item4.setData(analysis)
-                            item3.appendRow([item4])
+                            item5 = QStandardItem("")
+                            item5.setData(analysis.completion_percentage, Qt.UserRole + 10)
+                            item3.appendRow([item4,item5])
                             self.data_storage['analysis'][analysis.id] = { 'object': analysis, 'item': item4, 'widget': None}
                             self.data_storage['datamatrix'][dm.id]['analyses'].append(analysis.id)
 
@@ -1264,9 +1406,17 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
 
             #if rec.children.count() > 0:
             #    self.load_subproject(item1,item1.data())
+        delegate = PfItemDelegate()
+        self.treeView.setItemDelegateForColumn(1, delegate)
+
+        #horizontalHeader = self.treeView.horizontalHeader()
+        verticalHeader = self.treeView.header()
+        verticalHeader.resizeSection(0, 300)
+        verticalHeader.resizeSection(1, 100)
+
         self.treeView.expandAll()
-        self.treeView.hideColumn(1)
-        print("load treeview ends at", datetime.datetime.now())
+        #self.treeView.hideColumn(1)
+        #print("load treeview ends at", datetime.datetime.now())
 
     def load_datamatrices(self, project=None):
         if project is None:
@@ -1293,6 +1443,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                 #self.tabView.addTab(dm_widget, dm.datamatrix_name)
 
     def on_btn_add_taxon_clicked(self):
+        print("add taxon")
         if self.selected_datamatrix is None:
             return
         text, ok = QInputDialog.getText(self, 'Input Dialog', 'Enter new taxon name', text="")
@@ -1302,6 +1453,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         dm.taxa_list.append(text)
         dm.taxa_list_json = json.dumps(dm.taxa_list)
         dm.n_taxa = len(dm.taxa_list)
+        dm.datamatrix.append([""] * dm.n_chars)
+        dm.datamatrix_json = json.dumps(dm.datamatrix,indent=4)
         print("taxa_list 2", dm.taxa_list)
         dm.save()
         self.update_datamatrix_table()
@@ -1369,15 +1522,13 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         for row in range(self.selected_tableview.model().rowCount()):
             data_row = []
             for column in range(self.selected_tableview.model().columnCount()):
-                item = self.selected_tableview.model().item(row, column)
-                if item is not None:
-                    item.setBackground(QColor('white'))
-                    item_str = item.text()
-                    if item_str.find(" ") > -1:
-                        data = item_str.split(" ")
-                    else:
-                        data = item_str
-                    data_row.append(data)
+                idx = self.selected_tableview.model().index(row, column)
+                d = self.selected_tableview.model().data(idx, Qt.DisplayRole)
+                if d.find(" ") > -1:
+                    data = d.split(" ")
+                else:
+                    data = d
+                data_row.append(data)
                     #print(item.text(),)
                     #print(item.data())
                     #print(item.textAlignment())
@@ -1434,9 +1585,9 @@ if __name__ == "__main__":
 ''' 
 How to make an exe file
 
-pyinstaller --onefile --noconsole --add-data "icons/*.png;icons" --add-data "translations/*.qm;translations" --icon="icons/PhyloForester.png" PhyloForester.py
+pyinstaller --onefile --noconsole --add-data "icons/*.png;icons" --add-data "data/*.*;data" --add-data "translations/*.qm;translations" --icon="icons/PhyloForester.png" PhyloForester.py
 
-pyinstaller --onedir --noconsole --add-data "icons/*.png;icons" --add-data "translations/*.qm;translations" --icon="icons/PhyloForester.png" --noconfirm PhyloForester.py
+pyinstaller --onedir --noconsole --add-data "icons/*.png;icons" --add-data "data/*.*;data" --add-data "translations/*.qm;translations" --icon="icons/PhyloForester.png" --noconfirm PhyloForester.py
 
 pylupdate5 PhyloForester.py -ts translations/PhyloForester_en.ts
 pylupdate5 PhyloForester.py -ts translations/PhyloForester_ko.ts
