@@ -1,3 +1,4 @@
+from collections import Counter
 from peewee import *
 import datetime
 import os
@@ -126,20 +127,69 @@ class PfDatamatrix(Model):
                 self.taxa_list_json = json.dumps(self.taxa_list)
             if len( self.datamatrix ) > 0:
                 self.datamatrix_json = json.dumps(self.datamatrix,indent=4)
-            #if len(self.formatted_data_list) > 0:
-            #    self.datamatrix_json = json.dumps(self.formatted_data_list,indent=4)
-
-            #print("post load",self.formatted_data_list)
             
-            #if datafile_obj.file_type == 'Nexus':
-            #    if datafile_obj.block_hash['MRBAYES']:
-            #        self.mrbayes_block = datafile_obj.block_as_json('MRBAYES')
-            #    if datafile_obj.command_hash:
-            #        self.nexus_command_json = datafile_obj.command_hash_as_json()
+
+            type_count = {DATATYPE_DNA: 0, DATATYPE_RNA: 0, DATATYPE_PROTEIN: 0, DATATYPE_MORPHOLOGY: 0, DATATYPE_COMBINED: 0}
+            for char_idx in range(self.n_chars):
+                char_str = ''
+                for taxon_idx in range(self.n_taxa):
+                    char = self.datamatrix[taxon_idx][char_idx]
+                    if isinstance(char, list):
+                        char_str += ''.join(char)
+                    else:
+                        char_str += char
+
+                count = {}
+                count[DATATYPE_DNA] = self.count_dna(char_str)
+                count[DATATYPE_RNA] = self.count_rna(char_str)
+                count[DATATYPE_PROTEIN] = self.count_protein(char_str)
+                count[DATATYPE_MORPHOLOGY] = self.count_morphology(char_str)
+                max_datatype = max(count, key=count.get)
+                max_value = count[max_datatype]
+                type_count[max_datatype] += 1
+                #print("char idx:",char_idx, "char_str", char_str,"max:",max_datatype,"max_value:",max_value)
+                       
+            max_datatype = max(type_count, key=type_count.get)
+            self.datatype = max_datatype
+            #print("datatype:",self.datatype)
         else:
             return False
 
         return True
+
+    def count_chars(self, char_str, char_list):
+        '''
+        char_count = 0
+        for char in char_list:
+            char_count += char_str.count(char)
+        return char_count
+        '''
+        chars = (char.lower() for char in char_str if char.upper() in char_list)
+        count_result = Counter(chars)
+        count = 0
+        # sum dna_count
+        for key, value in count_result.items():
+            count += value
+        return count
+    
+
+    def count_dna(self, char_str):
+        count = self.count_chars( char_str, [ 'A','T','C','G'])
+        return count
+
+    def count_morphology(self, char_str):
+        count = self.count_chars( char_str, [ '0','1','2','3','4', '5','6','7','8','9'])
+        return count
+
+    def count_rna(self, char_str):
+        count = self.count_chars( char_str, [ 'A','U','C','G'])
+        return count
+
+    def count_protein(self, char_str):
+        count = self.count_chars( char_str, [ 'A','R','N','D','C','Q','E','G','H','I','L','K','M','F','P','S','T','W','Y','V'])
+        return count
+    
+
 
     # when exporting as file
     def matrix_as_string(self,parens=["(",")"],separator=" "):

@@ -13,6 +13,141 @@ from pathlib import Path
 import PfUtils as pu
 from PfModel import *
 
+MODE = { 'NONE': 0, 'PAN': 1, 'ZOOM': 2, 'EDIT': 3 }
+
+class TreeViewer2D(QLabel):
+    def __init__(self):
+        super(TreeViewer2D, self).__init__()
+        self.setMinimumSize(400,300)
+        self.bgcolor = "#AAAAAA"
+        self.m_app = QApplication.instance()
+        #self.read_settings()
+        self.orig_pixmap = None
+        self.curr_pixmap = None
+        self.scale = 1.0
+        self.pan_mode = MODE['NONE']
+        self.edit_mode = MODE['NONE']
+        self.pan_x = 0
+        self.pan_y = 0
+        self.temp_pan_x = 0
+        self.temp_pan_y = 0
+        self.mouse_down_x = 0
+        self.mouse_down_y = 0
+        self.mouse_curr_x = 0
+        self.mouse_curr_y = 0
+        self.image_canvas_ratio = 1.0
+        self.orig_width = -1
+        self.orig_height = -1
+        self.setAcceptDrops(True)
+        self.setMouseTracking(True)
+        #self.set_mode(MODE['EDIT_LANDMARK'])
+
+    def _2canx(self, coord):
+        return round((float(coord) / self.image_canvas_ratio) * self.scale) + self.pan_x + self.temp_pan_x
+    def _2cany(self, coord):
+        return round((float(coord) / self.image_canvas_ratio) * self.scale) + self.pan_y + self.temp_pan_y
+    def _2imgx(self, coord):
+        return round(((float(coord) - self.pan_x) / self.scale) * self.image_canvas_ratio)
+    def _2imgy(self, coord):
+        return round(((float(coord) - self.pan_y) / self.scale) * self.image_canvas_ratio)
+
+    def wheelEvent(self, event):
+        #if self.orig_pixmap is None:
+        #    return
+        we = QWheelEvent(event)
+        scale_delta = 0
+        if we.angleDelta().y() > 0:
+            scale_delta = 0.1
+        else:
+            scale_delta = -0.1
+        if self.scale <= 0.8 and scale_delta < 0:
+            return
+        if self.scale > 1:
+            scale_delta *= math.floor(self.scale)
+        
+        prev_scale = self.scale
+        self.scale += scale_delta
+        self.scale = round(self.scale * 10) / 10
+        scale_proportion = self.scale / prev_scale
+        if self.orig_pixmap is not None:
+            self.curr_pixmap = self.orig_pixmap.scaled(int(self.orig_pixmap.width() * self.scale / self.image_canvas_ratio), int(self.orig_pixmap.height() * self.scale / self.image_canvas_ratio))
+
+        self.pan_x = int( we.pos().x() - (we.pos().x() - self.pan_x) * scale_proportion )
+        self.pan_y = int( we.pos().y() - (we.pos().y() - self.pan_y) * scale_proportion )
+
+        self.repaint()
+
+        QLabel.wheelEvent(self, event)
+
+    def mouseMoveEvent(self, event):
+        me = QMouseEvent(event)
+        self.mouse_curr_x = me.x()
+        self.mouse_curr_y = me.y()
+        curr_pos = [self.mouse_curr_x, self.mouse_curr_y]
+        #print("self.edit_mode", self.edit_mode, "curr pos:", curr_pos)
+    
+        if self.pan_mode == MODE['PAN']:
+            self.temp_pan_x = int(self.mouse_curr_x - self.mouse_down_x)
+            self.temp_pan_y = int(self.mouse_curr_y - self.mouse_down_y)
+
+        self.repaint()
+        QLabel.mouseMoveEvent(self, event)
+
+    def mousePressEvent(self, event):
+
+        me = QMouseEvent(event)
+        if me.button() == Qt.RightButton:
+            self.pan_mode = MODE['PAN']
+            self.mouse_down_x = me.x()
+            self.mouse_down_y = me.y()
+        self.repaint()
+
+    def mouseReleaseEvent(self, ev: QMouseEvent) -> None:
+        me = QMouseEvent(ev)
+        if self.pan_mode == MODE['PAN']:
+            self.pan_mode = MODE['NONE']
+            self.pan_x += self.temp_pan_x
+            self.pan_y += self.temp_pan_y
+            self.temp_pan_x = 0
+            self.temp_pan_y = 0
+            self.repaint()
+        return super().mouseReleaseEvent(ev)    
+
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.fillRect(self.rect(), QBrush(QColor(self.bgcolor)))#as_qt_color(COLOR['BACKGROUND'])))
+
+        if self.curr_pixmap is not None:
+            painter.drawPixmap(self.pan_x+self.temp_pan_x, self.pan_y+self.temp_pan_y,self.curr_pixmap)
+
+    def calculate_resize(self):
+        #print("objectviewer calculate resize", self, self.object, self.object.landmark_list, self.landmark_list)
+        if self.orig_pixmap is not None:
+            self.orig_width = self.orig_pixmap.width()
+            self.orig_height = self.orig_pixmap.height()
+            image_wh_ratio = self.orig_width / self.orig_height
+            label_wh_ratio = self.width() / self.height()
+            if image_wh_ratio > label_wh_ratio:
+                self.image_canvas_ratio = self.orig_width / self.width()
+            else:
+                self.image_canvas_ratio = self.orig_height / self.height()
+            self.curr_pixmap = self.orig_pixmap.scaled(int(self.orig_width*self.scale/self.image_canvas_ratio),int(self.orig_width*self.scale/self.image_canvas_ratio), Qt.KeepAspectRatio)
+            self.setPixmap(self.curr_pixmap)
+        self.repaint()
+
+    def resizeEvent(self, event):
+        #print("resizeEvent")
+        self.calculate_resize()
+        QLabel.resizeEvent(self, event)
+
+    def set_tree_image(self, tree_image):
+        self.tree_image = tree_image
+        #self.orig_pixmap = QPixmap(self.tree_image)
+        self.orig_pixmap = QPixmap(self.tree_image)
+        #self.setPixmap(self.curr_pixmap)
+        #self.calculate_resize()
+
 class AnalysisDialog(QDialog):
     def __init__(self,parent):
         super().__init__()
@@ -632,11 +767,11 @@ class ProjectDialog(QDialog):
             self.project.datatype = "RNA"
         elif self.rbCombined.isChecked():
             self.project.datatype = "Combined"
-        self.project.taxa_str = ""
-        for i in range(self.lstTaxa.count()):
-            self.project.taxa_str += self.lstTaxa.item(i).text()
-            if i < self.lstTaxa.count()-1:
-                self.project.taxa_str += ","
+        #self.project.taxa_str = ""
+        #for i in range(self.lstTaxa.count()):
+        #    self.project.taxa_str += self.lstTaxa.item(i).text()
+        #    if i < self.lstTaxa.count()-1:
+        #        self.project.taxa_str += ","
 
         self.project.save()
         self.accept()

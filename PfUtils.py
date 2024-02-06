@@ -7,7 +7,7 @@ import tempfile
 
 COMPANY_NAME = "PaleoBytes"
 PROGRAM_NAME = "PhyloForester"
-PROGRAM_VERSION = "0.1.0"
+PROGRAM_VERSION = "0.0.1"
 
 DB_LOCATION = ""
 
@@ -167,18 +167,18 @@ class PhyloDatafile():
         curr_block=None
         in_block = False
         for line in line_list:
-            print(line)
+            #print(line)
             begin_line = re.match(r"\s*begin\s+(\w+)",line,flags=re.IGNORECASE)
             end_line = re.match(r"\s*end\s*;",line,flags=re.IGNORECASE)
 
             if begin_line:
-                print("begin", begin_line)
+                #print("begin", begin_line)
                 curr_block = {}
                 curr_block['name'] = begin_line.group(1).upper()
                 curr_block['text'] = []
                 in_block = True
             elif end_line:
-                print("end block")
+                #print("end block")
                 self.block_list.append(curr_block)
                 #if curr_block['name'] == 'DATA':
                 self.block_hash[curr_block['name']] = curr_block['text']
@@ -391,7 +391,7 @@ class PhyloTreefile:
             self.tree_section = {}
             for section in tree_sections:
                 #print(section)
-                section_line = re.search("(\w+)\s+(.+)",section,flags=re.IGNORECASE)
+                section_line = re.search(r"(\w+)\s+(.+)",section,flags=re.IGNORECASE)
                 if section_line:
                     section_name = section_line.group(1)
                     section_contents = section_line.group(2)
@@ -405,7 +405,7 @@ class PhyloTreefile:
                 for taxon in taxa_list:
                     taxon = taxon.strip()
                     #print(taxon)
-                    taxon_line = re.search("(\S+)\s+(\S+)",taxon,flags=re.IGNORECASE)
+                    taxon_line = re.search(r"(\S+)\s+(\S+)",taxon,flags=re.IGNORECASE)
                     if taxon_line:
                         taxon_index = taxon_line.group(1)
                         taxon_name = taxon_line.group(2)
@@ -439,7 +439,7 @@ class PhyloTreefile:
                     taxa_end = True
                     continue
                 if taxa_begin and not taxa_end:
-                    taxon_line = re.search("^\s*(\d+)\s+(\S+)\s*$",line,flags=re.IGNORECASE)
+                    taxon_line = re.search(r"^\s*(\d+)\s+(\S+)\s*$",line,flags=re.IGNORECASE)
                     #print(taxon_line)
                     if taxon_line:
                         taxon_idx = taxon_line.group(1)
@@ -451,7 +451,7 @@ class PhyloTreefile:
                 if taxa_end:
                     print("taxa end and now looking for tree")
                     print(line)
-                    tree_begin_line = re.search("^\s*tree\s+(\S+)\s*=\s*(.*)$",line,flags=re.IGNORECASE)
+                    tree_begin_line = re.search(r"^\s*tree\s+(\S+)\s*=\s*(.*)$",line,flags=re.IGNORECASE)
                     tree_end_line = re.search("(.*);",line)
                     print(tree_begin_line, tree_end_line)
                     if tree_begin_line:
@@ -543,8 +543,8 @@ class PhyloTreefile:
         in_block = False
         for line in line_list:
             #print(line)
-            begin_line = re.match("begin\s+(\S+)\s*;",line,flags=re.IGNORECASE)
-            end_line = re.match("end\s*;",line,flags=re.IGNORECASE)
+            begin_line = re.match(r"begin\s+(\S+)\s*;",line,flags=re.IGNORECASE)
+            end_line = re.match(r"end\s*;",line,flags=re.IGNORECASE)
 
             if begin_line:
                 #print(begin_line)

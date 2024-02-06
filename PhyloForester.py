@@ -510,7 +510,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         for line in output.decode().splitlines():
             progress_found = False
             if self.analysis.analysis_type == ANALYSIS_TYPE_ML:
-                progress_match = re.match("===> START BOOTSTRAP REPLICATE NUMBER (\d+)",line)
+                progress_match = re.match(r"===> START BOOTSTRAP REPLICATE NUMBER (\d+)",line)
 
                 if progress_match:
                     progress_found = True
@@ -519,7 +519,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                     print("<", line,">", flush=True,end='')
 
             elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
-                progress_match = re.match("^\s+(\d+).*(\d+:\d+:\d+)$",line)
+                progress_match = re.match(r"^\s+(\d+).*(\d+:\d+:\d+)$",line)
                 #progress_match = re.match("(\d+)\s+-- .+ --\s+(\d+:\d+\d+)",line)
                 if progress_match:
                     progress_found = True
@@ -821,6 +821,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             dm = PfDatamatrix()
             dm.project = self.selected_project
             dm.datamatrix_name = os.path.basename(file_name)
+            # print current time
+            print("importing file:", file_name, "at", datetime.datetime.now())
             dm.import_file(file_name)
             dm.save()
             #if dm.taxa_list is not None and dm.project.taxa_str is None:
@@ -831,8 +833,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                 self.statusBar.showMessage("Cannot process directory...",2000)
 
         project = self.selected_project
+        print("load treeview:", file_name, "at", datetime.datetime.now())
         self.load_treeview()
-        self.reset_tableView()
         self.select_project(project)
 
     def tableView_drag_enter_event(self, event):
@@ -876,6 +878,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
 
     def create_datamatrix_table(self, dm):
         #print("create datamatrix table", dm.datamatrix_name, dm.get_taxa_list())
+        print("create datamatrix table begins at", datetime.datetime.now())
         dm_widget = QWidget()
         table_view = PfTableView()
         self.data_storage['datamatrix'][dm.id]['widget'] = dm_widget
@@ -937,20 +940,38 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
 
         vheader = dm.get_taxa_list()
         datamatrix_model.setVerticalHeaderLabels( vheader )
+        table_view.verticalHeader().setFixedWidth(100)
 
         for i in range(character_list_len):
             table_view.setColumnWidth(i, 30)
 
-        for i, row in enumerate(data_list):
-            for j, col in enumerate(row):
-                if isinstance(col, list):
-                    col = " ".join(col)
-                item1 = QStandardItem(col)
-                item1.setTextAlignment(Qt.AlignCenter)
-                datamatrix_model.setItem(i,j,item1)
 
+        print("datamatrix", dm.datamatrix_name, "table data setting from", datetime.datetime.now())
+
+        for i, row in enumerate(dm.get_taxa_list()):
+            if i >= len(data_list):
+                for j in range(character_list_len):
+                    item = QStandardItem("")
+                    item.setTextAlignment(Qt.AlignCenter)
+                    datamatrix_model.setItem(i,j,item)
+            else:
+                for j in range(character_list_len):
+                    if j >= len(data_list[i]):
+                        item1 = QStandardItem("")
+                        item1.setTextAlignment(Qt.AlignCenter)
+                    else:
+                        col = data_list[i][j]
+                        if isinstance(col, list):
+                            col = " ".join(col)
+                        item1 = QStandardItem(col)
+                        item1.setTextAlignment(Qt.AlignCenter)
+                    datamatrix_model.setItem(i,j,item1)
+        print("datamatrix", dm.datamatrix_name, "table data setting ends at", datetime.datetime.now())
         return dm_widget
 
+    #def on_an_widget2_resize(self, event):
+    #    print("an_widget2 resize event")
+    #    print("widget size:",self.hsplitter.widget(1).size())
 
 
     def create_analysis_widget(self, analysis):
@@ -958,6 +979,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         an_widget = QWidget()
         an_tabview = QTabWidget()
         an_widget2 = QWidget()
+        #an_widget2.resizeEvent = self.on_an_widget2_resize
         tree_widget = QWidget()
 
         edtAnalysisOutput = QTextEdit()
@@ -973,12 +995,20 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             # get concensus tree file
             tree_filename = os.path.join( an.result_directory, "concensus_tree.svg" )
             if os.path.isfile(tree_filename):
-                tree_pixmap = QPixmap(tree_filename)
-                tree_label = QLabel()
-                tree_label.setPixmap(tree_pixmap)
+                tree_label = TreeViewer2D()
                 tree_layout = QVBoxLayout()
                 tree_layout.addWidget(tree_label)
                 tree_widget.setLayout(tree_layout)
+                tree_label.set_tree_image(tree_filename)
+                #tree_pixmap = QPixmap(tree_filename)
+                # get size of tree_label
+                #print("tree_label size:", tree_label.size())
+                # get hsplitter widget 1
+                
+                #self.hsplitter.getWidge(1).size()
+                #print("widget size:",self.hsplitter.widget(1).size())
+                #tree_pixmap = tree_pixmap.scaled( tree_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                #tree_label.setPixmap(tree_pixmap)
 
             #an.result_directory
 
@@ -1197,6 +1227,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         return selected_object_list
 
     def load_treeview(self):
+        print("load treeview begins at", datetime.datetime.now())
+
         self.project_model.clear()
         self.selected_project = None
         project_list = PfProject.select()
@@ -1234,6 +1266,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             #    self.load_subproject(item1,item1.data())
         self.treeView.expandAll()
         self.treeView.hideColumn(1)
+        print("load treeview ends at", datetime.datetime.now())
 
     def load_datamatrices(self, project=None):
         if project is None:
@@ -1268,6 +1301,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         print("taxa_list 1", dm.taxa_list)
         dm.taxa_list.append(text)
         dm.taxa_list_json = json.dumps(dm.taxa_list)
+        dm.n_taxa = len(dm.taxa_list)
         print("taxa_list 2", dm.taxa_list)
         dm.save()
         self.update_datamatrix_table()
@@ -1338,7 +1372,12 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                 item = self.selected_tableview.model().item(row, column)
                 if item is not None:
                     item.setBackground(QColor('white'))
-                    data_row.append(item.text())
+                    item_str = item.text()
+                    if item_str.find(" ") > -1:
+                        data = item_str.split(" ")
+                    else:
+                        data = item_str
+                    data_row.append(data)
                     #print(item.text(),)
                     #print(item.data())
                     #print(item.textAlignment())
