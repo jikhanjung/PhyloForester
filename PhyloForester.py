@@ -507,6 +507,9 @@ class PhyloForesterMainWindow(QMainWindow):
             os.makedirs( result_directory )
 
         data_filename = datamatrix.datamatrix_name + fileext
+        if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            data_filename = data_filename.replace(" ","_")
+
         data_file_location = os.path.join( result_directory, data_filename )#.replace(" ","_")
         data_fd = open(data_file_location,mode='w')
         print("writing data file:", data_file_location)

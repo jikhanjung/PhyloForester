@@ -115,8 +115,8 @@ class PfDatamatrix(Model):
             self.datamatrix_name = datafile_obj.dataset_name
             self.whole_text = datafile_obj.file_text
 
-            self.n_taxa = datafile_obj.n_taxa
-            self.n_chars = datafile_obj.n_chars
+            self.n_taxa = int(datafile_obj.n_taxa)
+            self.n_chars = int(datafile_obj.n_chars)
             self.taxa_list = datafile_obj.taxa_list
             self.datamatrix = datafile_obj.datamatrix
             self.block_hash = datafile_obj.block_hash

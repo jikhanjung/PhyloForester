@@ -232,10 +232,10 @@ class PhyloDatafile():
         if 'DIMENSIONS' in self.nexus_command_hash.keys():
             if 'NTAX' in self.nexus_command_hash['DIMENSIONS']:
                 ntax = int(self.nexus_command_hash['DIMENSIONS']['NTAX'])
-                self.n_taxa = ntax
+                self.n_taxa = int(ntax)
             if 'NCHAR' in self.nexus_command_hash['DIMENSIONS']:
                 nchar = int(self.nexus_command_hash['DIMENSIONS']['NCHAR'])
-                self.n_chars = nchar
+                self.n_chars = int(nchar)
         #print("number of taxa", ntax, len(self.taxa_list))
         #print("number of char", nchar)
         self.format_datamatrix()
