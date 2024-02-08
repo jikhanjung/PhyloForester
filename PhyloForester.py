@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QMainWindow, QHeaderView, QApplication, QAbstractItemView, \
                             QMessageBox, QTreeView, QTableView, QSplitter, QAction, QMenu, \
-                            QStatusBar, QInputDialog, QToolBar, QTabWidget, QTabBar,QStyledItemDelegate
+                            QStatusBar, QInputDialog, QToolBar, QTabWidget, QTabBar,QStyledItemDelegate, QPlainTextEdit 
 from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem, QKeySequence, QColor
 from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSettings, QSize, QTranslator, QModelIndex, QEvent, QProcess, QAbstractTableModel
 
@@ -79,9 +79,13 @@ class PfItemDelegate(QStyledItemDelegate):
                 progress_width = int(bar_width * progress_value / 100)
                 painter.fillRect(bar_x, bar_y, progress_width, bar_height, QColor(0x3399ff))  # Blue progress bar
                 # Optionally draw text label (adjust position as needed)
-                text_x = bar_x + progress_width + 5
-                text_y = bar_y + int((bar_height - painter.fontMetrics().height()) / 2)
+                #text_x = bar_x + progress_width + 5
+                #text_y = bar_y + int((bar_height - painter.fontMetrics().height()) / 2)
+                #painter.drawText(text_x, text_y, f"{progress_value}%")
+                text_x = rect.x() + 10
+                text_y = rect.y() + rect.height() - 5
                 painter.drawText(text_x, text_y, f"{progress_value}%")
+
 
 class PfTabBar(QTabBar):
     tabClicked = pyqtSignal(int)
@@ -342,7 +346,7 @@ class PhyloForesterMainWindow(QMainWindow):
         self.process.readyReadStandardError.connect(self.onReadyReadStandardError)
         self.process.finished.connect(self.onProcessFinished)
         self.process.errorOccurred.connect(self.handleError)
-        self.edtAnalysisOutput = QTextEdit()
+        #self.edtAnalysisOutput = QTextEdit()
 
 
     @pyqtSlot()
@@ -480,7 +484,7 @@ class PhyloForesterMainWindow(QMainWindow):
         if len(analysis_list) == 0:
             return
         self.analysis = analysis_list[0]
-        print("analysis:", self.analysis.analysis_name)
+        #print("analysis:", self.analysis.analysis_name)
         datamatrix = self.analysis.datamatrix
 
         if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
@@ -512,13 +516,13 @@ class PhyloForesterMainWindow(QMainWindow):
 
         data_file_location = os.path.join( result_directory, data_filename )#.replace(" ","_")
         data_fd = open(data_file_location,mode='w')
-        print("writing data file:", data_file_location)
+        #print("writing data file:", data_file_location)
         data_fd.write(datamatrix_str)
         data_fd.close()
 
         self.process.setWorkingDirectory(result_directory)
-        print("working directory:", self.process.workingDirectory())
-        print("result directory:", result_directory)        
+        #print("working directory:", self.process.workingDirectory())
+        #print("result directory:", result_directory)        
 
         self.analysis.start_datetime = datetime.datetime.now()
         self.analysis.analysis_status = ANALYSIS_STATUS_RUNNING
@@ -556,6 +560,10 @@ class PhyloForesterMainWindow(QMainWindow):
         print("process started")
         if self.process.state() == QProcess.NotRunning:
             print("Failed to start the process")
+        
+        edtOutput = self.data_storage['analysis'][self.analysis.id]['output']
+        #print("output textedit:", edtOutput)
+        edtOutput.appendPlainText("process started")
 
     def create_mrbayes_command_file(self, data_filename, result_directory, analysis):
         data_filename = os.path.join( result_directory, data_filename )
@@ -578,22 +586,37 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
 
     def onReadyReadStandardOutput(self):
         #print("standard output")
-        output = self.process.readAllStandardOutput().data() #.decode()
+        #output = self.process.readAllStandardOutput().data() #.decode()
+        if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            output = self.process.readAllStandardOutput().data().decode('cp437')
+            #print("ML analysis")
+        else:
+            output = self.process.readAllStandardOutput().data().decode()
         #print("output:",output)
+
         self.progress_check(output)
+
+        
+        self.data_storage['analysis'][self.analysis.id]['output'].appendPlainText(output)
+        #print("output textedit:", self.data_storage['analysis'][self.analysis.id]['output'])
 
         #self.edtAnalysisOutput.append(output)
 
     def onReadyReadStandardError(self):
         print("standard error")
-        output = self.process.readAllStandardError().data().decode()
-        print("error:", output)
+        if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            output = self.process.readAllStandardError().data().decode('cp437')
+            #print("ML analysis")
+        else:
+            output = self.process.readAllStandardError().data().decode()
+        self.progress_check(output)
+        #print("error:", output)
         #self.edtAnalysisOutput.append(output)
 
     def onProcessFinished(self):
         print("process finished")
         # This method will be called when the external process finishes
-        self.edtAnalysisOutput.append("\nProcess Finished\n")
+        #self.edtAnalysisOutput.append("\nProcess Finished\n")
         #print("Process Finished")
         # Here, you can also handle process exit code and status
         exitCode = self.process.exitCode()
@@ -601,6 +624,12 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         self.analysis.completion_percentage = 100
         self.analysis.finish_datetime = datetime.datetime.now()
         self.analysis.save()
+        self.treeView.update()
+
+        #self.edtAnalysisOutput.append(f"Exit Code: {exitCode}")
+        self.startAnalysis()
+
+    def process_consensus_tree(self):
 
         '''Tree file Processing'''
         if self.analysis.analysis_type == ANALYSIS_TYPE_ML:
@@ -644,14 +673,9 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         #buffer = io.BytesIO()
         #print(tree_filename)
         tree_imagefile = os.path.join( self.analysis.result_directory, "concensus_tree.svg" )
-        self.treeView.update()
 
         plt.savefig(tree_imagefile, format='svg')
 
-
-
-        self.edtAnalysisOutput.append(f"Exit Code: {exitCode}")
-        self.startAnalysis()
 
     def progress_check(self, output):
         total_step = 0
@@ -661,7 +685,14 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
             total_step = self.analysis.mcmc_ngen
 
-        for line in output.decode().splitlines():
+        progress_filename = os.path.join( self.analysis.result_directory,"progress.log" )
+
+        with open(progress_filename, 'ab') as file:
+            file.write(output.encode('utf-8'))
+            file.flush()  # Flush internal Python buffer
+            os.fsync(file.fileno())
+
+        for line in output.splitlines():
             progress_found = False
             if self.analysis.analysis_type == ANALYSIS_TYPE_ML:
                 progress_match = re.match(r"===> START BOOTSTRAP REPLICATE NUMBER (\d+)",line)
@@ -669,8 +700,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                 if progress_match:
                     progress_found = True
                     curr_step = progress_match.group(1)
-                    print("progress detected", curr_step, flush=True)
-                    print("<", line,">", flush=True,end='')
+                    #print("progress detected", curr_step, flush=True)
+                    #print("<", line,">", flush=True,end='')
 
             elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
                 progress_match = re.match(r"^\s+(\d+).*(\d+:\d+:\d+)$",line)
@@ -678,17 +709,14 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                 if progress_match:
                     progress_found = True
                     curr_step = progress_match.group(1)
-                    print("progress detected", curr_step, flush=True)
+                    #print("progress detected", curr_step, flush=True)
                     
             if progress_found:
                 percentage = float(round( ( float(curr_step) / float(total_step) ) * 1000 )) / 10.0
                 self.analysis.completion_percentage = percentage
                 self.analysis.save()
-                #progress_filename_fd.write(line)
-            #print(line,flush=True,end='')
-        #progress_filename_fd.close()
+        #self.treeView.update()
         self.load_treeview()
-
 
     def handleError(self, error):
         print("Error occurred:", error)
@@ -797,17 +825,18 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         #self.analysis_dialog.show()
 
         ret = self.analysis_dialog.exec_()
-        if ret == 0:
-            print(" analysis ret 0")
-        elif ret == 1:
-            print("analysis dialog ret 1")
-            self.startAnalysis()
 
         project = self.selected_project
         datamatrix = selected_datamatrix
         self.load_treeview()
         self.reset_tableView()
         self.select_project(project)
+        if ret == 0:
+            print(" analysis ret 0")
+        elif ret == 1:
+            print("analysis dialog ret 1")
+            self.startAnalysis()
+
         #self.load_datamatrices()
         #self.select_datamatrix(datamatrix)
 
@@ -1015,21 +1044,18 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         if self.selected_analysis is None:
             return
         if self.selected_analysis.id in self.data_storage['analysis']:
-            self.data_storage['analysis'][self.selected_analysis.id]['widget'] = self.create_analysis_widget(self.selected_analysis)
-        #else:
-        #    self.data_storage['analysis'][self.selected_analysis.id] = { 'object': self.selected_analysis, 'widget': self.create_analysis_widget(self.selected_analysis) }
+            #analysis_ref = self.data_storage['analysis'][self.selected_analysis.id]
+            if self.data_storage['analysis'][self.selected_analysis.id]['widget'] is None:
+                self.data_storage['analysis'][self.selected_analysis.id] = self.create_analysis_widget(self.selected_analysis)
+            #print("analysis widget created", analysis_ref['widget'], analysis_ref['output'])
 
     def update_datamatrix_table(self):
         #print("update_datamatrix_table", self.selected_datamatrix.id)
         if self.selected_datamatrix is None:
             return
-        print(self.data_storage['datamatrix'])
+        #print(self.data_storage['datamatrix'])
         if self.selected_datamatrix.id in self.data_storage['datamatrix']:
-            #print("datamatrix exists")
-            #print("taxa list", self.selected_datamatrix.taxa_list)
             self.data_storage['datamatrix'][self.selected_datamatrix.id]['widget'] = self.create_datamatrix_table(self.selected_datamatrix)
-        #else:
-        #    self.data_storage['analysis'][self.selected_analysis.id] = { 'object': self.selected_analysis, 'widget': self.create_analysis_widget(self.selected_analysis) }
 
     def create_datamatrix_table(self, dm):
         #print("create datamatrix table", dm.datamatrix_name, dm.get_taxa_list())
@@ -1146,19 +1172,37 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
 
     def create_analysis_widget(self, analysis):
         an = analysis
+
         an_widget = QWidget()
         an_tabview = QTabWidget()
         an_widget2 = QWidget()
         #an_widget2.resizeEvent = self.on_an_widget2_resize
         tree_widget = QWidget()
 
-        edtAnalysisOutput = QTextEdit()
+        self.data_storage['analysis'][an.id]['widget'] = an_widget
+        #output_widget = 
+
+        edtAnalysisOutput = QPlainTextEdit("")
+        font = QFont("Courier", 10)  # You can also use "Monospace", "Consolas", etc.
+        font.setStyleHint(QFont.Monospace)  # Hint to use a monospace font
+        edtAnalysisOutput.setFont(font)        
         edtAnalysisOutput.setReadOnly(True)
+        self.data_storage['analysis'][an.id]['output'] = edtAnalysisOutput
+        # if completed, load logfile to output
+        if an.completion_percentage == 100:
+            log_filename = os.path.join( an.result_directory, "progress.log" )
+            if os.path.isfile(log_filename):
+                #print("log file exists:", log_filename)
+                log_fd = open(log_filename,mode='r',encoding='utf-8')
+                log_text = log_fd.read()
+                edtAnalysisOutput.setPlainText(log_text)
+                log_fd.close()
+
         an_layout2 = QVBoxLayout()
         an_widget2.setLayout(an_layout2)
         an_layout2.addWidget(edtAnalysisOutput)
-        an_tabview.addTab(an_widget, "Analysis Result")
-        an_tabview.addTab(an_widget2, "Output")
+        an_tabview.addTab(an_widget, "Analysis Info")
+        an_tabview.addTab(an_widget2, "Log")
         an_tabview.addTab(tree_widget, "Trees")
 
         if an.completion_percentage == 100:
@@ -1183,7 +1227,6 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             #an.result_directory
 
 
-        self.data_storage['analysis'][an.id]['widget'] = an_widget
         # show analysis information
         # analysis type, analysis package, analysis status, analysis directory
         edtAnalysisName = QLineEdit()
@@ -1289,7 +1332,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         edtAnalysisCompletionPercentage.setText(str(an.completion_percentage))
         edtAnalysisCompletionPercentage.setReadOnly(True)
 
-        an_layout.addRow("Analysis Output", edtAnalysisOutput)
+        #an_layout.addRow("Analysis Output", edtAnalysisOutput)
         an_layout.addRow("Analysis Result Directory", edtAnalysisResultDirectory)
         an_layout.addRow("Start Datetime", edtAnalysisStartDatetime)
         an_layout.addRow("Finish Datetime", edtAnalysisFinishDatetime)
@@ -1312,6 +1355,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                 self.update_analysis_view()
                 self.selected_datamatrix = self.selected_analysis.datamatrix
                 self.selected_project = self.selected_datamatrix.project
+                #print(self.data_storage['analysis'][self.selected_analysis.id])
                 self.hsplitter.replaceWidget(1, self.data_storage['analysis'][self.selected_analysis.id]['widget'])
 
             if isinstance(data, PfDatamatrix):
@@ -1433,7 +1477,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                             item6 = QStandardItem("")
                             item6.setData(analysis.completion_percentage, Qt.UserRole + 10)
                             item3.appendRow([item5,item6])
-                            self.data_storage['analysis'][analysis.id] = { 'object': analysis, 'item': item4, 'widget': None}
+                            if analysis.id not in self.data_storage['analysis']:
+                                self.data_storage['analysis'][analysis.id] = { 'object': analysis, 'item': item4, 'widget': None, 'output': None}
                             self.data_storage['datamatrix'][dm.id]['analyses'].append(analysis.id)
 
             self.selected_project = project
@@ -1520,20 +1565,18 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             return
         
         for an in self.analysis_list:
+            #analysis_ref = 
+            #print("analysis widget:",self.data_storage['analysis'][an.id]['widget'])
             if self.data_storage['analysis'][an.id]['widget'] is None:
                 self.data_storage['analysis'][an.id]['widget'] = self.create_analysis_widget(an)
-
-
-                #self.hsplitter.replaceWidget(1, an_widget)
-                #an_layout.addWidget(self.edtAnalysisCompletionPercentage)
-
+            #print("analysis widget:",self.data_storage['analysis'][an.id]['widget'])                
 
 
         #self.analysis_model.clear()
-        for analysis in self.analysis_list:
-            item1 = QStandardItem(analysis.analysis_name)
-            item1.setIcon(QIcon(pu.resource_path(ICON['analysis'])))
-            item1.setData(analysis)
+        #for analysis in self.analysis_list:
+        #    item1 = QStandardItem(analysis.analysis_name)
+        #    item1.setIcon(QIcon(pu.resource_path(ICON['analysis'])))
+        #    item1.setData(analysis)
             #self.analysis_model.appendRow([item1])
 
     def on_btn_save_dm_clicked(self):

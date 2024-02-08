@@ -196,12 +196,12 @@ class PfDatamatrix(Model):
         matrix_string = ""
         datamatrix = self.datamatrix_as_list()
         taxa_list = json.loads(self.taxa_list_json)
-        print("datamatrix:",datamatrix)
+        #print("datamatrix:",datamatrix)
         for idx, data in enumerate(datamatrix):
-            print("data:",data)
+            #print("data:",data)
             taxon_string = ""
             taxon_name = taxa_list[idx]
-            print("taxon:",taxon_name)
+            #print("taxon:",taxon_name)
             #print(formatted_data)
             taxon_string += taxon_name + separator
             for char_state in data:
