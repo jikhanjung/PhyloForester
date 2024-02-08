@@ -360,10 +360,16 @@ class PhyloTreefile:
         filename, fileext = os.path.splitext(filename.upper())
         self.dataset_name = filename
 
+
+
         # determine by filetype
         if fileext.upper() in ['.NEX','.NEXUS']:
             self.file_type='Nexus'
         
+        # check if file exists
+        if not os.path.exists(a_filepath):
+            return False
+
         #read first line
         file = open(a_filepath,mode='r')
         self.file_text = file.read()

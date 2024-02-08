@@ -507,8 +507,8 @@ class PhyloForesterMainWindow(QMainWindow):
             os.makedirs( result_directory )
 
         data_filename = datamatrix.datamatrix_name + fileext
-        if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
-            data_filename = data_filename.replace(" ","_")
+        #if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+        data_filename = data_filename.replace(" ","_")
 
         data_file_location = os.path.join( result_directory, data_filename )#.replace(" ","_")
         data_fd = open(data_file_location,mode='w')
@@ -586,7 +586,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
 
     def onReadyReadStandardError(self):
         print("standard error")
-        output = self.process.readAllStandardError().data() #.decode()
+        output = self.process.readAllStandardError().data().decode()
         print("error:", output)
         #self.edtAnalysisOutput.append(output)
 
@@ -622,9 +622,12 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                     #clade.name = tf.taxa_hash[clade.name]
 
         elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
-            tree_filename = os.path.join( self.analysis.result_directory, self.analysis.datamatrix.datamatrix_name + ".nex1.con.tre" )
+            tree_filename = os.path.join( self.analysis.result_directory, self.analysis.datamatrix.datamatrix_name.replace(" ","_") + ".nex1.con.tre" )
             tf = pu.PhyloTreefile()
-            tf.readtree(tree_filename,'Nexus')
+            ret = tf.readtree(tree_filename,'Nexus')
+            if not ret:
+                print("Error reading treefile")
+                return
             #print(tf.tree_text_hash)
             #tree_text = tf.tree_text_hash['con_50_majrule']
             #handle = 
