@@ -354,22 +354,27 @@ class PhyloTreefile:
         self.tree_text_hash = {}
         self.tree_object_hash = {}
         self.file_type = None
+        self.tree_list = []
 
     def readtree(self,a_filepath,filetype):
         filepath,filename = os.path.split(a_filepath)
         filename, fileext = os.path.splitext(filename.upper())
         self.dataset_name = filename
 
+        self.file_type = filetype
 
-
+        #print("file type 1:", self.file_type, a_filepath)
         # determine by filetype
-        if fileext.upper() in ['.NEX','.NEXUS']:
-            self.file_type='Nexus'
-        
-        # check if file exists
+        if not self.file_type:
+            if fileext.upper() in ['.NEX','.NEXUS']:
+                self.file_type='Nexus'
+            elif fileext.upper() in ['.TRE',]:
+                self.file_type='tre'
+            # check if file exists
         if not os.path.exists(a_filepath):
             return False
 
+        #print("file type 2:", self.file_type, a_filepath)
         #read first line
         file = open(a_filepath,mode='r')
         self.file_text = file.read()
@@ -381,102 +386,163 @@ class PhyloTreefile:
             #first_line = self.line_list[0].upper()
             if upper_file_text.find('#NEXUS') > -1:
                 self.file_type = 'Nexus'
-        #print("File type:", self.file_type)
+        #print("File type 3:", self.file_type)
         
         if self.file_type == 'Nexus':
             #print("nexus file")
             self.parse_nexus_file()
-        if self.block_hash['TREES']:
-            tree_lines = self.block_hash['TREES']
-            taxa_begin = False
-            taxa_end = False
-            curr_tree_name = ""
-            prev_tree_name = ""
-            whole_tree = " ".join( tree_lines )
-            tree_sections = whole_tree.split(";")
-            self.tree_section = {}
-            for section in tree_sections:
-                #print(section)
-                section_line = re.search(r"(\w+)\s+(.+)",section,flags=re.IGNORECASE)
-                if section_line:
-                    section_name = section_line.group(1)
-                    section_contents = section_line.group(2)
-                    if section_name not in self.tree_section.keys():
-                        self.tree_section[section_name] = []
-                    self.tree_section[section_name].append(section_contents)
-                        
-            if 'translate' in self.tree_section.keys():
-                taxa_list = self.tree_section['translate'][0].split(",")
-                #print(taxa_list)
-                for taxon in taxa_list:
-                    taxon = taxon.strip()
-                    #print(taxon)
-                    taxon_line = re.search(r"(\S+)\s+(\S+)",taxon,flags=re.IGNORECASE)
-                    if taxon_line:
-                        taxon_index = taxon_line.group(1)
-                        taxon_name = taxon_line.group(2)
-                        self.taxa_list.append(taxon_name)
-                        self.taxa_hash[taxon_index] = taxon_name
-            if 'tree' in self.tree_section.keys():
-                #self.tree_hash = {}
-                for tree in self.tree_section['tree']:
-                    #print("tree:[",tree,"]")
-                    tree = tree.strip()
-                    tree_name, tree_text = tree.split("=",1)
-                    #tree_line = re.search("(\w+)\s*=(.+)",tree,flags=re.IGNORECASE)
-                    tree_name = tree_name.strip()
-                    tree_text = tree_text.strip()
-                    self.tree_text_hash[tree_name] = tree_text
-                #print(self.tree_section['tree'])
-            #print(self.taxa_hash)
-            return True
-            for line in tree_lines:
-                
-                
-                print("[",line,"]")
-                taxa_begin_line = re.search("translate",line,flags=re.IGNORECASE)
-                taxa_end_line = re.search(";",line,flags=re.IGNORECASE)
-                if taxa_begin_line:
-                    print("taxa begin")
-                    taxa_begin = True
-                    continue
-                if taxa_end_line:
-                    print("taxa end")
-                    taxa_end = True
-                    continue
-                if taxa_begin and not taxa_end:
-                    taxon_line = re.search(r"^\s*(\d+)\s+(\S+)\s*$",line,flags=re.IGNORECASE)
-                    #print(taxon_line)
-                    if taxon_line:
-                        taxon_idx = taxon_line.group(1)
-                        taxon_name = taxon_line.group(2)
-                        if taxon_name[-1] == ',':
-                            taxon_name = taxon_name[:-1]
-                        self.taxa_hash[taxon_idx] = taxon_name
-                        self.taxa_list.append(taxon_name)
-                if taxa_end:
-                    print("taxa end and now looking for tree")
-                    print(line)
-                    tree_begin_line = re.search(r"^\s*tree\s+(\S+)\s*=\s*(.*)$",line,flags=re.IGNORECASE)
-                    tree_end_line = re.search("(.*);",line)
-                    print(tree_begin_line, tree_end_line)
-                    if tree_begin_line:
-                        curr_tree_name = tree_begin_line.group(1)
-                        print("tree name:", curr_tree_name)
-                        if tree_end_line:
-                            tree_text = tree_begin_line.group(2)
-                            self.tree_text_hash[curr_tree_name] = tree_text
-                    elif tree_end_line:
-                        self.tree_text_hash[curr_tree_name] += tree_text
+            if self.block_hash['TREES']:
+                tree_lines = self.block_hash['TREES']
+                taxa_begin = False
+                taxa_end = False
+                curr_tree_name = ""
+                prev_tree_name = ""
+                whole_tree = " ".join( tree_lines )
+                tree_sections = whole_tree.split(";")
+                self.tree_section = {}
+                for section in tree_sections:
+                    #print(section)
+                    section_line = re.search(r"\s*(\w+)\s+(.+)",section,flags=re.IGNORECASE)
+                    if section_line:
+                        section_name = section_line.group(1)
+                        section_contents = section_line.group(2)
+                        if section_name not in self.tree_section.keys():
+                            self.tree_section[section_name] = []
+                        self.tree_section[section_name].append(section_contents)
+                            
+                if 'translate' in self.tree_section.keys():
+                    taxa_list = self.tree_section['translate'][0].split(",")
+                    #print(taxa_list)
+                    for taxon in taxa_list:
+                        taxon = taxon.strip()
+                        #print(taxon)
+                        taxon_line = re.search(r"(\S+)\s+(\S+)",taxon,flags=re.IGNORECASE)
+                        if taxon_line:
+                            taxon_index = taxon_line.group(1)
+                            taxon_name = taxon_line.group(2)
+                            self.taxa_list.append(taxon_name)
+                            self.taxa_hash[taxon_index] = taxon_name
+                if 'tree' in self.tree_section.keys():
+                    #self.tree_hash = {}
+                    for tree in self.tree_section['tree']:
+                        #print("tree:[",tree,"]")
+                        tree = tree.strip()
+                        tree_name, tree_text = tree.split("=",1)
+                        #tree_line = re.search("(\w+)\s*=(.+)",tree,flags=re.IGNORECASE)
+                        tree_name = tree_name.strip()
+                        tree_text = tree_text.strip()
+                        self.tree_text_hash[tree_name] = tree_text
+                        self.tree_list.append(tree_text)
+                    #print(self.tree_section['tree'])
+                #print(self.taxa_hash)
+                return True
+                for line in tree_lines:
+                    
+                    
+                    print("[",line,"]")
+                    taxa_begin_line = re.search("translate",line,flags=re.IGNORECASE)
+                    taxa_end_line = re.search(";",line,flags=re.IGNORECASE)
+                    if taxa_begin_line:
+                        print("taxa begin")
+                        taxa_begin = True
+                        continue
+                    if taxa_end_line:
+                        print("taxa end")
+                        taxa_end = True
+                        continue
+                    if taxa_begin and not taxa_end:
+                        taxon_line = re.search(r"^\s*(\d+)\s+(\S+)\s*$",line,flags=re.IGNORECASE)
+                        #print(taxon_line)
+                        if taxon_line:
+                            taxon_idx = taxon_line.group(1)
+                            taxon_name = taxon_line.group(2)
+                            if taxon_name[-1] == ',':
+                                taxon_name = taxon_name[:-1]
+                            self.taxa_hash[taxon_idx] = taxon_name
+                            self.taxa_list.append(taxon_name)
+                    if taxa_end:
+                        print("taxa end and now looking for tree")
+                        print(line)
+                        tree_begin_line = re.search(r"^\s*tree\s+(\S+)\s*=\s*(.*)$",line,flags=re.IGNORECASE)
+                        tree_end_line = re.search("(.*);",line)
+                        print(tree_begin_line, tree_end_line)
+                        if tree_begin_line:
+                            curr_tree_name = tree_begin_line.group(1)
+                            print("tree name:", curr_tree_name)
+                            if tree_end_line:
+                                tree_text = tree_begin_line.group(2)
+                                self.tree_text_hash[curr_tree_name] = tree_text
+                        elif tree_end_line:
+                            self.tree_text_hash[curr_tree_name] += tree_text
 
-            if self.tree_text_hash:
-                for tree_key in self.tree_text_hash.keys():
-                    tree_text = self.tree_text_hash[tree_key]
-                    self.tree_text_hash[tree_key] = self.remove_comment(tree_text)
+                if self.tree_text_hash:
+                    for tree_key in self.tree_text_hash.keys():
+                        tree_text = self.tree_text_hash[tree_key]
+                        self.tree_text_hash[tree_key] = self.remove_comment(tree_text)
+        elif self.file_type == 'tre':
+            self.parse_tre_file(self.line_list)
+        elif self.file_type == 'treefile':
+            self.parse_IQTree_treefile(self.line_list)
         else:
             return False
 
         return True
+
+    def parse_IQTree_treefile(self,line_list):
+        for line in line_list:
+            # find "tread" line
+            if re.match(r".*;",line,flags=re.IGNORECASE):
+                tree_text = line.replace(";","")
+                self.tree_list.append(tree_text)
+
+
+    def parse_tre_file(self,line_list):
+        header_found = False
+        for line in line_list:
+            # find "tread" line
+            if re.match(r"tread.*",line,flags=re.IGNORECASE):
+                #self.file_type = 'tread'
+                header_found = True
+                continue
+            elif re.match(r"proc.*",line,flags=re.IGNORECASE):
+                #self.file_type = 'proc'
+                
+                break
+            if header_found:
+                tree_text = line.replace(";","")
+                tree_text = tree_text.replace("*","")
+                tree_text = tree_text.replace("(","( ")
+                tree_text = tree_text.replace(")"," ) ")
+                str_list = []
+                raw_list = tree_text.split(" ")
+                for item in raw_list:
+                    if item != "":
+                        if len(str_list) > 0:
+                            if item == "(":
+                                if str_list[-1] != "(":
+                                    str_list.append(",")
+                            else:
+                                try :
+                                    int(item)
+                                    try:
+                                        int(str_list[-1])
+                                        if int(str_list[-1]) > 0 and int(item) > 0:
+                                            str_list.append(",")
+                                    except:
+                                        pass
+                                except:
+                                    pass#str_list.append(item)
+                            
+                                #int(str_list[-1]) > 0 and int(item) > 0:
+                                #str_list.append(",")
+                            
+                        str_list.append(item)
+                tree_text = "".join(str_list)
+                self.tree_list.append(tree_text)
+                #print(tree_text)
+
+
+            
 
     def remove_comment(self,tree_text):
         #print(tree_text[15],tree_text[20])
@@ -497,7 +563,7 @@ class PhyloTreefile:
         tree = []
         idx = 0
         subtree, processed_index = self.parse_subtree(tree_text[1:])
-        print(subtree)
+        #print(subtree)
 
         return subtree
         idx = processed_index
@@ -511,7 +577,7 @@ class PhyloTreefile:
     def parse_subtree(self,tree_text,depth=0):
         tree = []
         taxon=""
-        print("parse:",tree_text)
+        #print("parse:",tree_text)
         #for idx in range(len(tree_text)):
         idx=0
         while( idx < len(tree_text)):

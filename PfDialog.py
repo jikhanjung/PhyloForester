@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QTableWidgetItem, QHeaderView, QFileDialog, QCheckBo
                             QDialog, QLineEdit, QLabel, QPushButton, QAbstractItemView, QStatusBar, QMessageBox, \
                             QTableView, QSplitter, QRadioButton, QComboBox, QTextEdit, QSizePolicy, \
                             QTableWidget, QGridLayout, QAbstractButton, QButtonGroup, QGroupBox, \
-                            QTabWidget, QListWidget
+                            QTabWidget, QListWidget, QSlider, QScrollBar
 from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap, QStandardItemModel, QStandardItem, QImage,\
                         QFont, QPainter, QBrush, QMouseEvent, QWheelEvent, QDoubleValidator
 from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSize, QPoint,\
@@ -12,14 +12,251 @@ from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSize, QPoint,\
 from pathlib import Path
 import PfUtils as pu
 from PfModel import *
+import matplotlib.pyplot as plt
 
 MODE = { 'NONE': 0, 'PAN': 1, 'ZOOM': 2, 'EDIT': 3 }
-
-class TreeViewer2D(QLabel):
+class TreeViewer(QWidget):
     def __init__(self):
-        super(TreeViewer2D, self).__init__()
+        super(TreeViewer, self).__init__()
         self.setMinimumSize(400,300)
-        self.bgcolor = "#AAAAAA"
+        self.bgcolor = "#000000"
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+        self.m_app = QApplication.instance()
+        self.treeobj_hash = {}
+        self.newick_tree_list = []
+        self.stored_newick_tree_list = []
+        self.stored_tree_hash = {}
+
+        self.tree_type_widget = QWidget()
+        #self.tree_type_widget.setFixedHeight(50)
+        self.tree_type_layout = QHBoxLayout()
+        self.tree_type_widget.setLayout(self.tree_type_layout)
+        self.layout.addWidget(self.tree_type_widget)
+        self.rb_tree_type1 = QRadioButton("Trees")
+        self.rb_tree_type2 = QRadioButton("Stored Trees")
+        self.tree_type_layout.addWidget(self.rb_tree_type1)
+        self.tree_type_layout.addWidget(self.rb_tree_type2)
+        self.rb_tree_type1.setChecked(True)
+        self.rb_tree_type1.clicked.connect(self.on_rb_tree_type1_clicked)
+        self.rb_tree_type2.clicked.connect(self.on_rb_tree_type2_clicked)
+
+        self.tree_info_widget1 = QWidget()
+        # set tree_info_widget height to 30
+        #self.tree_info_widget1.setFixedHeight(50)
+        self.tree_info_layout = QHBoxLayout()
+        self.tree_info_widget1.setLayout(self.tree_info_layout)
+        self.layout.addWidget(self.tree_info_widget1)
+        self.lbl_tree_number = QLabel()
+        self.lbl_tree_number.setText("Tree Index")
+        self.tree_info_layout.addWidget(self.lbl_tree_number)
+        self.edt_tree_index = QLineEdit()
+        self.edt_tree_index.setReadOnly(True)
+        self.tree_info_layout.addWidget(self.edt_tree_index)
+        self.lbl_total_trees = QLabel()
+        self.tree_info_layout.addWidget(self.lbl_total_trees)
+        #self.lbl_total_trees.setText("Total Trees: 0")
+
+        self.tree_info_widget2 = QWidget()
+        self.tree_info_layout2 = QHBoxLayout()
+        self.tree_info_widget2.setFixedHeight(50)
+        self.tree_info_widget2.setLayout(self.tree_info_layout2)
+        self.layout.addWidget(self.tree_info_widget2)
+        self.lbl_tree_info = QLabel()
+        self.lbl_tree_info.setText("Consensus tree")
+        self.tree_info_layout2.addWidget(self.lbl_tree_info)
+        self.edt_tree_index2 = QLineEdit()
+        self.edt_tree_index2.setReadOnly(True)
+        self.tree_info_layout2.addWidget(self.edt_tree_index2)
+        self.lbl_total_trees2 = QLabel()
+        self.tree_info_layout2.addWidget(self.lbl_total_trees2)
+
+        self.tree_label = TreeLabel()
+        self.layout.addWidget(self.tree_label)
+        self.tree_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.tree_list = []
+        self.consensus_tree = None
+        self.slider = QSlider()
+        self.slider.setOrientation(Qt.Horizontal)
+        self.slider.setRange(0, 100)
+        self.slider.setValue(0)
+        self.slider.setPageStep(10)
+        self.slider.setSingleStep(1)
+        self.slider.valueChanged.connect(self.on_slider_valueChanged)
+        self.layout.addWidget(self.slider)
+        self.curr_tree_index = 1
+
+    def add_stored_tree(self, tree):
+        self.stored_newick_tree_list.append(tree)
+        self.stored_tree_hash[len(self.stored_newick_tree_list)] = tree
+
+    def on_rb_tree_type1_clicked(self):
+        self.current_treeobj_hash = self.treeobj_hash
+        self.current_newick_tree_list = self.newick_tree_list
+
+    def on_rb_tree_type2_clicked(self):
+        self.current_treeobj_hash = self.stored_tree_hash
+        self.current_newick_tree_list = self.stored_newick_tree_list
+
+    def on_slider_valueChanged(self, value):
+        #print("scrollbar valueChanged", value)
+        self.tree_current_index = value + 1
+        self.edt_tree_index.setText(str(self.tree_current_index))
+
+        tree = None
+
+        if self.tree_current_index not in self.treeobj_hash.keys():
+            tree = Phylo.read(io.StringIO(self.newick_tree_list[self.tree_current_index-1]), "newick")
+            self.treeobj_hash[self.tree_current_index] = tree
+            for clade in tree.find_clades():
+                if clade.name:
+                    try:
+                        taxon_index = int(clade.name) - 1
+                        taxa_list = self.analysis.datamatrix.get_taxa_list()
+                        clade.name = taxa_list[taxon_index]
+                    except:
+                        pass
+                    #taxon_index = int(clade.name) - 1
+                    #taxa_list = self.analysis.datamatrix.get_taxa_list()
+                    #clade.name = taxa_list[taxon_index]
+
+        else:
+            tree = self.treeobj_hash[self.tree_current_index]
+        if tree is None:
+            return
+
+        #tree = self.tree_list[value]
+        fig = plt.figure(figsize=(10, 20), dpi=100)
+        axes = fig.add_subplot(1, 1, 1)
+        Phylo.draw(tree, axes=axes,do_show=False)
+
+        buf = io.BytesIO()
+        plt.savefig(buf, format='svg')
+        buf.seek(0)  # Go to the beginning of the BytesIO object
+        self.set_tree_image_buf(buf)
+        plt.close(fig)
+
+    def set_tree_image_buf(self, buf):
+        #print("set_tree_image in treelabel", tree_image)
+        self.tree_label.orig_pixmap = QPixmap()
+        self.tree_label.orig_pixmap.loadFromData(buf.read())
+        self.tree_label.curr_pixmap = self.tree_label.orig_pixmap.scaled(int(self.tree_label.orig_pixmap.width() * self.tree_label.scale / self.tree_label.image_canvas_ratio), int(self.tree_label.orig_pixmap.height() * self.tree_label.scale / self.tree_label.image_canvas_ratio))
+        self.tree_label.repaint()
+
+    def set_analysis(self, analysis):
+        self.analysis = analysis
+        self.load_trees()
+
+    def load_trees(self):
+        tree_dir = self.analysis.result_directory
+        if not os.path.exists(tree_dir):
+            return
+        
+        if self.analysis.analysis_type == ANALYSIS_TYPE_ML:
+            tf = pu.PhyloTreefile()
+            filename = os.path.join(tree_dir, self.analysis.datamatrix.datamatrix_name + ".phy.boottrees")
+            #print("ML tree filename:", filename)
+            tf.readtree(filename, 'treefile')
+            self.newick_tree_list = tf.tree_list
+            #for tree in tf.tree_list:
+            #    #print(tree)
+            #    tree_obj = Phylo.read(io.StringIO(tree), "newick")
+            #    self.tree_list.append(tree_obj)
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            tf = pu.PhyloTreefile()
+            tf.readtree(os.path.join(tree_dir, "tmp.tre"), 'tre')
+            self.newick_tree_list = tf.tree_list
+            #for tree in tf.tree_list:
+            #    tree_obj = Phylo.read(io.StringIO(tree), "newick")
+            #    self.tree_list.append(tree_obj)
+            #    for clade in tree_obj.find_clades():
+            #       if clade.name:
+            #            taxon_index = int(clade.name) - 1
+            #            taxa_list = self.analysis.datamatrix.get_taxa_list()
+            #            clade.name = taxa_list[taxon_index]
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+            tf = pu.PhyloTreefile()
+            tf.readtree(os.path.join(tree_dir, self.analysis.datamatrix.datamatrix_name.replace(" ","_") + ".nex1.t"), 'Nexus')
+            self.newick_tree_list = tf.tree_list
+            #for tree in tf.tree_list:
+            #    tree_obj = Phylo.read(io.StringIO(tree), "newick")
+            #    self.tree_list.append(tree_obj)
+            #    for clade in tree_obj.find_clades():
+            #        if clade.name and tf.taxa_hash[clade.name]:
+            #            clade.name = tf.taxa_hash[clade.name]
+        #print(self.analysis.datamatrix.datamatrix_name, self.analysis.analysis_name, "tree_list:", len(self.tree_list))
+        self.slider.setRange(0, len(self.newick_tree_list) - 1)
+        self.slider.setValue(0)
+        self.slider.setPageStep(10)
+        self.slider.setSingleStep(1)
+        self.lbl_total_trees.setText("/" + str(len(self.newick_tree_list)))
+        self.edt_tree_index.setText("1")
+            
+        self.generate_consensus_tree()
+
+    def set_tree_image(self, tree_image):
+        #print("set_tree_image in treeviewer", tree_image)
+        self.tree_label.set_tree_image( tree_image)
+
+        #self.orig_pixmap = QPixmap(self.tree_image)
+        #self.orig_pixmap = QPixmap(self.tree_image)
+
+    def generate_consensus_tree(self):
+        '''Tree file Processing'''
+        if self.analysis.analysis_type == ANALYSIS_TYPE_ML:
+            tree_filename = os.path.join( self.analysis.result_directory, self.analysis.datamatrix.datamatrix_name + ".phy.treefile" )
+            tree = Phylo.read( tree_filename, "newick" )
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            tree_filename = os.path.join( self.analysis.result_directory, "aquickie.tre" )
+            #tree = Phylo.read( tree_filename, "nexus" )
+            tf = pu.PhyloTreefile()
+            tf.readtree(tree_filename,'Nexus')
+            #print(tf.block_hash)
+            tree = Phylo.read(io.StringIO(tf.tree_text_hash['tnt_1']), "newick")
+            for clade in tree.find_clades():
+                if clade.name:
+                    taxon_index = int(clade.name) - 1
+                    taxa_list = self.analysis.datamatrix.get_taxa_list()
+                    clade.name = taxa_list[taxon_index]
+                    #print(clade.name)
+                    #clade.name = tf.taxa_hash[clade.name]
+
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+            tree_filename = os.path.join( self.analysis.result_directory, self.analysis.datamatrix.datamatrix_name.replace(" ","_") + ".nex1.con.tre" )
+            #print(tree_filename)
+            tf = pu.PhyloTreefile()
+            ret = tf.readtree(tree_filename,'Nexus')
+            if not ret:
+                print("Error reading treefile")
+                return
+            #print(tf.tree_text_hash)
+            #tree_text = tf.tree_text_hash['con_50_majrule']
+            #handle = 
+            tree = Phylo.read(io.StringIO(tf.tree_text_hash['con_50_majrule']), "newick")
+            for clade in tree.find_clades():
+                if clade.name and tf.taxa_hash[clade.name]:
+                    #print(clade.name)
+                    clade.name = tf.taxa_hash[clade.name]
+
+        self.consensus_tree = tree
+        fig = plt.figure(figsize=(10, 20), dpi=100)
+        axes = fig.add_subplot(1, 1, 1)
+        Phylo.draw(tree, axes=axes,do_show=False)
+        #plt.show()
+        #buffer = io.BytesIO()
+        #print(tree_filename)
+        
+        tree_imagefile = os.path.join( self.analysis.result_directory, "consensus_tree.svg" )
+
+        plt.savefig(tree_imagefile, format='svg')
+        self.set_tree_image(tree_imagefile)
+        plt.close(fig)
+
+class TreeLabel(QLabel):
+    def __init__(self):
+        super(TreeLabel, self).__init__()
+        self.setMinimumSize(400,300)
+        self.bgcolor = "#333333"
         self.m_app = QApplication.instance()
         #self.read_settings()
         self.orig_pixmap = None
@@ -115,6 +352,7 @@ class TreeViewer2D(QLabel):
 
 
     def paintEvent(self, event):
+        #print("tree paint", self.curr_pixmap)
         painter = QPainter(self)
         painter.fillRect(self.rect(), QBrush(QColor(self.bgcolor)))#as_qt_color(COLOR['BACKGROUND'])))
 
@@ -122,7 +360,7 @@ class TreeViewer2D(QLabel):
             painter.drawPixmap(self.pan_x+self.temp_pan_x, self.pan_y+self.temp_pan_y,self.curr_pixmap)
 
     def calculate_resize(self):
-        #print("objectviewer calculate resize", self, self.object, self.object.landmark_list, self.landmark_list)
+        #print("calculate_resize", self.orig_pixmap, self.width(), self.height(), self)
         if self.orig_pixmap is not None:
             self.orig_width = self.orig_pixmap.width()
             self.orig_height = self.orig_pixmap.height()
@@ -137,16 +375,18 @@ class TreeViewer2D(QLabel):
         self.repaint()
 
     def resizeEvent(self, event):
-        #print("resizeEvent")
+        #print("resizeEvent", self)
         self.calculate_resize()
         QLabel.resizeEvent(self, event)
 
     def set_tree_image(self, tree_image):
+        #print("set_tree_image in treelabel", tree_image)
+
         self.tree_image = tree_image
         #self.orig_pixmap = QPixmap(self.tree_image)
         self.orig_pixmap = QPixmap(self.tree_image)
-        #self.setPixmap(self.curr_pixmap)
-        #self.calculate_resize()
+        #print("orig_pixmap", self.orig_pixmap)
+        #self.update()
 
 class AnalysisDialog(QDialog):
     def __init__(self,parent):

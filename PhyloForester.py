@@ -47,7 +47,6 @@ class PfItemDelegate(QStyledItemDelegate):
                 painter.drawText(text_x, text_y, progress_value)
                 return
 
-
             if progress_value == 0:
                 text_x = rect.x() + 10
                 text_y = rect.y() + rect.height() - 5
@@ -67,8 +66,8 @@ class PfItemDelegate(QStyledItemDelegate):
                 painter.drawText(text_x, text_y, "✔")
             else:
                 # Calculate progress bar dimensions and position
-                bar_width = int(0.8 * rect.width())
-                bar_height = 10
+                bar_width = int(0.9 * rect.width())
+                bar_height = int(0.9 * rect.height())
                 bar_x = rect.x() + int((rect.width() - bar_width) / 2)
                 bar_y = rect.y() + int((rect.height() - bar_height) / 2)
 
@@ -77,7 +76,7 @@ class PfItemDelegate(QStyledItemDelegate):
 
                 # Draw progress bar
                 progress_width = int(bar_width * progress_value / 100)
-                painter.fillRect(bar_x, bar_y, progress_width, bar_height, QColor(0x3399ff))  # Blue progress bar
+                painter.fillRect(bar_x, bar_y, progress_width, bar_height, QColor(0x99ccff))  # Blue progress bar
                 # Optionally draw text label (adjust position as needed)
                 #text_x = bar_x + progress_width + 5
                 #text_y = bar_y + int((bar_height - painter.fontMetrics().height()) / 2)
@@ -625,57 +624,10 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         self.analysis.finish_datetime = datetime.datetime.now()
         self.analysis.save()
         self.treeView.update()
+        self.data_storage['analysis'][self.analysis.id]['widget'] = self.create_analysis_widget(self.analysis)
 
         #self.edtAnalysisOutput.append(f"Exit Code: {exitCode}")
         self.startAnalysis()
-
-    def process_consensus_tree(self):
-
-        '''Tree file Processing'''
-        if self.analysis.analysis_type == ANALYSIS_TYPE_ML:
-            tree_filename = os.path.join( self.analysis.result_directory, self.analysis.datamatrix.datamatrix_name + ".phy.treefile" )
-            tree = Phylo.read( tree_filename, "newick" )
-        elif self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
-            tree_filename = os.path.join( self.analysis.result_directory, "aquickie.tre" )
-            #tree = Phylo.read( tree_filename, "nexus" )
-            tf = pu.PhyloTreefile()
-            tf.readtree(tree_filename,'Nexus')
-            #print(tf.block_hash)
-            tree = Phylo.read(io.StringIO(tf.tree_text_hash['tnt_1']), "newick")
-            for clade in tree.find_clades():
-                if clade.name:
-                    taxon_index = int(clade.name) - 1
-                    taxa_list = self.analysis.datamatrix.get_taxa_list()
-                    clade.name = taxa_list[taxon_index]
-                    #print(clade.name)
-                    #clade.name = tf.taxa_hash[clade.name]
-
-        elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
-            tree_filename = os.path.join( self.analysis.result_directory, self.analysis.datamatrix.datamatrix_name.replace(" ","_") + ".nex1.con.tre" )
-            tf = pu.PhyloTreefile()
-            ret = tf.readtree(tree_filename,'Nexus')
-            if not ret:
-                print("Error reading treefile")
-                return
-            #print(tf.tree_text_hash)
-            #tree_text = tf.tree_text_hash['con_50_majrule']
-            #handle = 
-            tree = Phylo.read(io.StringIO(tf.tree_text_hash['con_50_majrule']), "newick")
-            for clade in tree.find_clades():
-                if clade.name and tf.taxa_hash[clade.name]:
-                    #print(clade.name)
-                    clade.name = tf.taxa_hash[clade.name]
-
-        fig = plt.figure(figsize=(10, 20), dpi=100)
-        axes = fig.add_subplot(1, 1, 1)
-        Phylo.draw(tree, axes=axes,do_show=False)
-        #plt.show()
-        #buffer = io.BytesIO()
-        #print(tree_filename)
-        tree_imagefile = os.path.join( self.analysis.result_directory, "concensus_tree.svg" )
-
-        plt.savefig(tree_imagefile, format='svg')
-
 
     def progress_check(self, output):
         total_step = 0
@@ -1177,9 +1129,12 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         an_tabview = QTabWidget()
         an_widget2 = QWidget()
         #an_widget2.resizeEvent = self.on_an_widget2_resize
-        tree_widget = QWidget()
+        tree_widget = TreeViewer()
+        tree_widget.set_analysis(an)
+        #print("analysis", an.analysis_name, "tree widget:", tree_widget)
 
         self.data_storage['analysis'][an.id]['widget'] = an_widget
+        #self.data_storage['analysis'][an.id]['tree_widget'] = tree_widget
         #output_widget = 
 
         edtAnalysisOutput = QPlainTextEdit("")
@@ -1204,28 +1159,19 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         an_tabview.addTab(an_widget, "Analysis Info")
         an_tabview.addTab(an_widget2, "Log")
         an_tabview.addTab(tree_widget, "Trees")
+        #print("tree widget:", tree_widget)
 
         if an.completion_percentage == 100:
             # get concensus tree file
             tree_filename = os.path.join( an.result_directory, "concensus_tree.svg" )
             if os.path.isfile(tree_filename):
-                tree_label = TreeViewer2D()
-                tree_layout = QVBoxLayout()
-                tree_layout.addWidget(tree_label)
-                tree_widget.setLayout(tree_layout)
-                tree_label.set_tree_image(tree_filename)
-                #tree_pixmap = QPixmap(tree_filename)
-                # get size of tree_label
-                #print("tree_label size:", tree_label.size())
-                # get hsplitter widget 1
-                
-                #self.hsplitter.getWidge(1).size()
-                #print("widget size:",self.hsplitter.widget(1).size())
-                #tree_pixmap = tree_pixmap.scaled( tree_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                #tree_label.setPixmap(tree_pixmap)
-
-            #an.result_directory
-
+                tree_widget.set_tree_image(tree_filename)
+                #tree_label = TreeViewer()
+                #tree_layout = QVBoxLayout()
+                #tree_layout.addWidget(tree_label)
+                #tree_widget.setLayout(tree_layout)
+                #tree_label.set_analysis(an)
+                #tree_label.set_tree_image(tree_filename)
 
         # show analysis information
         # analysis type, analysis package, analysis status, analysis directory
@@ -1249,21 +1195,6 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         an_layout.addRow("Analysis Package", edtAnalysisPackage)
         an_layout.addRow("Analysis Status", edtAnalysisStatus)
 
-
-        '''
-        ml_bootstrap = IntegerField(default=100)
-        ml_bootstrap_type = CharField(default=BOOTSTRAP_TYPE_NORMAL)
-        ml_substitution_model = CharField(default='GTR')
-        mcmc_burnin = IntegerField(default=1000)
-        mcmc_relburnin = BooleanField(default=False)
-        mcmc_burninfrac = FloatField(default=0.25)
-        mcmc_ngen = IntegerField(default=1000000)
-        mcmc_nrates = CharField(default='gamma')
-        mcmc_printfreq = IntegerField(default=1000)
-        mcmc_samplefreq = IntegerField(default=100)
-        mcmc_nruns = IntegerField(default=1)
-        mcmc_nchains = IntegerField(default=1)
-        '''
         if an.analysis_type == ANALYSIS_TYPE_PARSIMONY:
             pass
         elif an.analysis_type == ANALYSIS_TYPE_ML:
@@ -1321,6 +1252,15 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         edtAnalysisResultDirectory = QLineEdit()
         edtAnalysisResultDirectory.setText(an.result_directory)
         edtAnalysisResultDirectory.setReadOnly(True)
+        dir_widget = QWidget()
+        dir_layout = QHBoxLayout()
+        dir_widget.setLayout(dir_layout)
+        btnOpenDir = QPushButton("Open Directory")
+        btnOpenDir.clicked.connect(self.on_btn_open_result_dir_clicked)
+        dir_layout.addWidget(edtAnalysisResultDirectory)
+        dir_layout.addWidget(btnOpenDir)
+
+
         edtAnalysisStartDatetime = QLineEdit()
         edtAnalysisStartDatetime.setText(an.start_datetime.strftime("%Y-%m-%d %H:%M:%S"))
         edtAnalysisStartDatetime.setReadOnly(True)
@@ -1333,12 +1273,18 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         edtAnalysisCompletionPercentage.setReadOnly(True)
 
         #an_layout.addRow("Analysis Output", edtAnalysisOutput)
-        an_layout.addRow("Analysis Result Directory", edtAnalysisResultDirectory)
+        an_layout.addRow("Result Directory", dir_widget)
         an_layout.addRow("Start Datetime", edtAnalysisStartDatetime)
         an_layout.addRow("Finish Datetime", edtAnalysisFinishDatetime)
-        an_layout.addRow("Completion Percentage", edtAnalysisCompletionPercentage)
+        an_layout.addRow("Completion %", edtAnalysisCompletionPercentage)
         return an_tabview
 
+    def on_btn_open_result_dir_clicked(self):
+        if self.selected_analysis is None:
+            return
+        result_dir = self.selected_analysis.result_directory
+        if os.path.isdir(result_dir):
+            os.startfile(result_dir)
 
     def on_treeview_selection_changed(self, selected, deselected):
         #print("project selection changed")
