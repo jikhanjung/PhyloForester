@@ -324,3 +324,15 @@ class PfAnalysis(Model):
                 return Phylo.draw_ascii(tree)
             else:
                 return tree_filename
+
+class PfTree(Model):
+    analysis = ForeignKeyField(PfAnalysis, backref='trees', on_delete='CASCADE')
+    tree_name = CharField()
+    tree_type = CharField()
+    tree_desc = CharField(null=True)
+    newick_text = CharField(null=True)
+    comment = CharField(null=True)
+    created_at = DateTimeField(default=datetime.datetime.now)
+    modified_at = DateTimeField(default=datetime.datetime.now)
+    class Meta:
+        database = gDatabase

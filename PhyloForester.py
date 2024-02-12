@@ -416,7 +416,7 @@ class PhyloForesterMainWindow(QMainWindow):
             return
             print(tables)
         else:
-            gDatabase.create_tables([PfProject, PfDatamatrix,PfAnalysis,PfPackage])
+            gDatabase.create_tables([PfProject, PfDatamatrix,PfAnalysis,PfPackage,PfTree])
 
     def closeEvent(self, event):
         self.write_settings()
@@ -602,7 +602,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         #self.edtAnalysisOutput.append(output)
 
     def onReadyReadStandardError(self):
-        print("standard error")
+        #print("standard error")
         if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
             output = self.process.readAllStandardError().data().decode('cp437')
             #print("ML analysis")

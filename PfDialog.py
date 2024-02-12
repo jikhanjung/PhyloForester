@@ -23,13 +23,12 @@ class TreeViewer(QWidget):
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
         self.m_app = QApplication.instance()
-        self.treeobj_hash = {}
         self.newick_tree_list = []
+        self.treeobj_hash = {}
         self.stored_newick_tree_list = []
-        self.stored_tree_hash = {}
+        self.stored_treeobj_hash = {}
 
-        self.tree_type_widget = QWidget()
-        #self.tree_type_widget.setFixedHeight(50)
+        self.tree_type_widget = QWidget()        
         self.tree_type_layout = QHBoxLayout()
         self.tree_type_widget.setLayout(self.tree_type_layout)
         self.layout.addWidget(self.tree_type_widget)
@@ -88,14 +87,14 @@ class TreeViewer(QWidget):
 
     def add_stored_tree(self, tree):
         self.stored_newick_tree_list.append(tree)
-        self.stored_tree_hash[len(self.stored_newick_tree_list)] = tree
+        self.stored_treeobj_hash[len(self.stored_newick_tree_list)] = tree
 
     def on_rb_tree_type1_clicked(self):
         self.current_treeobj_hash = self.treeobj_hash
         self.current_newick_tree_list = self.newick_tree_list
 
     def on_rb_tree_type2_clicked(self):
-        self.current_treeobj_hash = self.stored_tree_hash
+        self.current_treeobj_hash = self.stored_treeobj_hash
         self.current_newick_tree_list = self.stored_newick_tree_list
 
     def on_slider_valueChanged(self, value):
