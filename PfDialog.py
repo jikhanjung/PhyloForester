@@ -13,6 +13,7 @@ from pathlib import Path
 import PfUtils as pu
 from PfModel import *
 import matplotlib.pyplot as plt
+import matplotlib.backends.backend_svg
 
 MODE = { 'NONE': 0, 'PAN': 1, 'ZOOM': 2, 'EDIT': 3 }
 class TreeViewer(QWidget):
