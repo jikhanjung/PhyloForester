@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QTableWidgetItem, QHeaderView, QFileDialog, QCheckBo
                             QDialog, QLineEdit, QLabel, QPushButton, QAbstractItemView, QStatusBar, QMessageBox, \
                             QTableView, QSplitter, QRadioButton, QComboBox, QTextEdit, QSizePolicy, \
                             QTableWidget, QGridLayout, QAbstractButton, QButtonGroup, QGroupBox, \
-                            QTabWidget, QListWidget, QSlider, QScrollBar
+                            QTabWidget, QListWidget, QSlider, QScrollBar, QPlainTextEdit 
 from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap, QStandardItemModel, QStandardItem, QImage,\
                         QFont, QPainter, QBrush, QMouseEvent, QWheelEvent, QDoubleValidator
 from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSize, QPoint,\
@@ -14,6 +14,201 @@ import PfUtils as pu
 from PfModel import *
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_svg
+
+
+class AnalysisViewer(QWidget):
+    def __init__(self):
+        super(AnalysisViewer, self).__init__()
+        self.setMinimumSize(400,300)
+        self.bgcolor = "#000000"
+
+        self.tabview = QTabWidget()
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+        self.layout.addWidget(self.tabview)
+
+        self.analysis_info_widget = QWidget()
+        self.analysis_log_widget = QWidget()
+        tree_widget = TreeViewer()
+
+        self.edtAnalysisOutput = QPlainTextEdit("")
+        font = QFont("Courier", 10)  # You can also use "Monospace", "Consolas", etc.
+        font.setStyleHint(QFont.Monospace)  # Hint to use a monospace font
+        self.edtAnalysisOutput.setFont(font)        
+        self.edtAnalysisOutput.setReadOnly(True)
+        #self.data_storage['analysis'][an.id]['output'] = edtAnalysisOutput
+        # if completed, load logfile to output
+
+        self.layout2 = QVBoxLayout()
+        self.analysis_log_widget.setLayout(self.layout2)
+        self.layout2.addWidget(self.edtAnalysisOutput)
+        self.tabview.addTab(self.analysis_info_widget, "Analysis Info")
+        self.tabview.addTab(self.analysis_log_widget, "Log")
+        self.tabview.addTab(tree_widget, "Trees")
+        #print("tree widget:", tree_widget)
+
+        # show analysis information
+        # analysis type, analysis package, analysis status, analysis directory
+        self.edtAnalysisName = QLineEdit()
+        self.edtAnalysisName.setReadOnly(True)
+        self.edtAnalysisType = QLineEdit()
+        self.edtAnalysisType.setReadOnly(True)
+        self.edtAnalysisPackage = QLineEdit()
+        #edtAnalysisPackage.setText(an.analysis_package)
+        self.edtAnalysisPackage.setReadOnly(True)
+        self.edtAnalysisStatus = QLineEdit()
+        self.edtAnalysisStatus.setReadOnly(True)
+
+        self.layout1 = QFormLayout()
+        self.analysis_info_widget.setLayout(self.layout1)
+        self.layout1.addRow("Analysis Name", self.edtAnalysisName) # 0
+        self.layout1.addRow("Analysis Type", self.edtAnalysisType) # 1
+        self.layout1.addRow("Analysis Package", self.edtAnalysisPackage) # 2
+        self.layout1.addRow("Analysis Status", self.edtAnalysisStatus) # 3
+
+        self.edtBootstrapCount = QLineEdit()
+        self.edtBootstrapCount.setReadOnly(True)
+        self.edtBootstrapType = QLineEdit()
+        self.edtBootstrapType.setReadOnly(True)
+        self.edtSubstitutionModel = QLineEdit()
+        self.edtSubstitutionModel.setReadOnly(True)
+        self.layout1.addRow("Bootstrap Count", self.edtBootstrapCount) # 4
+        self.layout1.addRow("Bootstrap Type", self.edtBootstrapType) # 5
+        self.layout1.addRow("Substitution Model", self.edtSubstitutionModel) # 6
+
+        self.edtMCMCBurnin = QLineEdit()
+        self.edtMCMCBurnin.setReadOnly(True)
+        self.edtMCMCRelBurnin = QLineEdit()
+        self.edtMCMCRelBurnin.setReadOnly(True)
+        self.edtMCMCBurninFrac = QLineEdit()
+        self.edtMCMCBurninFrac.setReadOnly(True)
+        self.edtMCMCNGen = QLineEdit()
+        self.edtMCMCNGen.setReadOnly(True)
+        self.edtMCMCNRates = QLineEdit()
+        self.edtMCMCNRates.setReadOnly(True)
+        self.edtMCMCPrintFreq = QLineEdit()
+        self.edtMCMCPrintFreq.setReadOnly(True)                    
+        self.edtMCMCSampleFreq = QLineEdit()
+        self.edtMCMCSampleFreq.setReadOnly(True)
+        self.edtMCMCNRuns = QLineEdit()
+        self.edtMCMCNRuns.setReadOnly(True)
+        self.edtMCMCNChains = QLineEdit()
+        self.edtMCMCNChains.setReadOnly(True)
+        self.layout1.addRow("MCMC Burnin", self.edtMCMCBurnin) # 7
+        self.layout1.addRow("MCMC Rel Burnin", self.edtMCMCRelBurnin) # 8
+        self.layout1.addRow("MCMC Burnin Frac", self.edtMCMCBurninFrac) # 9
+        self.layout1.addRow("MCMC NGen", self.edtMCMCNGen) # 10
+        self.layout1.addRow("MCMC NRates", self.edtMCMCNRates) # 11
+        self.layout1.addRow("MCMC Print Freq", self.edtMCMCPrintFreq) # 12
+        self.layout1.addRow("MCMC Sample Freq", self.edtMCMCSampleFreq) # 13
+        self.layout1.addRow("MCMC NRuns", self.edtMCMCNRuns) # 14
+        self.layout1.addRow("MCMC NChains", self.edtMCMCNChains) # 15
+
+        self.edtAnalysisResultDirectory = QLineEdit()
+        self.edtAnalysisResultDirectory.setReadOnly(True)
+        self.dir_widget = QWidget()
+        self.dir_layout = QHBoxLayout()
+        self.dir_widget.setLayout(self.dir_layout)
+        self.btnOpenDir = QPushButton("Open Directory")
+        self.btnOpenDir.clicked.connect(self.on_btn_open_result_dir_clicked)
+        self.dir_layout.addWidget(self.edtAnalysisResultDirectory)
+        self.dir_layout.addWidget(self.btnOpenDir)
+
+
+        self.edtAnalysisStartDatetime = QLineEdit()
+        self.edtAnalysisStartDatetime.setReadOnly(True)
+        self.edtAnalysisFinishDatetime = QLineEdit()
+        self.edtAnalysisFinishDatetime.setReadOnly(True)
+        self.edtAnalysisCompletionPercentage = QLineEdit()
+        self.edtAnalysisCompletionPercentage.setReadOnly(True)
+
+        #an_layout.addRow("Analysis Output", edtAnalysisOutput)
+        self.layout1.addRow("Result Directory", self.dir_widget)
+        self.layout1.addRow("Start Datetime", self.edtAnalysisStartDatetime)
+        self.layout1.addRow("Finish Datetime", self.edtAnalysisFinishDatetime)
+        self.layout1.addRow("Completion %", self.edtAnalysisCompletionPercentage)
+
+    def set_analysis(self,analysis):
+        self.analysis = analysis
+        
+        if analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            for i in range(4,16):
+                #print("i:", i)
+                self.layout1.itemAt(4,QFormLayout.FieldRole).widget().hide()
+                self.layout1.itemAt(4,QFormLayout.LabelRole).widget().hide()
+                self.layout1.removeRow(4)
+        elif analysis.analysis_type == ANALYSIS_TYPE_ML:
+            for i in range(7,16):
+                #print("i:", i)
+                self.layout1.itemAt(7,QFormLayout.FieldRole).widget().hide()
+                self.layout1.itemAt(7,QFormLayout.LabelRole).widget().hide()
+                self.layout1.removeRow(7)
+        elif analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+            for i in range(4,7):
+                #print("i:", i)
+                self.layout1.itemAt(4,QFormLayout.FieldRole).widget().hide()
+                self.layout1.itemAt(4,QFormLayout.LabelRole).widget().hide()
+                self.layout1.removeRow(4)
+        #    for i in range(5,8):
+        #        self.layout1.itemAt(i).widget().hide()
+            #for i in range(13,17):
+            #    self.layout1.itemAt(i).widget().hide()
+            
+        #self.update_info()
+
+    def update_info(self, analysis):
+        #analysis = self.analysis
+        if analysis.completion_percentage == 100:
+            log_filename = os.path.join( analysis.result_directory, "progress.log" )
+            if os.path.isfile(log_filename):
+                #print("log file exists:", log_filename)
+                log_fd = open(log_filename,mode='r',encoding='utf-8')
+                log_text = log_fd.read()
+                self.edtAnalysisOutput.setPlainText(log_text)
+                log_fd.close()
+        #if analysis.completion_percentage == 100:
+        #    # get concensus tree file
+        #    tree_filename = os.path.join( analysis.result_directory, "concensus_tree.svg" )
+        #    if os.path.isfile(tree_filename):
+        #        self.tree_widget.set_tree_image(tree_filename)
+        self.edtAnalysisName.setText(analysis.analysis_name)
+        self.edtAnalysisType.setText(analysis.analysis_type)
+        self.edtAnalysisStatus.setText(analysis.analysis_status)
+        if analysis.finish_datetime is not None:
+            self.edtAnalysisFinishDatetime.setText(analysis.finish_datetime.strftime("%Y-%m-%d %H:%M:%S"))
+
+        self.edtAnalysisStartDatetime.setText(analysis.start_datetime.strftime("%Y-%m-%d %H:%M:%S"))
+        self.edtAnalysisCompletionPercentage.setText(str(analysis.completion_percentage))
+
+        if analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            pass
+        elif analysis.analysis_type == ANALYSIS_TYPE_ML:
+
+            self.edtBootstrapCount.setText(str(analysis.ml_bootstrap))
+            self.edtBootstrapType.setText(analysis.ml_bootstrap_type)
+            self.edtSubstitutionModel.setText(analysis.ml_substitution_model)
+        elif analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+            self.edtMCMCBurnin.setText(str(analysis.mcmc_burnin))
+            self.edtMCMCRelBurnin.setText(str(analysis.mcmc_relburnin))
+            self.edtMCMCBurninFrac.setText(str(analysis.mcmc_burninfrac))
+            self.edtMCMCNGen.setText(str(analysis.mcmc_ngen))
+            self.edtMCMCNRates.setText(analysis.mcmc_nrates)
+            self.edtMCMCPrintFreq.setText(str(analysis.mcmc_printfreq))
+            self.edtMCMCSampleFreq.setText(str(analysis.mcmc_samplefreq))
+            self.edtMCMCNRuns.setText(str(analysis.mcmc_nruns))
+            self.edtMCMCNChains.setText(str(analysis.mcmc_nchains))
+        self.edtAnalysisResultDirectory.setText(analysis.result_directory)
+
+
+    def on_btn_open_result_dir_clicked(self):
+        if self.analysis is None:
+            return
+        result_dir = self.analysis.result_directory
+        if os.path.isdir(result_dir):
+            os.startfile(result_dir)
+
+    def append_output(self, text):
+        self.edtAnalysisOutput.appendPlainText(text)
 
 MODE = { 'NONE': 0, 'PAN': 1, 'ZOOM': 2, 'EDIT': 3 }
 class TreeViewer(QWidget):
@@ -203,12 +398,19 @@ class TreeViewer(QWidget):
 
     def generate_consensus_tree(self):
         '''Tree file Processing'''
+        tree_name = ''
         if self.analysis.analysis_type == ANALYSIS_TYPE_ML:
+            tree_name = "ML Consensus tree"
             tree_filename = os.path.join( self.analysis.result_directory, self.analysis.datamatrix.datamatrix_name + ".phy.treefile" )
+            if not os.path.exists(tree_filename):
+                return
             tree = Phylo.read( tree_filename, "newick" )
         elif self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            tree_name = "Parsimony Consensus tree"
             tree_filename = os.path.join( self.analysis.result_directory, "aquickie.tre" )
             #tree = Phylo.read( tree_filename, "nexus" )
+            if not os.path.exists(tree_filename):
+                return
             tf = pu.PhyloTreefile()
             tf.readtree(tree_filename,'Nexus')
             #print(tf.block_hash)
@@ -222,6 +424,7 @@ class TreeViewer(QWidget):
                     #clade.name = tf.taxa_hash[clade.name]
 
         elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+            tree_name = "Bayesian Consensus tree"
             tree_filename = os.path.join( self.analysis.result_directory, self.analysis.datamatrix.datamatrix_name.replace(" ","_") + ".nex1.con.tre" )
             #print(tree_filename)
             tf = pu.PhyloTreefile()
@@ -238,19 +441,25 @@ class TreeViewer(QWidget):
                     #print(clade.name)
                     clade.name = tf.taxa_hash[clade.name]
 
-        self.consensus_tree = tree
-        fig = plt.figure(figsize=(10, 20), dpi=100)
-        axes = fig.add_subplot(1, 1, 1)
-        Phylo.draw(tree, axes=axes,do_show=False)
-        #plt.show()
-        #buffer = io.BytesIO()
-        #print(tree_filename)
-        
-        tree_imagefile = os.path.join( self.analysis.result_directory, "consensus_tree.svg" )
+        string_io = io.StringIO()
 
-        plt.savefig(tree_imagefile, format='svg')
-        self.set_tree_image(tree_imagefile)
-        plt.close(fig)
+        # Write the tree in Newick format to the text stream
+        Phylo.write(tree, string_io, "newick")
+
+        # Get the Newick string from the text stream
+        newick_string = string_io.getvalue()
+
+        # Close the StringIO object if it's not needed anymore
+        string_io.close()
+
+        consensus_tree = PfTree()
+        consensus_tree.project = self.analysis.project
+        consensus_tree.datamatrix = self.analysis.datamatrix
+        consensus_tree.analysis = self.analysis
+        consensus_tree.tree_type = TREE_TYPE_CONSENSUS
+        consensus_tree.tree_name = "Consensus Tree"
+        consensus_tree.newick_text = newick_string
+        consensus_tree.save()
 
 class TreeLabel(QLabel):
     def __init__(self):

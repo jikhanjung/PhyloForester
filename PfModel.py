@@ -36,6 +36,11 @@ DATATYPE_COMBINED = 'Combined'
 BOOTSTRAP_TYPE_NORMAL = 'Normal'
 BOOTSTRAP_TYPE_ULTRAFAST = 'Ultrafast'
 
+TREE_TYPE_CONSENSUS = 'Consensus'
+TREE_TYPE_BOOTSTRAP = 'Bootstrap'
+TREE_TYPE_POSTERIOR = 'Posterior'
+TREE_TYPE_MPT = 'MPT'
+
 LINE_SEPARATOR = "\n"
 
 database_path = os.path.join(pu.DEFAULT_DB_DIRECTORY, 'PhyloForester.db')
@@ -326,6 +331,8 @@ class PfAnalysis(Model):
                 return tree_filename
 
 class PfTree(Model):
+    project = ForeignKeyField(PfProject, backref='trees', on_delete='CASCADE')
+    datamatrix = ForeignKeyField(PfDatamatrix, backref='trees', on_delete='CASCADE')
     analysis = ForeignKeyField(PfAnalysis, backref='trees', on_delete='CASCADE')
     tree_name = CharField()
     tree_type = CharField()

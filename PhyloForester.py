@@ -560,9 +560,10 @@ class PhyloForesterMainWindow(QMainWindow):
         if self.process.state() == QProcess.NotRunning:
             print("Failed to start the process")
         
-        edtOutput = self.data_storage['analysis'][self.analysis.id]['output']
+        self.data_storage['analysis'][self.analysis.id]['widget'].append_output("process started")
+        #edtOutput = self.data_storage['analysis'][self.analysis.id]['output']
         #print("output textedit:", edtOutput)
-        edtOutput.appendPlainText("process started")
+        #edtOutput.appendPlainText("process started")
 
     def create_mrbayes_command_file(self, data_filename, result_directory, analysis):
         data_filename = os.path.join( result_directory, data_filename )
@@ -595,8 +596,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
 
         self.progress_check(output)
 
-        
-        self.data_storage['analysis'][self.analysis.id]['output'].appendPlainText(output)
+        self.data_storage['analysis'][self.analysis.id]['widget'].append_output(output)
         #print("output textedit:", self.data_storage['analysis'][self.analysis.id]['output'])
 
         #self.edtAnalysisOutput.append(output)
@@ -609,6 +609,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         else:
             output = self.process.readAllStandardError().data().decode()
         self.progress_check(output)
+        self.update_analysis_info(self.analysis)
         #print("error:", output)
         #self.edtAnalysisOutput.append(output)
 
@@ -623,10 +624,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         self.analysis.completion_percentage = 100
         self.analysis.finish_datetime = datetime.datetime.now()
         self.analysis.save()
-        self.treeView.update()
-        self.data_storage['analysis'][self.analysis.id]['widget'] = self.create_analysis_widget(self.analysis)
+        self.update_analysis_info(self.analysis)
 
-        #self.edtAnalysisOutput.append(f"Exit Code: {exitCode}")
         self.startAnalysis()
 
     def progress_check(self, output):
@@ -666,9 +665,30 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             if progress_found:
                 percentage = float(round( ( float(curr_step) / float(total_step) ) * 1000 )) / 10.0
                 self.analysis.completion_percentage = percentage
+                #self.data_storage['analysis'][self.analysis.id]['tree_item'].setData(self.analysis.completion_percentage, Qt.UserRole + 10)
                 self.analysis.save()
-        #self.treeView.update()
-        self.load_treeview()
+
+                self.update_analysis_info(self.analysis)
+
+    def update_analysis_info(self, analysis):
+        #self.data_storage['analysis'][analysis.id]['tree_item'].setData(analysis.completion_percentage, Qt.UserRole + 10)
+        av = self.data_storage['analysis'][analysis.id]['widget']
+        #analysis_view.set_analysis(analysis)
+        av.update_info(analysis)
+
+        if self.data_storage['analysis'][analysis.id]['tree_item'] is not None:
+            #print("item:", self.data_storage['analysis'][analysis.id]['tree_item'])
+            self.data_storage['analysis'][analysis.id]['tree_item'].setData(analysis.completion_percentage, Qt.UserRole + 10)
+            self.treeView.update()
+        #else:
+            #print("item is none")
+        #self.treeView.repaint()
+
+        #self.data_storage['analysis'][analysis.id]['completion'].setText(f"{analysis.completion_percentage}%")
+        #self.data_storage['analysis'][analysis.id]['widget'].update()
+        #self.data_storage['analysis'][analysis.id]['widget'].repaint()
+
+        #pass
 
     def handleError(self, error):
         print("Error occurred:", error)
@@ -686,6 +706,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
     def open_treeview_menu(self, position):
         indexes = self.treeView.selectedIndexes()
         if len(indexes) > 0:
+
 
 
             action_add_project = QAction("Add new project")
@@ -821,12 +842,14 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             an_id = analysis.id
             analysis.delete_instance()
             self.load_treeview()
-            return
 
+            self.hsplitter.replaceWidget(1,self.empty_widget)
             self.data_storage['analysis'][an_id]['widget'].close()
             self.data_storage['analysis'][an_id]['object'] = None
             self.data_storage['analysis'][an_id]['widget'] = None
-            self.data_storage['datamatrix'][self.selected_datamatrix.id]['analyses'].remove(an_id)
+            self.data_storage['analysis'][an_id]['tree_item'] = None
+            #self.data_storage['datamatrix'][self.selected_datamatrix.id]['analyses'].remove(an_id)
+            return
 
             # remove from treeview
             parent_item = item1.parent()
@@ -992,13 +1015,16 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         event.accept()
         return
 
-    def update_analysis_view(self):
+    def show_selected_analysis(self):
         if self.selected_analysis is None:
             return
         if self.selected_analysis.id in self.data_storage['analysis']:
             #analysis_ref = self.data_storage['analysis'][self.selected_analysis.id]
-            if self.data_storage['analysis'][self.selected_analysis.id]['widget'] is None:
-                self.data_storage['analysis'][self.selected_analysis.id] = self.create_analysis_widget(self.selected_analysis)
+            av = self.data_storage['analysis'][self.selected_analysis.id]['widget']
+            if av is None:
+                av = self.data_storage['analysis'][self.selected_analysis.id]['widget'] = AnalysisViewer()
+                av.set_analysis(self.selected_analysis)
+                av.update_info(self.selected_analysis)
             #print("analysis widget created", analysis_ref['widget'], analysis_ref['output'])
 
     def update_datamatrix_table(self):
@@ -1122,7 +1148,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
     #    print("widget size:",self.hsplitter.widget(1).size())
 
 
-    def create_analysis_widget(self, analysis):
+    def _create_analysis_widget(self, analysis):
         an = analysis
 
         an_widget = QWidget()
@@ -1271,6 +1297,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         edtAnalysisCompletionPercentage = QLineEdit()
         edtAnalysisCompletionPercentage.setText(str(an.completion_percentage))
         edtAnalysisCompletionPercentage.setReadOnly(True)
+        self.data_storage['analysis'][an.id]['completion'] = edtAnalysisCompletionPercentage
+
 
         #an_layout.addRow("Analysis Output", edtAnalysisOutput)
         an_layout.addRow("Result Directory", dir_widget)
@@ -1298,7 +1326,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             if isinstance(data, PfAnalysis):
                 #self.selected_analysis = 
                 self.selected_analysis = PfAnalysis.get_by_id(data.id)
-                self.update_analysis_view()
+                self.show_selected_analysis()
                 self.selected_datamatrix = self.selected_analysis.datamatrix
                 self.selected_project = self.selected_datamatrix.project
                 #print(self.data_storage['analysis'][self.selected_analysis.id])
@@ -1424,7 +1452,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                             item6.setData(analysis.completion_percentage, Qt.UserRole + 10)
                             item3.appendRow([item5,item6])
                             if analysis.id not in self.data_storage['analysis']:
-                                self.data_storage['analysis'][analysis.id] = { 'object': analysis, 'item': item4, 'widget': None, 'output': None}
+                                self.data_storage['analysis'][analysis.id] = { 'object': analysis, 'tree_item': item6, 'widget': None }
                             self.data_storage['datamatrix'][dm.id]['analyses'].append(analysis.id)
 
             self.selected_project = project
@@ -1513,8 +1541,12 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         for an in self.analysis_list:
             #analysis_ref = 
             #print("analysis widget:",self.data_storage['analysis'][an.id]['widget'])
-            if self.data_storage['analysis'][an.id]['widget'] is None:
-                self.data_storage['analysis'][an.id]['widget'] = self.create_analysis_widget(an)
+            av = self.data_storage['analysis'][an.id]['widget']
+            if av is None:
+                #self.data_storage['analysis'][an.id]['widget'] = self.create_analysis_widget(an)
+                av = self.data_storage['analysis'][an.id]['widget'] = AnalysisViewer()
+                av.set_analysis(an)
+                av.update_info(an)
             #print("analysis widget:",self.data_storage['analysis'][an.id]['widget'])                
 
 
