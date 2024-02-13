@@ -625,6 +625,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         self.analysis.finish_datetime = datetime.datetime.now()
         self.analysis.save()
         self.update_analysis_info(self.analysis)
+        self.generate_consensus_tree(self.analysis)
 
         self.startAnalysis()
 
@@ -669,6 +670,71 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                 self.analysis.save()
 
                 self.update_analysis_info(self.analysis)
+
+    def generate_consensus_tree(self, analysis):
+        '''Tree file Processing'''
+        tree_name = ''
+        if analysis.analysis_type == ANALYSIS_TYPE_ML:
+            tree_name = "ML Consensus tree"
+            tree_filename = os.path.join( analysis.result_directory, analysis.datamatrix.datamatrix_name + ".phy.treefile" )
+            if not os.path.exists(tree_filename):
+                return
+            tree = Phylo.read( tree_filename, "newick" )
+        elif analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            tree_name = "Parsimony Consensus tree"
+            tree_filename = os.path.join( analysis.result_directory, "aquickie.tre" )
+            #tree = Phylo.read( tree_filename, "nexus" )
+            if not os.path.exists(tree_filename):
+                return
+            tf = pu.PhyloTreefile()
+            tf.readtree(tree_filename,'Nexus')
+            #print(tf.block_hash)
+            tree = Phylo.read(io.StringIO(tf.tree_text_hash['tnt_1']), "newick")
+            for clade in tree.find_clades():
+                if clade.name:
+                    taxon_index = int(clade.name) - 1
+                    taxa_list = analysis.datamatrix.get_taxa_list()
+                    clade.name = taxa_list[taxon_index]
+                    #print(clade.name)
+                    #clade.name = tf.taxa_hash[clade.name]
+
+        elif analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+            tree_name = "Bayesian Consensus tree"
+            tree_filename = os.path.join( analysis.result_directory, analysis.datamatrix.datamatrix_name.replace(" ","_") + ".nex1.con.tre" )
+            #print(tree_filename)
+            tf = pu.PhyloTreefile()
+            ret = tf.readtree(tree_filename,'Nexus')
+            if not ret:
+                print("Error reading treefile")
+                return
+            #print(tf.tree_text_hash)
+            #tree_text = tf.tree_text_hash['con_50_majrule']
+            #handle = 
+            tree = Phylo.read(io.StringIO(tf.tree_text_hash['con_50_majrule']), "newick")
+            for clade in tree.find_clades():
+                if clade.name and tf.taxa_hash[clade.name]:
+                    #print(clade.name)
+                    clade.name = tf.taxa_hash[clade.name]
+
+        string_io = io.StringIO()
+
+        # Write the tree in Newick format to the text stream
+        Phylo.write(tree, string_io, "newick")
+
+        # Get the Newick string from the text stream
+        newick_string = string_io.getvalue()
+
+        # Close the StringIO object if it's not needed anymore
+        string_io.close()
+
+        consensus_tree = PfTree()
+        consensus_tree.project = analysis.project
+        consensus_tree.datamatrix = analysis.datamatrix
+        consensus_tree.analysis = analysis
+        consensus_tree.tree_type = TREE_TYPE_CONSENSUS
+        consensus_tree.tree_name = "Consensus Tree"
+        consensus_tree.newick_text = newick_string
+        consensus_tree.save()
 
     def update_analysis_info(self, analysis):
         #self.data_storage['analysis'][analysis.id]['tree_item'].setData(analysis.completion_percentage, Qt.UserRole + 10)
