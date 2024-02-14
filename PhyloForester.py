@@ -624,8 +624,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         self.analysis.completion_percentage = 100
         self.analysis.finish_datetime = datetime.datetime.now()
         self.analysis.save()
-        self.update_analysis_info(self.analysis)
         self.generate_consensus_tree(self.analysis)
+        self.update_analysis_info(self.analysis)
 
         self.startAnalysis()
 
@@ -717,13 +717,10 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                     clade.name = tf.taxa_hash[clade.name]
 
         string_io = io.StringIO()
-
         # Write the tree in Newick format to the text stream
         Phylo.write(tree, string_io, "newick")
-
         # Get the Newick string from the text stream
         newick_string = string_io.getvalue()
-
         # Close the StringIO object if it's not needed anymore
         string_io.close()
 
@@ -914,6 +911,9 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             self.data_storage['analysis'][an_id]['object'] = None
             self.data_storage['analysis'][an_id]['widget'] = None
             self.data_storage['analysis'][an_id]['tree_item'] = None
+            # remove self.data_storage['analysis'][an_id]
+            del self.data_storage['analysis'][an_id]
+            #self.data_storage['analysis'].
             #self.data_storage['datamatrix'][self.selected_datamatrix.id]['analyses'].remove(an_id)
             return
 

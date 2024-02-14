@@ -160,6 +160,8 @@ class AnalysisViewer(QWidget):
 
     def update_info(self, analysis):
         #analysis = self.analysis
+        #print("update analysis info", analysis.analysis_name, analysis.analysis_status)
+        self.analysis = analysis
         if analysis.completion_percentage == 100:
             log_filename = os.path.join( analysis.result_directory, "progress.log" )
             if os.path.isfile(log_filename):
@@ -200,7 +202,7 @@ class AnalysisViewer(QWidget):
             self.edtMCMCNRuns.setText(str(analysis.mcmc_nruns))
             self.edtMCMCNChains.setText(str(analysis.mcmc_nchains))
         self.edtAnalysisResultDirectory.setText(analysis.result_directory)
-
+        self.tree_widget.update_info(self.analysis)
 
     def on_btn_open_result_dir_clicked(self):
         if self.analysis is None:
@@ -284,22 +286,29 @@ class TreeViewer(QWidget):
         self.curr_tree_index = 0
         self.tree_type = 1
 
+    def update_info(self, analysis):
+        self.analysis = analysis
+        #print("treeview update_info", analysis.analysis_name, analysis.analysis_status, analysis.completion_percentage)
+        if analysis.completion_percentage == 100:
+            self.load_trees()
+
+
     def on_rb_tree_type1_clicked(self):
-        print("on_rb_tree_type1_clicked")
+        #print("on_rb_tree_type1_clicked")
         self.tree_type = 1
         #self.current_treeobj_hash = self.treeobj_hash
         #self.current_newick_tree_list = self.newick_tree_list
+        self.slider.setRange(0, len(self.newick_tree_list) - 1)
         self.slider.setValue(0)
         self.on_slider_valueChanged(0)
-        self.slider.setRange(0, len(self.newick_tree_list) - 1)
         self.lbl_total_trees.setText("/" + str(len(self.newick_tree_list)))
 
     def on_rb_tree_type2_clicked(self):
-        print("on_rb_tree_type2_clicked")
+        #print("on_rb_tree_type2_clicked")
         self.tree_type = 2
+        self.slider.setRange(0, len(self.stored_newick_tree_list) - 1)
         self.slider.setValue(0)
         self.on_slider_valueChanged(0)
-        self.slider.setRange(0, len(self.stored_newick_tree_list) - 1)
         self.lbl_total_trees.setText("/" + str(len(self.stored_newick_tree_list)))
 
         #self.current_treeobj_hash = self.stored_treeobj_hash
@@ -314,26 +323,31 @@ class TreeViewer(QWidget):
 
         if self.tree_type == 1:
             if self.tree_current_index not in self.treeobj_hash.keys():
-                tree = Phylo.read(io.StringIO(self.newick_tree_list[self.tree_current_index-1]), "newick")
-                self.treeobj_hash[self.tree_current_index] = tree
-                for clade in tree.find_clades():
-                    if clade.name:
-                        try:
-                            taxon_index = int(clade.name) - 1
-                            taxa_list = self.analysis.datamatrix.get_taxa_list()
-                            clade.name = taxa_list[taxon_index]
-                        except:
-                            pass
+                if self.tree_current_index < len(self.newick_tree_list):
+                    tree = Phylo.read(io.StringIO(self.newick_tree_list[self.tree_current_index-1]), "newick")
+                    self.treeobj_hash[self.tree_current_index] = tree
+                    for clade in tree.find_clades():
+                        if clade.name:
+                            try:
+                                taxon_index = int(clade.name) - 1
+                                taxa_list = self.analysis.datamatrix.get_taxa_list()
+                                clade.name = taxa_list[taxon_index]
+                            except:
+                                pass
             else:
                 tree = self.treeobj_hash[self.tree_current_index]
         elif self.tree_type == 2:
+            if self.tree_current_index < len(self.newick_tree_list):
             #self.stored_tree_list = PfTree.select().where(PfTree.analysis == self.analysis)        
             #self.stored_newick_tree_list = [tree.newick_text for tree in self.stored_tree_list]
-            tree = Phylo.read(io.StringIO(self.stored_newick_tree_list[self.tree_current_index]), "newick")
+                tree = Phylo.read(io.StringIO(self.stored_newick_tree_list[self.tree_current_index]), "newick")
 
         if tree is None:
             return
 
+        self.tree_label.set_tree(tree)
+        return
+    
         #tree = self.tree_list[value]
         fig = plt.figure(figsize=(10, 20), dpi=100)
         axes = fig.add_subplot(1, 1, 1)
@@ -400,9 +414,10 @@ class TreeLabel(QLabel):
     def __init__(self):
         super(TreeLabel, self).__init__()
         self.setMinimumSize(400,300)
-        self.bgcolor = "#333333"
+        self.bgcolor = "#FFFFFF"
         self.m_app = QApplication.instance()
         #self.read_settings()
+        self.tree = None
         self.orig_pixmap = None
         self.curr_pixmap = None
         self.scale = 1.0
@@ -422,6 +437,7 @@ class TreeLabel(QLabel):
         self.setAcceptDrops(True)
         self.setMouseTracking(True)
         #self.set_mode(MODE['EDIT_LANDMARK'])
+        self.tree_node_parents = {}
 
     def _2canx(self, coord):
         return round((float(coord) / self.image_canvas_ratio) * self.scale) + self.pan_x + self.temp_pan_x
@@ -494,11 +510,45 @@ class TreeLabel(QLabel):
             self.repaint()
         return super().mouseReleaseEvent(ev)    
 
+    def draw_tree(self, painter):
+        if self.tree is None:
+            return
+        print("draw_tree", self.tree)
+        Phylo.draw_ascii(self.tree)
+
+        clade_list = [ c for c in self.tree.find_clades() ]
+        root = clade_list[0]
+        returned_row = self.draw_node(painter, root, 0, 1)
+
+        print("root:", root, root.count_terminals(), returned_row)
+        for child in root:
+            print("child:", child, child.count_terminals())
+
+    def draw_node(self, painter, node, begin_row, depth ):
+        #pass
+        if node.is_terminal():
+            self.draw_text( painter, depth, begin_row, node.name )
+            return begin_row + 0.5
+        else:
+            #print("non-terminal:", node)
+            traversed_row_count = 0
+            returned_row = 0
+            for child in node:
+                #print("child:", child)
+                returned_row += self.draw_node(painter, child, begin_row + traversed_row_count, depth+1)
+                traversed_row_count += child.count_terminals()
+            return returned_row / len(node)
+        
+
+    def draw_text(self, painter, x, y, text):
+        painter.drawText(x * 50, y * 30 + 100, text)
 
     def paintEvent(self, event):
         #print("tree paint", self.curr_pixmap)
         painter = QPainter(self)
         painter.fillRect(self.rect(), QBrush(QColor(self.bgcolor)))#as_qt_color(COLOR['BACKGROUND'])))
+
+        self.draw_tree(painter)
 
         if self.curr_pixmap is not None:
             painter.drawPixmap(self.pan_x+self.temp_pan_x, self.pan_y+self.temp_pan_y,self.curr_pixmap)
@@ -560,6 +610,27 @@ class TreeLabel(QLabel):
         self.orig_pixmap = QPixmap(self.tree_image)
         #print("orig_pixmap", self.orig_pixmap)
         #self.update()
+
+    def set_tree(self, tree):
+        self.tree = tree
+        #parents = {}
+        for clade in tree.find_clades(order="level"):
+            for child in clade:
+                self.tree_node_parents[child] = clade
+        return self.tree_node_parents
+        #for clade in tree.find_clades():
+        #for child in root:
+            #print("child:", child)
+        #for clade in cldes:
+        #    print("clade:", clade) 
+        #print("set_tree in treelabel", tree.BaseTree)
+        #fig = plt.figure(figsize=(10, 20), dpi=100)
+        #axes = fig.add_subplot(1, 1, 1)
+        #Phylo.draw(tree, axes=axes,do_show=False)
+
+        #buf = io.BytesIO()
+        #plt.savefig(buf, format='svg')
+        #buf.seek(0)
 
 class AnalysisDialog(QDialog):
     def __init__(self,parent):
