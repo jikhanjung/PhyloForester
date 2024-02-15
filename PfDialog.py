@@ -3,9 +3,9 @@ from PyQt5.QtWidgets import QTableWidgetItem, QHeaderView, QFileDialog, QCheckBo
                             QDialog, QLineEdit, QLabel, QPushButton, QAbstractItemView, QStatusBar, QMessageBox, \
                             QTableView, QSplitter, QRadioButton, QComboBox, QTextEdit, QSizePolicy, \
                             QTableWidget, QGridLayout, QAbstractButton, QButtonGroup, QGroupBox, \
-                            QTabWidget, QListWidget, QSlider, QScrollBar, QPlainTextEdit 
+                            QTabWidget, QListWidget, QSlider, QScrollBar, QPlainTextEdit, QScrollArea
 from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap, QStandardItemModel, QStandardItem, QImage,\
-                        QFont, QPainter, QBrush, QMouseEvent, QWheelEvent, QDoubleValidator
+                        QFont, QPainter, QBrush, QMouseEvent, QWheelEvent, QDoubleValidator, QFontMetrics
 from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSize, QPoint,\
                          pyqtSlot, QItemSelectionModel, QTimer
 
@@ -227,6 +227,11 @@ class TreeViewer(QWidget):
         self.treeobj_hash = {}
         self.stored_newick_tree_list = []
         self.stored_treeobj_hash = {}
+        #self.scroll_area = QScrollArea()
+        #self.scroll_area.setWidgetResizable(True)
+        #self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        #self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+
 
         self.tree_type_widget = QWidget()        
         self.tree_type_layout = QHBoxLayout()
@@ -256,11 +261,27 @@ class TreeViewer(QWidget):
         self.tree_info_layout.addWidget(self.lbl_total_trees)
         #self.lbl_total_trees.setText("Total Trees: 0")
 
+        self.options_widget = QWidget()
+        self.options_layout = QHBoxLayout()
+        self.options_widget.setLayout(self.options_layout)
+        self.layout.addWidget(self.options_widget)
+        self.cbx_show_branch_length = QCheckBox()
+        self.cbx_show_branch_length.setText("Show Branch Length")
+        self.cbx_show_branch_length.setChecked(False)
+        self.options_layout.addWidget(self.cbx_show_branch_length)
+        self.cbx_show_branch_length.clicked.connect(self.on_cbx_show_branch_length_clicked)
+        self.cbx_align_taxa = QCheckBox()
+        self.cbx_align_taxa.setText("Align Taxa")
+        self.cbx_align_taxa.setChecked(False)
+        self.options_layout.addWidget(self.cbx_align_taxa)
+        self.cbx_align_taxa.clicked.connect(self.on_cbx_align_taxa_clicked)
+
+
         self.tree_info_widget2 = QWidget()
         self.tree_info_layout2 = QHBoxLayout()
         self.tree_info_widget2.setFixedHeight(50)
         self.tree_info_widget2.setLayout(self.tree_info_layout2)
-        self.layout.addWidget(self.tree_info_widget2)
+        #self.layout.addWidget(self.tree_info_widget2)
         self.lbl_tree_info = QLabel()
         self.lbl_tree_info.setText("Consensus tree")
         self.tree_info_layout2.addWidget(self.lbl_tree_info)
@@ -271,7 +292,9 @@ class TreeViewer(QWidget):
         self.tree_info_layout2.addWidget(self.lbl_total_trees2)
 
         self.tree_label = TreeLabel()
+        #self.scroll_area.setWidget(self.tree_label)
         self.layout.addWidget(self.tree_label)
+
         self.tree_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.tree_list = []
         self.consensus_tree = None
@@ -285,6 +308,22 @@ class TreeViewer(QWidget):
         self.layout.addWidget(self.slider)
         self.curr_tree_index = 0
         self.tree_type = 1
+
+    def on_cbx_show_branch_length_clicked(self):
+        self.tree_label.show_branch_length = self.cbx_show_branch_length.isChecked()
+        if self.tree_label.show_branch_length:
+            #self.cbx_align_taxa.setEnabled(False)
+            self.cbx_align_taxa.setChecked(False)
+            self.tree_label.align_taxa = False
+        self.tree_label.repaint()
+    
+    def on_cbx_align_taxa_clicked(self):
+        self.tree_label.align_taxa = self.cbx_align_taxa.isChecked()
+        if self.tree_label.align_taxa:
+            #self.cbx_show_branch_length.setEnabled(False)
+            self.cbx_show_branch_length.setChecked(False)
+            self.tree_label.show_branch_length = False
+        self.tree_label.repaint()
 
     def update_info(self, analysis):
         self.analysis = analysis
@@ -344,8 +383,9 @@ class TreeViewer(QWidget):
 
         if tree is None:
             return
-
+        #print("selection changed. tree:", tree)
         self.tree_label.set_tree(tree)
+        self.tree_label.update()
         return
     
         #tree = self.tree_list[value]
@@ -369,6 +409,21 @@ class TreeViewer(QWidget):
     def set_analysis(self, analysis):
         self.analysis = analysis
         self.load_trees()
+        self.tree_label.set_analysis_type(self.analysis.analysis_type)
+        if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            self.cbx_align_taxa.setEnabled(True)
+            #self.cbx_show_branch_length.setEnabled(False)
+            self.cbx_show_branch_length.setChecked(False)
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_ML:
+            #self.cbx_align_taxa.setEnabled(False)
+            self.cbx_show_branch_length.setEnabled(True)
+            self.cbx_show_branch_length.setChecked(True)
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+            #self.cbx_align_taxa.setEnabled(False)
+            self.cbx_show_branch_length.setEnabled(True)
+            self.cbx_show_branch_length.setChecked(True)
+        self.on_cbx_show_branch_length_clicked()
+        self.on_cbx_align_taxa_clicked()
 
     def load_trees(self):
         #print("load trees")
@@ -414,7 +469,7 @@ class TreeLabel(QLabel):
     def __init__(self):
         super(TreeLabel, self).__init__()
         self.setMinimumSize(400,300)
-        self.bgcolor = "#FFFFFF"
+        self.bgcolor = "#EEEEEE"
         self.m_app = QApplication.instance()
         #self.read_settings()
         self.tree = None
@@ -436,8 +491,15 @@ class TreeLabel(QLabel):
         self.orig_height = -1
         self.setAcceptDrops(True)
         self.setMouseTracking(True)
+        self.tree_leaf_height = 30
+        self.tree_y_offset = 30
+        self.tree_unit_width = 50
+        self.text_offset = 5
         #self.set_mode(MODE['EDIT_LANDMARK'])
         self.tree_node_parents = {}
+        self.show_branch_length = False
+        self.align_taxa = False
+        self.analysis_type = None
 
     def _2canx(self, coord):
         return round((float(coord) / self.image_canvas_ratio) * self.scale) + self.pan_x + self.temp_pan_x
@@ -449,6 +511,7 @@ class TreeLabel(QLabel):
         return round(((float(coord) - self.pan_y) / self.scale) * self.image_canvas_ratio)
 
     def wheelEvent(self, event):
+        return
         #if self.orig_pixmap is None:
         #    return
         we = QWheelEvent(event)
@@ -486,8 +549,7 @@ class TreeLabel(QLabel):
         if self.pan_mode == MODE['PAN']:
             self.temp_pan_x = int(self.mouse_curr_x - self.mouse_down_x)
             self.temp_pan_y = int(self.mouse_curr_y - self.mouse_down_y)
-
-        self.repaint()
+            self.repaint()
         QLabel.mouseMoveEvent(self, event)
 
     def mousePressEvent(self, event):
@@ -497,7 +559,8 @@ class TreeLabel(QLabel):
             self.pan_mode = MODE['PAN']
             self.mouse_down_x = me.x()
             self.mouse_down_y = me.y()
-        self.repaint()
+            self.repaint()
+        QLabel.mousePressEvent(self, event)
 
     def mouseReleaseEvent(self, ev: QMouseEvent) -> None:
         me = QMouseEvent(ev)
@@ -508,43 +571,106 @@ class TreeLabel(QLabel):
             self.temp_pan_x = 0
             self.temp_pan_y = 0
             self.repaint()
-        return super().mouseReleaseEvent(ev)    
+        return super().mouseReleaseEvent(ev)
 
     def draw_tree(self, painter):
         if self.tree is None:
             return
-        print("draw_tree", self.tree)
-        Phylo.draw_ascii(self.tree)
+        #print("draw_tree", self.tree)
+        #Phylo.draw_ascii(self.tree)
 
         clade_list = [ c for c in self.tree.find_clades() ]
         root = clade_list[0]
-        returned_row = self.draw_node(painter, root, 0, 1)
+        if self.show_branch_length and self.analysis_type != ANALYSIS_TYPE_PARSIMONY:
+            self.clade_depths = self.tree.depths()
+        else:
+            self.clade_depths = self.tree.depths(unit_branch_lengths=True)
+        #print("clade_depths", self.clade_depths)
+        self.max_depth = max(self.clade_depths.values())
+        #print("max_depth", self.max_depth)
+        self.branch_length_scale = ( self.width() * 0.8 ) / self.max_depth
+        #self.
+        v_pos = self.draw_node(painter, root, 0, 1)
 
-        print("root:", root, root.count_terminals(), returned_row)
-        for child in root:
-            print("child:", child, child.count_terminals())
+        #print("root:", root, root.count_terminals(), v_pos)
+        #for child in root:
+        #    print("child:", child, child.count_terminals())
 
     def draw_node(self, painter, node, begin_row, depth ):
+        #print(" "*depth*4, "draw_node", node, begin_row, depth, node.is_terminal())
         #pass
         if node.is_terminal():
+            if self.align_taxa:
+                depth = self.max_depth + 1
+            if self.show_branch_length:
+                depth = self.clade_depths[node]
             self.draw_text( painter, depth, begin_row, node.name )
-            return begin_row + 0.5
+            return begin_row + 0.3
         else:
             #print("non-terminal:", node)
             traversed_row_count = 0
-            returned_row = 0
+            v_pos_sum = 0
+            v_pos_list = []
             for child in node:
-                #print("child:", child)
-                returned_row += self.draw_node(painter, child, begin_row + traversed_row_count, depth+1)
+                v_pos = self.draw_node(painter, child, begin_row + traversed_row_count, depth+1)
+                #print("child:", child, depth, v_pos)
+                v_pos_list.append(v_pos)
+                v_pos_sum += v_pos
+                #self.draw_node(painter, child, begin_row + traversed_row_count, depth+1)
+                from_depth = depth
+                to_depth = depth + 1
+                if self.align_taxa and child.is_terminal():
+                    to_depth = self.max_depth + 1
+                if self.show_branch_length:
+                    from_depth = self.clade_depths[node]
+                    to_depth = self.clade_depths[child]
+                self.draw_line(painter, from_depth, to_depth, v_pos, v_pos )
                 traversed_row_count += child.count_terminals()
-            return returned_row / len(node)
-        
+            #print(v_pos_list)
+            if self.show_branch_length:
+                depth = self.clade_depths[node]
+            self.draw_line(painter, depth, depth, v_pos_list[0], v_pos_list[-1])
+            return v_pos_sum / len(node)
+
+    def draw_line(self, painter, x1, x2, y1, y2):
+        if self.show_branch_length:
+            x1 = int( x1 * self.branch_length_scale ) + self.tree_unit_width + self.pan_x + self.temp_pan_x
+            x2 = int( x2 * self.branch_length_scale ) + self.tree_unit_width + self.pan_x + self.temp_pan_x
+        else:
+            x1 = int( x1 * self.tree_unit_width ) + self.pan_x + self.temp_pan_x
+            x2 = int( x2 * self.tree_unit_width ) + self.pan_x + self.temp_pan_x
+        y1 = int( y1 * self.tree_leaf_height + self.tree_y_offset ) - int(self.tree_leaf_height / 2) + self.pan_y + self.temp_pan_y
+        y2 = int( y2 * self.tree_leaf_height + self.tree_y_offset ) - int(self.tree_leaf_height / 2) + self.pan_y + self.temp_pan_y
+        painter.drawLine(x1, y1, x2, y2)
+        #painter.drawLine(int(x1) * self.tree_unit_width,int(y) * self.tree_leaf_height + self.tree_y_offset, int(x2) * self.tree_unit_width, int(y) * self.tree_leaf_height + self.tree_y_offset)
 
     def draw_text(self, painter, x, y, text):
-        painter.drawText(x * 50, y * 30 + 100, text)
+        #text = self.text()  # Get the text from the QLabel
+        font = painter.font()
+        #print("initial_font", font.family())
+        #font = QFont("Arial", 12)  # Set the desired font and size
+        #font.setItalic(True)  # Set the font to italic
+        #font.setPointSize(12)
+        #painter.setFont(font)
+
+        #text = text.replace(".", ". ")
+
+        # Get font metrics to determine text width and height
+        #fontMetrics = QFontMetrics(font)
+        #textWidth = fontMetrics.width(text)
+        #textHeight = fontMetrics.height()     
+        if self.show_branch_length:
+            x1 = int( x * self.branch_length_scale ) + self.tree_unit_width + self.text_offset + self.pan_x + self.temp_pan_x
+            #depth = self.clade_depths[self.tree_node_parents[text]]   
+        else:
+            x1 = x * self.tree_unit_width + self.text_offset + self.pan_x + self.temp_pan_x
+        y1 = y * self.tree_leaf_height + self.tree_y_offset + self.pan_y + self.temp_pan_y
+        painter.drawText(x1, y1, text)
+        #painter.drawText(x * self.tree_unit_width, y * self.tree_leaf_height + self.tree_y_offset, text)
 
     def paintEvent(self, event):
         #print("tree paint", self.curr_pixmap)
+        
         painter = QPainter(self)
         painter.fillRect(self.rect(), QBrush(QColor(self.bgcolor)))#as_qt_color(COLOR['BACKGROUND'])))
 
@@ -610,6 +736,9 @@ class TreeLabel(QLabel):
         self.orig_pixmap = QPixmap(self.tree_image)
         #print("orig_pixmap", self.orig_pixmap)
         #self.update()
+
+    def set_analysis_type(self, analysis_type):
+        self.analysis_type = analysis_type
 
     def set_tree(self, tree):
         self.tree = tree
@@ -1370,7 +1499,7 @@ class PreferencesDialog(QDialog):
         self.edtResultPath = QLineEdit()
         self.edtResultPath.setText(str(self.m_app.result_path))
         self.btnResultPath = QPushButton("Select Path")
-        self.gbResultPath = QGroupBox("IQTree")
+        self.gbResultPath = QGroupBox("")
         self.gbResultPath.setLayout(QHBoxLayout())
         self.gbResultPath.layout().addWidget(self.edtResultPath)
         self.gbResultPath.layout().addWidget(self.btnResultPath)
@@ -1379,7 +1508,7 @@ class PreferencesDialog(QDialog):
         self.lang_layout = QHBoxLayout()
         self.comboLang = QComboBox()
         self.comboLang.addItem(self.tr("English"))
-        self.comboLang.addItem(self.tr("Korean"))
+        #self.comboLang.addItem(self.tr("Korean"))
         self.comboLang.currentIndexChanged.connect(self.comboLangIndexChanged)
         self.lang_layout.addWidget(self.comboLang)
         self.lang_widget = QWidget()

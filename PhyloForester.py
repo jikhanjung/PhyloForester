@@ -1704,17 +1704,15 @@ if __name__ == "__main__":
     app.exec_()
 
 
-''' 
+'''
 How to make an exe file
 
 pyinstaller --onefile --noconsole --add-data "icons/*.png;icons" --add-data "data/*.*;data" --add-data "translations/*.qm;translations" --icon="icons/PhyloForester.png" PhyloForester.py
-
 pyinstaller --onedir --noconsole --add-data "icons/*.png;icons" --add-data "data/*.*;data" --add-data "translations/*.qm;translations" --icon="icons/PhyloForester.png" --noconfirm PhyloForester.py
 
 pylupdate5 PhyloForester.py -ts translations/PhyloForester_en.ts
 pylupdate5 PhyloForester.py -ts translations/PhyloForester_ko.ts
 
 linguist
-
 
 '''
