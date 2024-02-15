@@ -265,16 +265,22 @@ class TreeViewer(QWidget):
         self.options_layout = QHBoxLayout()
         self.options_widget.setLayout(self.options_layout)
         self.layout.addWidget(self.options_widget)
-        self.cbx_show_branch_length = QCheckBox()
-        self.cbx_show_branch_length.setText("Show Branch Length")
-        self.cbx_show_branch_length.setChecked(False)
-        self.options_layout.addWidget(self.cbx_show_branch_length)
-        self.cbx_show_branch_length.clicked.connect(self.on_cbx_show_branch_length_clicked)
+        self.cbx_apply_branch_length = QCheckBox()
+        self.cbx_apply_branch_length.setText("Apply Branch Length")
+        self.cbx_apply_branch_length.setChecked(False)
+        self.options_layout.addWidget(self.cbx_apply_branch_length)
+        self.cbx_apply_branch_length.clicked.connect(self.on_cbx_show_branch_length_clicked)
         self.cbx_align_taxa = QCheckBox()
         self.cbx_align_taxa.setText("Align Taxa")
         self.cbx_align_taxa.setChecked(False)
         self.options_layout.addWidget(self.cbx_align_taxa)
         self.cbx_align_taxa.clicked.connect(self.on_cbx_align_taxa_clicked)
+        self.cbx_italic_taxa_name = QCheckBox()
+        self.cbx_italic_taxa_name.setText("Italic Taxa Name")
+        self.cbx_italic_taxa_name.setChecked(False)
+        self.options_layout.addWidget(self.cbx_italic_taxa_name)
+        self.cbx_italic_taxa_name.clicked.connect(self.on_cbx_italic_taxa_name_clicked)
+
 
 
         self.tree_info_widget2 = QWidget()
@@ -309,9 +315,13 @@ class TreeViewer(QWidget):
         self.curr_tree_index = 0
         self.tree_type = 1
 
+    def on_cbx_italic_taxa_name_clicked(self):
+        self.tree_label.italic_taxa_name = self.cbx_italic_taxa_name.isChecked()
+        self.tree_label.repaint()
+
     def on_cbx_show_branch_length_clicked(self):
-        self.tree_label.show_branch_length = self.cbx_show_branch_length.isChecked()
-        if self.tree_label.show_branch_length:
+        self.tree_label.apply_branch_length = self.cbx_apply_branch_length.isChecked()
+        if self.tree_label.apply_branch_length:
             #self.cbx_align_taxa.setEnabled(False)
             self.cbx_align_taxa.setChecked(False)
             self.tree_label.align_taxa = False
@@ -321,8 +331,8 @@ class TreeViewer(QWidget):
         self.tree_label.align_taxa = self.cbx_align_taxa.isChecked()
         if self.tree_label.align_taxa:
             #self.cbx_show_branch_length.setEnabled(False)
-            self.cbx_show_branch_length.setChecked(False)
-            self.tree_label.show_branch_length = False
+            self.cbx_apply_branch_length.setChecked(False)
+            self.tree_label.apply_branch_length = False
         self.tree_label.repaint()
 
     def update_info(self, analysis):
@@ -413,15 +423,15 @@ class TreeViewer(QWidget):
         if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
             self.cbx_align_taxa.setEnabled(True)
             #self.cbx_show_branch_length.setEnabled(False)
-            self.cbx_show_branch_length.setChecked(False)
+            self.cbx_apply_branch_length.setChecked(False)
         elif self.analysis.analysis_type == ANALYSIS_TYPE_ML:
             #self.cbx_align_taxa.setEnabled(False)
-            self.cbx_show_branch_length.setEnabled(True)
-            self.cbx_show_branch_length.setChecked(True)
+            self.cbx_apply_branch_length.setEnabled(True)
+            self.cbx_apply_branch_length.setChecked(True)
         elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
             #self.cbx_align_taxa.setEnabled(False)
-            self.cbx_show_branch_length.setEnabled(True)
-            self.cbx_show_branch_length.setChecked(True)
+            self.cbx_apply_branch_length.setEnabled(True)
+            self.cbx_apply_branch_length.setChecked(True)
         self.on_cbx_show_branch_length_clicked()
         self.on_cbx_align_taxa_clicked()
 
@@ -497,9 +507,11 @@ class TreeLabel(QLabel):
         self.text_offset = 5
         #self.set_mode(MODE['EDIT_LANDMARK'])
         self.tree_node_parents = {}
-        self.show_branch_length = False
+        self.apply_branch_length = False
         self.align_taxa = False
         self.analysis_type = None
+        self.italic_taxa_name = False
+        self.leaf_count = 0
 
     def _2canx(self, coord):
         return round((float(coord) / self.image_canvas_ratio) * self.scale) + self.pan_x + self.temp_pan_x
@@ -581,7 +593,10 @@ class TreeLabel(QLabel):
 
         clade_list = [ c for c in self.tree.find_clades() ]
         root = clade_list[0]
-        if self.show_branch_length and self.analysis_type != ANALYSIS_TYPE_PARSIMONY:
+        self.leaf_count = root.count_terminals()
+
+
+        if self.apply_branch_length and self.analysis_type != ANALYSIS_TYPE_PARSIMONY:
             self.clade_depths = self.tree.depths()
         else:
             self.clade_depths = self.tree.depths(unit_branch_lengths=True)
@@ -589,8 +604,10 @@ class TreeLabel(QLabel):
         self.max_depth = max(self.clade_depths.values())
         #print("max_depth", self.max_depth)
         self.branch_length_scale = ( self.width() * 0.8 ) / self.max_depth
+        self.row_height = int( self.height() * 0.9 ) / self.leaf_count
+        self.tree_unit_width = int( self.width() * 0.05 )
         #self.
-        v_pos = self.draw_node(painter, root, 0, 1)
+        v_pos = self.draw_node(painter, root, 0, 0)
 
         #print("root:", root, root.count_terminals(), v_pos)
         #for child in root:
@@ -601,8 +618,8 @@ class TreeLabel(QLabel):
         #pass
         if node.is_terminal():
             if self.align_taxa:
-                depth = self.max_depth + 1
-            if self.show_branch_length:
+                depth = self.max_depth
+            if self.apply_branch_length:
                 depth = self.clade_depths[node]
             self.draw_text( painter, depth, begin_row, node.name )
             return begin_row + 0.3
@@ -618,59 +635,50 @@ class TreeLabel(QLabel):
                 v_pos_sum += v_pos
                 #self.draw_node(painter, child, begin_row + traversed_row_count, depth+1)
                 from_depth = depth
-                to_depth = depth + 1
+                to_depth = depth +1
                 if self.align_taxa and child.is_terminal():
-                    to_depth = self.max_depth + 1
-                if self.show_branch_length:
+                    to_depth = self.max_depth
+                if self.apply_branch_length:
                     from_depth = self.clade_depths[node]
                     to_depth = self.clade_depths[child]
                 self.draw_line(painter, from_depth, to_depth, v_pos, v_pos )
                 traversed_row_count += child.count_terminals()
             #print(v_pos_list)
-            if self.show_branch_length:
+            if self.apply_branch_length:
                 depth = self.clade_depths[node]
             self.draw_line(painter, depth, depth, v_pos_list[0], v_pos_list[-1])
             return v_pos_sum / len(node)
 
     def draw_line(self, painter, x1, x2, y1, y2):
-        if self.show_branch_length:
-            x1 = int( x1 * self.branch_length_scale ) + self.tree_unit_width + self.pan_x + self.temp_pan_x
-            x2 = int( x2 * self.branch_length_scale ) + self.tree_unit_width + self.pan_x + self.temp_pan_x
-        else:
-            x1 = int( x1 * self.tree_unit_width ) + self.pan_x + self.temp_pan_x
-            x2 = int( x2 * self.tree_unit_width ) + self.pan_x + self.temp_pan_x
-        y1 = int( y1 * self.tree_leaf_height + self.tree_y_offset ) - int(self.tree_leaf_height / 2) + self.pan_y + self.temp_pan_y
-        y2 = int( y2 * self.tree_leaf_height + self.tree_y_offset ) - int(self.tree_leaf_height / 2) + self.pan_y + self.temp_pan_y
+        x1 = int( x1 * self.branch_length_scale ) + self.tree_unit_width + self.pan_x + self.temp_pan_x
+        x2 = int( x2 * self.branch_length_scale ) + self.tree_unit_width + self.pan_x + self.temp_pan_x
+        y1 = int( ( y1 + 1.5 ) * self.row_height ) - int(self.row_height / 2) + self.pan_y + self.temp_pan_y
+        y2 = int( ( y2 + 1.5 ) * self.row_height ) - int(self.row_height / 2) + self.pan_y + self.temp_pan_y
         painter.drawLine(x1, y1, x2, y2)
-        #painter.drawLine(int(x1) * self.tree_unit_width,int(y) * self.tree_leaf_height + self.tree_y_offset, int(x2) * self.tree_unit_width, int(y) * self.tree_leaf_height + self.tree_y_offset)
 
     def draw_text(self, painter, x, y, text):
-        #text = self.text()  # Get the text from the QLabel
         font = painter.font()
+        if self.italic_taxa_name:
+            font.setItalic(True)
+            painter.setFont(font)
+
         #print("initial_font", font.family())
         #font = QFont("Arial", 12)  # Set the desired font and size
         #font.setItalic(True)  # Set the font to italic
         #font.setPointSize(12)
         #painter.setFont(font)
 
-        #text = text.replace(".", ". ")
-
         # Get font metrics to determine text width and height
         #fontMetrics = QFontMetrics(font)
         #textWidth = fontMetrics.width(text)
         #textHeight = fontMetrics.height()     
-        if self.show_branch_length:
-            x1 = int( x * self.branch_length_scale ) + self.tree_unit_width + self.text_offset + self.pan_x + self.temp_pan_x
-            #depth = self.clade_depths[self.tree_node_parents[text]]   
-        else:
-            x1 = x * self.tree_unit_width + self.text_offset + self.pan_x + self.temp_pan_x
-        y1 = y * self.tree_leaf_height + self.tree_y_offset + self.pan_y + self.temp_pan_y
+
+        x1 = int( x * self.branch_length_scale ) + self.tree_unit_width + self.text_offset + self.pan_x + self.temp_pan_x
+        y1 = int( ( y + 1.5 ) * self.row_height ) + self.pan_y + self.temp_pan_y
         painter.drawText(x1, y1, text)
-        #painter.drawText(x * self.tree_unit_width, y * self.tree_leaf_height + self.tree_y_offset, text)
 
     def paintEvent(self, event):
         #print("tree paint", self.curr_pixmap)
-        
         painter = QPainter(self)
         painter.fillRect(self.rect(), QBrush(QColor(self.bgcolor)))#as_qt_color(COLOR['BACKGROUND'])))
 
