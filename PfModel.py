@@ -92,6 +92,22 @@ class PfDatamatrix(Model):
     class Meta:
         database = gDatabase
 
+    def copy(self):
+        new_datamatrix = PfDatamatrix.create(
+            project=self.project,
+            datamatrix_name=self.datamatrix_name,
+            datamatrix_desc=self.datamatrix_desc,
+            datamatrix_index=self.datamatrix_index,
+            datatype=self.datatype,
+            n_taxa=self.n_taxa,
+            n_chars=self.n_chars,
+            taxa_list_json=self.taxa_list_json,
+            character_list_json=self.character_list_json,
+            datamatrix_json=self.datamatrix_json,
+            whole_text=self.whole_text
+        )
+        return new_datamatrix
+
     def get_character_list(self):
         if self.character_list_json:
             return json.loads(self.character_list_json)
@@ -276,7 +292,6 @@ class PfPackage(Model):
         database = gDatabase
 
 class PfAnalysis(Model):
-    project = ForeignKeyField(PfProject, backref='analyses', on_delete='CASCADE')
     datamatrix = ForeignKeyField(PfDatamatrix, backref='analyses', on_delete='CASCADE')
     package = ForeignKeyField(PfPackage, backref='analyses', null=True)
     analysis_type = CharField()
@@ -331,8 +346,6 @@ class PfAnalysis(Model):
                 return tree_filename
 
 class PfTree(Model):
-    project = ForeignKeyField(PfProject, backref='trees', on_delete='CASCADE')
-    datamatrix = ForeignKeyField(PfDatamatrix, backref='trees', on_delete='CASCADE')
     analysis = ForeignKeyField(PfAnalysis, backref='trees', on_delete='CASCADE')
     tree_name = CharField()
     tree_type = CharField()

@@ -240,7 +240,7 @@ class PfTableModel(QAbstractTableModel):
         if role == Qt.DisplayRole:
             if orientation == Qt.Horizontal:
                 # Return the header text for the given horizontal section
-                return "{}".format(section)
+                return "{}".format(section+1)
             elif orientation == Qt.Vertical:
                 # Return the header text for the given vertical section
                 if len( self._vheader_data ) == 0:
@@ -725,7 +725,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         string_io.close()
 
         consensus_tree = PfTree()
-        consensus_tree.project = analysis.project
+        #consensus_tree.project = analysis.project
         consensus_tree.datamatrix = analysis.datamatrix
         consensus_tree.analysis = analysis
         consensus_tree.tree_type = TREE_TYPE_CONSENSUS
@@ -950,13 +950,10 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         self.treeView.setDragEnabled(True)
         self.treeView.setAcceptDrops(True)
         self.treeView.setDropIndicatorShown(True)
-        self.treeView.dropEvent = self.dropEvent
+        #self.treeView.dropEvent = self.dropEvent
         self.treeView.dropEvent = self.treeView_drop_event
         self.treeView.dragEnterEvent = self.treeView_drag_enter_event
         self.treeView.dragMoveEvent = self.treeView_drag_move_event
-
-
-
 
     def reset_tableView(self):
         #self.datamatrix_model = PfItemModel()
@@ -984,31 +981,69 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         #self.clear_object_view()
 
     def treeView_drop_event(self, event):
-        print("treeView_drop_event")
-        file_name_list = event.mimeData().text().strip().split("\n")
-        if len(file_name_list) == 0:
-            return
-        self.add_datamatrix(file_name_list)
+        #print("treeView_drop_event", event.source())
+        if event.source() == self.treeView:
+            # datamatrix copy or move
+            target_index=self.treeView.indexAt(event.pos())
+            target_item = self.project_model.itemFromIndex(target_index)
+            target_object = target_item.data()
+            if target_object is None:
+                return
+            if target_object is not None and isinstance(target_object, PfAnalysis):
+                target_project = target_object.datamatrix.project
+            elif target_object is not None and isinstance(target_object, PfDatamatrix):
+                target_project = target_object.project
+            elif target_object is not None and isinstance(target_object, PfProject):
+                target_project = target_object
+
+            source_index = event.source().currentIndex()
+            source_item = self.project_model.itemFromIndex(source_index)
+            source_object = source_item.data()
+            if source_object is not None and isinstance(source_object, PfAnalysis):
+                return
+            elif source_object is not None and isinstance(source_object, PfDatamatrix):
+                source_datamatrix = source_object
+
+            ''' copy move logic
+            shift_clicked = False
+            modifiers = QApplication.keyboardModifiers()
+            if modifiers == Qt.ShiftModifier:
+                shift_clicked = True
+            '''
+
+            if source_datamatrix is not None:
+                new_datamatrix = source_datamatrix.copy()
+                new_datamatrix.project = target_project
+                datamatrix_name_list = [dm.datamatrix_name for dm in target_project.datamatrices]
+                new_datamatrix.datamatrix_name = pu.get_unique_name(source_datamatrix.datamatrix_name, datamatrix_name_list)
+                new_datamatrix.save()
+                self.load_treeview()
+                self.select_project(target_project)
+        elif event.mimeData().hasUrls():
+            # file import
+            file_name_list = event.mimeData().text().strip().split("\n")
+            if len(file_name_list) == 0:
+                return
+            self.add_datamatrix(file_name_list)
 
     def tableView_drop_event(self, event):
-        print("tableView_drop_event")
+        #print("tableView_drop_event")
         file_name_list = event.mimeData().text().strip().split("\n")
         if len(file_name_list) == 0:
             return
         self.add_datamatrix(file_name_list)
-
 
     def add_datamatrix(self, file_name_list):
         create_new_project = False
         if self.selected_project is None:
             msgBox = QMessageBox(self)
             msgBox.setIcon(QMessageBox.Warning)
-            msgBox.setText("No project is selected. Do you want to create a project with this file?")
+            msgBox.setText("No project is selected. Do you want to create a new project with this file?")
             msgBox.setWindowTitle("Warning")
             msgBox.setWindowModality(Qt.ApplicationModal)
             msgBox.setWindowFlags(msgBox.windowFlags() | Qt.WindowStaysOnTopHint)
                     
-            createButton = msgBox.addButton("Create New Project", QMessageBox.AcceptRole)
+            createButton = msgBox.addButton("Create a New Project", QMessageBox.AcceptRole)
             cancelButton = msgBox.addButton(QMessageBox.Cancel)
 
             msgBox.exec_()
@@ -1016,7 +1051,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             if msgBox.clickedButton() == createButton:
                 # Logic to create a new project
                 create_new_project = True
-                print("Creating new project...")
+                print("Creating a new project...")
             elif msgBox.clickedButton() == cancelButton:
                 # Cancel logic or do nothing
                 #print("Cancelled")            
@@ -1152,12 +1187,13 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         #horizontalHeader.resizeSection(1, 50)
 
         data_list = dm.datamatrix_as_list()
+        self.datamatrix = data_list
         if data_list is None:
             return dm_widget
 
         # setting headers
         table_view.verticalHeader().setFixedWidth(200)
-        table_view.horizontalHeader().setDefaultSectionSize(20)
+        table_view.horizontalHeader().setDefaultSectionSize(15)
 
         '''
         header_labels = []
@@ -1167,15 +1203,15 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             character_list = [""] * character_list_len
 
         for i in range(len(character_list)):
-            header_labels.append("{}".format(i+1))
+            header_labels.append("{}".format(i+2))
         '''
 
         vheader = dm.get_taxa_list()
         datamatrix_model.setVerticalHeader(vheader)
         #datamatrix_model.setHorizontalHeader(header_labels)
-        '''
         #datamatrix_model.setColumnCount(len(header_labels))
-        datamatrix_model.setHorizontalHeaderLabels( header_labels )
+        #datamatrix_model.setHorizontalHeaderLabels( header_labels )
+        '''
 
         vheader = dm.get_taxa_list()
         datamatrix_model.setVerticalHeaderLabels( vheader )
@@ -1563,19 +1599,23 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                 #self.tabView.addTab(dm_widget, dm.datamatrix_name)
 
     def on_btn_add_taxon_clicked(self):
-        print("add taxon")
+        #print("add taxon")
         if self.selected_datamatrix is None:
             return
         text, ok = QInputDialog.getText(self, 'Input Dialog', 'Enter new taxon name', text="")
         dm = self.selected_datamatrix
         dm.taxa_list = dm.get_taxa_list()
-        print("taxa_list 1", dm.taxa_list)
+        #print("taxa_list 1", dm.taxa_list)
         dm.taxa_list.append(text)
         dm.taxa_list_json = json.dumps(dm.taxa_list)
         dm.n_taxa = len(dm.taxa_list)
+        dm.datamatrix = dm.datamatrix_as_list()
+        #print("datamatrix 1:", dm.datamatrix)
+        #dm.datamatrix
         dm.datamatrix.append([""] * dm.n_chars)
         dm.datamatrix_json = json.dumps(dm.datamatrix,indent=4)
-        print("taxa_list 2", dm.taxa_list)
+        #print("taxa_list 2", dm.taxa_list)
+        #print("datamatrix 2:", dm.datamatrix)
         dm.save()
         self.update_datamatrix_table()
         self.hsplitter.replaceWidget(1, self.data_storage['datamatrix'][self.selected_datamatrix.id]['widget'])
@@ -1593,6 +1633,10 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         dm.characters_list.append(text)
         dm.character_list_json = json.dumps(dm.characters_list)
         dm.n_chars = len(dm.characters_list)
+        dm.datamatrix = dm.datamatrix_as_list()
+        for row in dm.datamatrix:
+            row.append("")
+        dm.datamatrix_json = json.dumps(dm.datamatrix,indent=4)
         dm.save()
         self.update_datamatrix_table()
         self.hsplitter.replaceWidget(1, self.data_storage['datamatrix'][self.selected_datamatrix.id]['widget'])

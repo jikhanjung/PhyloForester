@@ -15,6 +15,28 @@ from PfModel import *
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_svg
 
+class PfInputDialog(QDialog):
+    def __init__(self, parent=None):
+        super(PfInputDialog, self).__init__(parent)
+        self.setWindowTitle("Input")
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+        self.edtInput1 = QLineEdit()
+        self.layout.addWidget(self.edtInput1)
+        self.edtInput2 = QLineEdit()
+        self.layout.addWidget(self.edtInput2)
+        self.btnOK = QPushButton("OK")
+        self.btnOK.clicked.connect(self.on_btn_ok_clicked)
+        self.btnCancel = QPushButton("Cancel")
+        self.btnCancel.clicked.connect(self.on_btn_cancel_clicked)
+        self.layout.addWidget(self.btnOK)
+        self.layout.addWidget(self.btnCancel)
+
+    def on_btn_ok_clicked(self):
+        self.accept()
+
+    def on_btn_cancel_clicked(self):
+        self.reject()
 
 class AnalysisViewer(QWidget):
     def __init__(self):
@@ -266,17 +288,17 @@ class TreeViewer(QWidget):
         self.options_widget.setLayout(self.options_layout)
         self.layout.addWidget(self.options_widget)
         self.cbx_apply_branch_length = QCheckBox()
-        self.cbx_apply_branch_length.setText("Apply Branch Length")
+        self.cbx_apply_branch_length.setText("Branch Length")
         self.cbx_apply_branch_length.setChecked(False)
         self.options_layout.addWidget(self.cbx_apply_branch_length)
         self.cbx_apply_branch_length.clicked.connect(self.on_cbx_show_branch_length_clicked)
         self.cbx_align_taxa = QCheckBox()
-        self.cbx_align_taxa.setText("Align Taxa")
+        self.cbx_align_taxa.setText("Align")
         self.cbx_align_taxa.setChecked(False)
         self.options_layout.addWidget(self.cbx_align_taxa)
         self.cbx_align_taxa.clicked.connect(self.on_cbx_align_taxa_clicked)
         self.cbx_italic_taxa_name = QCheckBox()
-        self.cbx_italic_taxa_name.setText("Italic Taxa Name")
+        self.cbx_italic_taxa_name.setText("Italic")
         self.cbx_italic_taxa_name.setChecked(False)
         self.options_layout.addWidget(self.cbx_italic_taxa_name)
         self.cbx_italic_taxa_name.clicked.connect(self.on_cbx_italic_taxa_name_clicked)
@@ -991,9 +1013,9 @@ class AnalysisDialog(QDialog):
 
         for analysis_type in analysis_type_list:
             analysis = PfAnalysis()
-            analysis.project = self.parent.selected_project
-            if analysis.project is None:
-                return
+            #analysis.project = self.parent.selected_project
+            #if analysis.project is None:
+            #    return
             analysis.datamatrix = self.parent.selected_datamatrix
             if analysis.datamatrix is None:
                 return
@@ -1089,15 +1111,19 @@ class DatamatrixDialog(QDialog):
         datatype_layout.addWidget(self.rbCombined)
 
         self.lstCharacters = QListWidget()
-        self.lstCharacters.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.lstCharacters.setSelectionMode(QAbstractItemView.SingleSelection)
         self.lstCharacters.setSortingEnabled(False)
         self.lstCharacters.setAlternatingRowColors(True)
+        self.lstCharacters.itemSelectionChanged.connect(self.on_lstCharacters_itemSelectionChanged)
 
         self.edtCharacter = QLineEdit()
         self.edtCharacter.setPlaceholderText("Enter character name")
         self.btnAddCharacter = QPushButton()
         self.btnAddCharacter.setText("Add")
         self.btnAddCharacter.clicked.connect(self.on_btnAddCharacter_clicked)
+        self.btnSaveCharacter = QPushButton()
+        self.btnSaveCharacter.setText("Save")
+        self.btnSaveCharacter.clicked.connect(self.on_btnSaveCharacter_clicked)
         self.btnRemoveCharacter = QPushButton()
         self.btnRemoveCharacter.setText("Remove")
         self.btnRemoveCharacter.clicked.connect(self.on_btnRemoveCharacter_clicked)
@@ -1105,6 +1131,7 @@ class DatamatrixDialog(QDialog):
         self.character_input_layout = QHBoxLayout()
         self.character_input_layout.addWidget(self.edtCharacter)
         self.character_input_layout.addWidget(self.btnAddCharacter)
+        self.character_input_layout.addWidget(self.btnSaveCharacter)
         self.character_input_layout.addWidget(self.btnRemoveCharacter)
         self.character_input_widget = QWidget()
         self.character_input_widget.setLayout(self.character_input_layout)
@@ -1119,7 +1146,45 @@ class DatamatrixDialog(QDialog):
         self.characters_layout_widget.layout().setStretch(0,1)
         self.characters_layout_widget.layout().setStretch(1,0)
 
+        self.lstTaxa = QListWidget()
+        # set single selection mode
 
+        self.lstTaxa.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.lstTaxa.setSortingEnabled(False)
+        self.lstTaxa.setAlternatingRowColors(True)
+        
+        # selection changed event to update
+        self.lstTaxa.itemSelectionChanged.connect(self.on_lstTaxa_itemSelectionChanged)
+
+        self.edtTaxon = QLineEdit()
+        self.edtTaxon.setPlaceholderText("Enter character name")
+        self.btnAddTaxon = QPushButton()
+        self.btnAddTaxon.setText("Add")
+        self.btnAddTaxon.clicked.connect(self.on_btnAddTaxon_clicked)
+        self.btnSaveTaxon = QPushButton()
+        self.btnSaveTaxon.setText("Save")
+        self.btnSaveTaxon.clicked.connect(self.on_btnSaveTaxon_clicked)
+        self.btnRemoveTaxon = QPushButton()
+        self.btnRemoveTaxon.setText("Remove")
+        self.btnRemoveTaxon.clicked.connect(self.on_btnRemoveTaxon_clicked)
+
+        self.taxon_input_layout = QHBoxLayout()
+        self.taxon_input_layout.addWidget(self.edtTaxon)
+        self.taxon_input_layout.addWidget(self.btnAddTaxon)
+        self.taxon_input_layout.addWidget(self.btnSaveTaxon)
+        self.taxon_input_layout.addWidget(self.btnRemoveTaxon)
+        self.taxon_input_widget = QWidget()
+        self.taxon_input_widget.setLayout(self.taxon_input_layout)
+
+        self.taxa_layout_widget = QWidget()
+        self.taxa_layout_widget.setLayout(QVBoxLayout())
+        self.taxa_layout_widget.layout().addWidget(self.lstTaxa)
+        self.taxa_layout_widget.layout().addWidget(self.taxon_input_widget)
+        self.taxa_layout_widget.layout().setContentsMargins(0,0,0,0)
+        self.taxa_layout_widget.layout().setSpacing(0)
+        self.taxa_layout_widget.layout().setAlignment(Qt.AlignTop)
+        self.taxa_layout_widget.layout().setStretch(0,1)
+        self.taxa_layout_widget.layout().setStretch(1,0)
 
         self.main_layout = QFormLayout()
         self.setLayout(self.main_layout)
@@ -1127,6 +1192,7 @@ class DatamatrixDialog(QDialog):
         self.main_layout.addRow("Datamatrix Name", self.edtDatamatrixName)
         self.main_layout.addRow("Description", self.edtDatamatrixDesc)
         self.main_layout.addRow("Data Type", datatype_layout)
+        self.main_layout.addRow("Taxa", self.taxa_layout_widget)
         self.main_layout.addRow("Characters", self.characters_layout_widget)
         self.btnOkay = QPushButton()
         self.btnOkay.setText("Save")
@@ -1146,6 +1212,13 @@ class DatamatrixDialog(QDialog):
         btn_layout.addWidget(self.btnCancel)
         self.main_layout.addRow(btn_layout)
 
+    def on_lstCharacters_itemSelectionChanged(self):
+        items = self.lstCharacters.selectedItems()
+        if len(items) == 0:
+            return
+        item = items[0]
+        self.edtCharacter.setText(item.text())
+
     def on_btnAddCharacter_clicked(self):
         character_name = self.edtCharacter.text()
         if character_name == "":
@@ -1153,10 +1226,47 @@ class DatamatrixDialog(QDialog):
         self.edtCharacter.setText("")
         self.lstCharacters.addItem(character_name)
 
+    def on_btnSaveCharacter_clicked(self):
+        character_name = self.edtCharacter.text()
+        if character_name == "":
+            return
+        items = self.lstCharacters.selectedItems()
+        item = items[0]
+        item.setText(character_name)
+
     def on_btnRemoveCharacter_clicked(self):
         items = self.lstCharacters.selectedItems()
         for item in items:
             self.lstCharacters.takeItem(self.lstCharacters.row(item))
+
+    def on_lstTaxa_itemSelectionChanged(self):
+        items = self.lstTaxa.selectedItems()
+        if len(items) == 0:
+            return
+        item = items[0]
+        self.edtTaxon.setText(item.text())
+
+    def on_btnAddTaxon_clicked(self):
+        taxon_name = self.edtTaxon.text()
+        if taxon_name == "":
+            return
+        self.edtTaxon.setText("")
+        self.lstTaxa.addItem(taxon_name)
+
+    def on_btnSaveTaxon_clicked(self):
+        taxon_name = self.edtTaxon.text()
+        if taxon_name == "":
+            return
+        items = self.lstTaxa.selectedItems()
+        item = items[0]
+        item.setText(taxon_name)
+        #self.edtTaxon.setText("")
+        #self.lstTaxa.addItem(taxon_name)
+
+    def on_btnRemoveTaxon_clicked(self):
+        items = self.lstTaxa.selectedItems()
+        for item in items:
+            self.lstTaxa.takeItem(self.lstTaxa.row(item))
 
     def read_settings(self):
         self.remember_geometry = pu.value_to_bool(self.m_app.settings.value("WindowGeometry/RememberGeometry", True))
@@ -1198,6 +1308,10 @@ class DatamatrixDialog(QDialog):
         if len( character_list ) != 0:
             for character in character_list:
                 self.lstCharacters.addItem(character)
+        taxa_list = datamatrix.get_taxa_list()
+        if len( taxa_list ) != 0:
+            for taxon in taxa_list:
+                self.lstTaxa.addItem(taxon)
     
     def Okay(self):
         if self.datamatrix is None:
