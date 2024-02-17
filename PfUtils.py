@@ -14,13 +14,18 @@ DB_LOCATION = ""
 #print(os.name)
 USER_PROFILE_DIRECTORY = os.path.expanduser('~')
 
-DEFAULT_DB_DIRECTORY = os.path.join( USER_PROFILE_DIRECTORY, PROGRAM_NAME )
-DEFAULT_STORAGE_DIRECTORY = os.path.join(DEFAULT_DB_DIRECTORY, "data/")
+DEFAULT_DB_DIRECTORY = os.path.join( USER_PROFILE_DIRECTORY, COMPANY_NAME, PROGRAM_NAME )
+#DEFAULT_STORAGE_DIRECTORY = os.path.join(DEFAULT_DB_DIRECTORY, "data/")
 
 if not os.path.exists(DEFAULT_DB_DIRECTORY):
     os.makedirs(DEFAULT_DB_DIRECTORY)
-if not os.path.exists(DEFAULT_STORAGE_DIRECTORY):
-    os.makedirs(DEFAULT_STORAGE_DIRECTORY)
+#if not os.path.exists(DEFAULT_STORAGE_DIRECTORY):
+#    os.makedirs(DEFAULT_STORAGE_DIRECTORY)
+
+def get_timestamp():
+    import datetime
+    now = datetime.datetime.now()
+    return now.strftime("%Y%m%d_%H%M%S")
 
 def value_to_bool(value):
     return value.lower() == 'true' if isinstance(value, str) else bool(value)

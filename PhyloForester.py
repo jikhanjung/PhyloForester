@@ -15,6 +15,7 @@ import PfUtils as pu
 from PfModel import *
 from PfDialog import *
 import matplotlib.pyplot as plt
+from peewee_migrate import Router
 
 
 ICON = {}
@@ -389,7 +390,7 @@ class PhyloForesterMainWindow(QMainWindow):
 
     def read_settings(self):
         #self.m_app.settings = QSettings(QSettings.IniFormat, QSettings.UserScope,pu.COMPANY_NAME, pu.PROGRAM_NAME)
-        self.m_app.storage_directory = os.path.abspath(pu.DEFAULT_STORAGE_DIRECTORY)
+        #self.m_app.storage_directory = os.path.abspath(pu.DEFAULT_STORAGE_DIRECTORY)
         self.m_app.tnt_path = self.m_app.settings.value("SoftwarePath/TNT", "")
         self.m_app.iqtree_path = self.m_app.settings.value("SoftwarePath/IQTree", "")
         self.m_app.mrbayes_path = self.m_app.settings.value("SoftwarePath/MrBayes", "")
@@ -410,7 +411,14 @@ class PhyloForesterMainWindow(QMainWindow):
             self.m_app.settings.setValue("WindowGeometry/MainWindow", self.geometry())
 
     def check_db(self):
+        migrations_path = pu.resource_path("migrations")
         gDatabase.connect()
+        router = Router(gDatabase, migrate_dir=migrations_path)
+
+        # Auto-discover and run migrations
+        router.run()        
+        return
+
         tables = gDatabase.get_tables()
         if tables:
             return
@@ -1775,8 +1783,8 @@ if __name__ == "__main__":
 '''
 How to make an exe file
 
-pyinstaller --onefile --noconsole --add-data "icons/*.png;icons" --add-data "data/*.*;data" --add-data "translations/*.qm;translations" --icon="icons/PhyloForester.png" PhyloForester.py
-pyinstaller --onedir --noconsole --add-data "icons/*.png;icons" --add-data "data/*.*;data" --add-data "translations/*.qm;translations" --icon="icons/PhyloForester.png" --noconfirm PhyloForester.py
+pyinstaller --onefile --noconsole --add-data "icons/*.png;icons" --add-data "data/*.*;data" --add-data "translations/*.qm;translations" --add-data "migrations/*;migrations" --icon="icons/PhyloForester.png" PhyloForester.py
+pyinstaller --onedir --noconsole --add-data "icons/*.png;icons" --add-data "data/*.*;data" --add-data "translations/*.qm;translations" --add-data "migrations/*;migrations" --icon="icons/PhyloForester.png" --noconfirm PhyloForester.py
 
 pylupdate5 PhyloForester.py -ts translations/PhyloForester_en.ts
 pylupdate5 PhyloForester.py -ts translations/PhyloForester_ko.ts
