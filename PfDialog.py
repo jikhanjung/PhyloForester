@@ -1050,6 +1050,9 @@ class AnalysisDialog(QDialog):
 
             analysis.analysis_status = ANALYSIS_STATUS_QUEUED
             analysis.analysis_type = analysis_type
+            analysis.taxa_list_json = analysis.datamatrix.taxa_list_json
+            analysis.character_list_json = analysis.datamatrix.character_list_json
+            analysis.datamatrix_json = analysis.datamatrix.datamatrix_json
             analysis.save()
 
         self.accept()
@@ -1314,6 +1317,7 @@ class DatamatrixDialog(QDialog):
                 self.lstTaxa.addItem(taxon)
     
     def Okay(self):
+        #print("okay")
         if self.datamatrix is None:
             self.datamatrix = PfDatamatrix()
         self.datamatrix.datamatrix_name = self.edtDatamatrixName.text()
@@ -1326,12 +1330,33 @@ class DatamatrixDialog(QDialog):
             self.datamatrix.datatype = DATATYPE_RNA
         elif self.rbCombined.isChecked():
             self.datamatrix.datatype = DATATYPE_COMBINED
-        self.datamatrix.characters_str = ""
+        character_list = []
         for i in range(self.lstCharacters.count()):
-            self.datamatrix.characters_str += self.lstCharacters.item(i).text()
-            if i < self.lstCharacters.count()-1:
-                self.datamatrix.characters_str += ","
+            character_list.append(self.lstCharacters.item(i).text())
+            #self.datamatrix.characters_str += self.lstCharacters.item(i).text()
+            #if i < self.lstCharacters.count()-1:
+            #    self.datamatrix.characters_str += ","
+        self.datamatrix.character_list_json = json.dumps(character_list)
+        self.datamatrix.n_chars = len(character_list)
+        taxon_list = []
+        for i in range(self.lstTaxa.count()):
+            taxon_list.append(self.lstTaxa.item(i).text())
+            #self.datamatrix.taxa_str += self.lstTaxa.item(i).text()
+            #if i < self.lstTaxa.count()-1:
+            #    self.datamatrix.taxa_str += ","
+        self.datamatrix.taxa_list_json = json.dumps(taxon_list)
+        self.datamatrix.n_taxa = len(taxon_list)
 
+        self.datamatrix.datamatrix = self.datamatrix.datamatrix_as_list()
+        if len( self.datamatrix.datamatrix ) < self.datamatrix.n_taxa:
+            self.datamatrix.datamatrix.append( ["0"] * self.datamatrix.n_chars )
+            #return
+        for i, row in enumerate(self.datamatrix.datamatrix):
+            if len(row) < self.datamatrix.n_chars:
+                self.datamatrix.datamatrix[i].extend( ["0"] * (self.datamatrix.n_chars - len(row)) )
+        self.datamatrix.datamatrix_json = json.dumps(self.datamatrix.datamatrix)
+        #print("saving datamatrix", self.datamatrix.datamatrix )
+        #print("saving datamatrix")
         self.datamatrix.save()
         self.accept()
 

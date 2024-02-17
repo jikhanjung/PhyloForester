@@ -844,7 +844,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                 return
             elif ret == 1:
                 self.load_treeview()
-                self.reset_tableView()                
+                self.update_datamatrix_table()
+                #self.reset_tableView()                
 
     def on_action_run_analysis_triggered(self):
         indexes = self.treeView.selectedIndexes()
@@ -877,7 +878,22 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         #self.select_datamatrix(datamatrix)
 
     def on_action_add_datamatrix_triggered(self):
-        pass
+        indexes = self.treeView.selectedIndexes()
+        index = indexes[0]
+        item1 =self.project_model.itemFromIndex(index)
+        prj = item1.data()
+        if isinstance(prj, PfProject):
+            self.dlg = DatamatrixDialog(self)
+            self.dlg.setModal(True)
+            dm = PfDatamatrix()
+            dm.project = prj
+            self.dlg.set_datamatrix( dm )
+            ret = self.dlg.exec_()
+            if ret == 0:
+                return
+            elif ret == 1:
+                self.load_treeview()
+                self.reset_tableView()                
 
     def on_action_delete_datamatrix_triggered(self):
         #print("delete datamatrix")
@@ -1207,7 +1223,15 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         '''
 
         vheader = dm.get_taxa_list()
+        #print("vheader:", vheader)
         datamatrix_model.setVerticalHeader(vheader)
+        hheader = dm.get_character_list()
+        #print("hheader:", hheader)
+        #print("n char, n taxa:", dm.n_chars, dm.n_taxa)
+
+        if len(data_list) < len(vheader):
+            for i in range(len(vheader) - len(data_list)):
+                data_list.append(["0"] * len(hheader))
         #datamatrix_model.setHorizontalHeader(header_labels)
         #datamatrix_model.setColumnCount(len(header_labels))
         #datamatrix_model.setHorizontalHeaderLabels( header_labels )
@@ -1612,7 +1636,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         dm.datamatrix = dm.datamatrix_as_list()
         #print("datamatrix 1:", dm.datamatrix)
         #dm.datamatrix
-        dm.datamatrix.append([""] * dm.n_chars)
+        dm.datamatrix.append(["0"] * dm.n_chars)
         dm.datamatrix_json = json.dumps(dm.datamatrix,indent=4)
         #print("taxa_list 2", dm.taxa_list)
         #print("datamatrix 2:", dm.datamatrix)
@@ -1629,13 +1653,13 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
 
         dm.characters_list = dm.get_character_list()
         if len(dm.characters_list) == 0:
-            dm.characters_list = [''] * dm.n_chars
+            dm.characters_list = ['0'] * dm.n_chars
         dm.characters_list.append(text)
         dm.character_list_json = json.dumps(dm.characters_list)
         dm.n_chars = len(dm.characters_list)
         dm.datamatrix = dm.datamatrix_as_list()
         for row in dm.datamatrix:
-            row.append("")
+            row.append("0")
         dm.datamatrix_json = json.dumps(dm.datamatrix,indent=4)
         dm.save()
         self.update_datamatrix_table()

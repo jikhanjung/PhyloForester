@@ -97,7 +97,7 @@ end
 
 set dobremer 1;
 set bootit 1;
-sect:slack 25;
+sect:slack 150;
 
 if ( !windows ) cls ; end
 resettime ;

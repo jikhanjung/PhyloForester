@@ -109,17 +109,21 @@ class PfDatamatrix(Model):
         return new_datamatrix
 
     def get_character_list(self):
+        self.character_list = []
         if self.character_list_json:
-            return json.loads(self.character_list_json)
-        else:
-            return []
+            self.character_list = json.loads(self.character_list_json)
+        if len(self.character_list) == 0:
+            if self.n_chars is not None:
+                self.character_list = [""] * self.n_chars
+
+        return self.character_list
 
     def datamatrix_as_list(self):
         if self.datamatrix_json:
             formatted_data_list = json.loads(self.datamatrix_json)
             return formatted_data_list
         else:
-            return ""
+            return []
 
     def get_taxa_list(self):
         if self.taxa_list_json:
@@ -299,6 +303,9 @@ class PfAnalysis(Model):
     analysis_status = CharField(null=True)
     result_directory = CharField(null=True)
     datafile = CharField(null=True)
+    taxa_list_json = CharField(null=True)
+    character_list_json = CharField(null=True)
+    datamatrix_json = CharField(null=True)
     completion_percentage = IntegerField(default=0)
     start_datetime = DateTimeField(default=datetime.datetime.now)
     finish_datetime = DateTimeField(null=True)
