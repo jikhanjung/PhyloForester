@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QTableWidgetItem, QHeaderView, QFileDialog, QCheckBo
                             QTableView, QSplitter, QRadioButton, QComboBox, QTextEdit, QSizePolicy, \
                             QTableWidget, QGridLayout, QAbstractButton, QButtonGroup, QGroupBox, \
                             QTabWidget, QListWidget, QSlider, QScrollBar, QPlainTextEdit, QScrollArea
-from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap, QStandardItemModel, QStandardItem, QImage,\
+from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap, QResizeEvent, QStandardItemModel, QStandardItem, QImage,\
                         QFont, QPainter, QBrush, QMouseEvent, QWheelEvent, QDoubleValidator, QFontMetrics
 from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSize, QPoint,\
                          pyqtSlot, QItemSelectionModel, QTimer
@@ -247,8 +247,8 @@ class TreeViewer(QWidget):
         self.m_app = QApplication.instance()
         self.newick_tree_list = []
         self.treeobj_hash = {}
-        self.stored_newick_tree_list = []
-        self.stored_treeobj_hash = {}
+        self.bookmarked_newick_tree_list = []
+        self.bookmarked_treeobj_hash = {}
         #self.scroll_area = QScrollArea()
         #self.scroll_area.setWidgetResizable(True)
         #self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
@@ -260,7 +260,7 @@ class TreeViewer(QWidget):
         self.tree_type_widget.setLayout(self.tree_type_layout)
         self.layout.addWidget(self.tree_type_widget)
         self.rb_tree_type1 = QRadioButton("Trees")
-        self.rb_tree_type2 = QRadioButton("Stored Trees")
+        self.rb_tree_type2 = QRadioButton("Bookmarked Trees")
         self.tree_type_layout.addWidget(self.rb_tree_type1)
         self.tree_type_layout.addWidget(self.rb_tree_type2)
         self.rb_tree_type1.setChecked(True)
@@ -278,6 +278,8 @@ class TreeViewer(QWidget):
         self.tree_info_layout.addWidget(self.lbl_tree_number)
         self.edt_tree_index = QLineEdit()
         self.edt_tree_index.setReadOnly(True)
+        self.edt_tree_index.setFixedWidth(50)
+
         self.tree_info_layout.addWidget(self.edt_tree_index)
         self.lbl_total_trees = QLabel()
         self.tree_info_layout.addWidget(self.lbl_total_trees)
@@ -287,13 +289,14 @@ class TreeViewer(QWidget):
         self.options_layout = QHBoxLayout()
         self.options_widget.setLayout(self.options_layout)
         self.layout.addWidget(self.options_widget)
+
         self.cbx_apply_branch_length = QCheckBox()
         self.cbx_apply_branch_length.setText("Branch Length")
         self.cbx_apply_branch_length.setChecked(False)
         self.options_layout.addWidget(self.cbx_apply_branch_length)
         self.cbx_apply_branch_length.clicked.connect(self.on_cbx_show_branch_length_clicked)
         self.cbx_align_taxa = QCheckBox()
-        self.cbx_align_taxa.setText("Align")
+        self.cbx_align_taxa.setText("Align Names")
         self.cbx_align_taxa.setChecked(False)
         self.options_layout.addWidget(self.cbx_align_taxa)
         self.cbx_align_taxa.clicked.connect(self.on_cbx_align_taxa_clicked)
@@ -302,8 +305,61 @@ class TreeViewer(QWidget):
         self.cbx_italic_taxa_name.setChecked(False)
         self.options_layout.addWidget(self.cbx_italic_taxa_name)
         self.cbx_italic_taxa_name.clicked.connect(self.on_cbx_italic_taxa_name_clicked)
+        self.cbx_fit_to_window = QCheckBox()
+        self.cbx_fit_to_window.setText("Fit")
+        self.cbx_fit_to_window.setFixedWidth(50)
+        self.cbx_fit_to_window.setChecked(True)
+        self.options_layout.addWidget(self.cbx_fit_to_window)
+        self.cbx_fit_to_window.clicked.connect(self.on_cbx_fit_to_window_clicked)
 
+        self.edt_tree_width = QLineEdit()
+        self.edt_tree_width.setReadOnly(True)
+        self.edt_tree_width.setEnabled(False)
+        self.edt_tree_width.setFixedWidth(50)
+        # change event
+        self.edt_tree_width.editingFinished.connect(self.on_edt_tree_width_change)
+        #self.edt_tree_width.changeEvent = self.on_edt_tree_width_change
+        #self.edt_tree_width.setText("0")
+        self.options_layout.addWidget(self.edt_tree_width)
+        self.lbl_tree_x = QLabel()
+        self.lbl_tree_x.setText("x")
+        self.lbl_tree_x.setFixedWidth(10)
+        self.options_layout.addWidget(self.lbl_tree_x)        
+        self.edt_tree_height = QLineEdit()
+        self.edt_tree_height.setReadOnly(True)
+        self.edt_tree_height.setEnabled(False)
+        self.edt_tree_height.setFixedWidth(50)
+        # change event
+        self.edt_tree_height.editingFinished.connect(self.on_edt_tree_height_change)
+        #self.edt_tree_height.changeEvent = self.on_edt_tree_height_change
+        #self.edt_tree_height.setText("0")
+        self.options_layout.addWidget(self.edt_tree_height)
 
+        self.buttons_widget = QWidget()
+        self.buttons_layout = QHBoxLayout()
+        self.buttons_widget.setLayout(self.buttons_layout)
+
+        self.btn_reset = QPushButton("Reset")
+        self.btn_reset.clicked.connect(self.on_btn_reset_clicked)
+        #self.btn_reset.setFixedWidth(80)
+        self.buttons_layout.addWidget(self.btn_reset)
+
+        self.btn_bookmark = QPushButton("Bookmark")
+        self.btn_bookmark.clicked.connect(self.on_btn_bookmark_clicked)
+        #self.btn_save.setFixedWidth(80)
+        self.buttons_layout.addWidget(self.btn_bookmark)
+
+        self.btn_export = QPushButton("Export")
+        self.btn_export.clicked.connect(self.on_btn_export_clicked)
+        #self.btn_export.setFixedWidth(80)
+        self.buttons_layout.addWidget(self.btn_export)
+
+        self.combo_image_type = QComboBox()
+        self.combo_image_type.addItem("SVG")
+        self.combo_image_type.addItem("PNG")
+        #self.combo_image_type.addItem("PDF")
+        self.combo_image_type.setFixedWidth(80)
+        self.buttons_layout.addWidget(self.combo_image_type)
 
         self.tree_info_widget2 = QWidget()
         self.tree_info_layout2 = QHBoxLayout()
@@ -333,9 +389,92 @@ class TreeViewer(QWidget):
         self.slider.setPageStep(10)
         self.slider.setSingleStep(1)
         self.slider.valueChanged.connect(self.on_slider_valueChanged)
-        self.layout.addWidget(self.slider)
+        self.tree_info_layout.addWidget(self.slider)
         self.curr_tree_index = 0
         self.tree_type = 1
+
+        self.layout.addWidget(self.buttons_widget)
+
+        self.current_tree = None
+
+
+
+    def on_btn_export_clicked(self):
+        pass
+
+    def on_btn_bookmark_clicked(self):
+        if self.current_tree is None:
+            return
+        consensus_tree = PfTree()
+        #consensus_tree.project = analysis.project
+        consensus_tree.analysis = self.analysis
+        if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+            consensus_tree.tree_type = TREE_TYPE_MPT
+            consensus_tree.tree_name = TREE_TYPE_MPT + " " + str(self.tree_current_index+1)
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_ML:
+            consensus_tree.tree_type = TREE_TYPE_BOOTSTRAP
+            consensus_tree.tree_name = TREE_TYPE_BOOTSTRAP + " " + str(self.tree_current_index+1)
+        elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+            consensus_tree.tree_type = TREE_TYPE_POSTERIOR
+            consensus_tree.tree_name = TREE_TYPE_POSTERIOR + " " + str(self.tree_current_index+1)
+        string_io = io.StringIO()
+        # Write the tree in Newick format to the text stream
+        Phylo.write(self.current_tree, string_io, "newick")
+        # Get the Newick string from the text stream
+        newick_string = string_io.getvalue()
+        # Close the StringIO object if it's not needed anymore
+        string_io.close()
+        
+        consensus_tree.newick_text = newick_string
+        consensus_tree.save()
+    
+    def on_btn_reset_clicked(self):
+        self.set_analysis(self.analysis)
+
+        if self.rb_tree_type1.isChecked():
+            self.on_rb_tree_type1_clicked()
+        else:
+            self.on_rb_tree_type2_clicked()
+        self.cbx_fit_to_window.setChecked(True)
+        self.on_cbx_fit_to_window_clicked()
+        self.cbx_align_taxa.setChecked(False)
+        self.on_cbx_align_taxa_clicked()
+        self.cbx_italic_taxa_name.setChecked(False)
+        self.on_cbx_italic_taxa_name_clicked()
+        self.tree_label.scale = 1.0
+        self.tree_label.pan_x = 0
+        self.tree_label.pan_y = 0
+        self.tree_label.temp_pan_x = 0
+        self.tree_label.temp_pan_y = 0
+        self.tree_label.repaint()
+        
+    def on_edt_tree_width_change(self):
+        #print("on_edt_tree_width_change", self.edt_tree_width.text())
+        self.tree_label.tree_image_width = int(self.edt_tree_width.text())
+        self.tree_label.repaint()
+    
+    def on_edt_tree_height_change(self):
+        #print("on_edt_tree_height_change", self.edt_tree_height.text())
+        self.tree_label.tree_image_height = int(self.edt_tree_height.text())
+        self.tree_label.repaint()
+
+    def on_cbx_fit_to_window_clicked(self):
+        fit_to_window = self.cbx_fit_to_window.isChecked()
+        self.tree_label.fit_to_window = fit_to_window
+        if fit_to_window:
+            self.edt_tree_width.setText(str(self.tree_label.width()))
+            self.edt_tree_height.setText(str(self.tree_label.height()))
+            self.edt_tree_width.setEnabled(False)
+            self.edt_tree_height.setEnabled(False)
+            self.edt_tree_width.setReadOnly(True)
+            self.edt_tree_height.setReadOnly(True)
+        else:
+            print("not fit to window, edit width and height manually.")
+            self.edt_tree_width.setEnabled(True)
+            self.edt_tree_height.setEnabled(True)
+            self.edt_tree_width.setReadOnly(False)
+            self.edt_tree_height.setReadOnly(False)
+        self.tree_label.repaint()
 
     def on_cbx_italic_taxa_name_clicked(self):
         self.tree_label.italic_taxa_name = self.cbx_italic_taxa_name.isChecked()
@@ -377,10 +516,10 @@ class TreeViewer(QWidget):
     def on_rb_tree_type2_clicked(self):
         #print("on_rb_tree_type2_clicked")
         self.tree_type = 2
-        self.slider.setRange(0, len(self.stored_newick_tree_list) - 1)
+        self.slider.setRange(0, len(self.bookmarked_newick_tree_list) - 1)
         self.slider.setValue(0)
         self.on_slider_valueChanged(0)
-        self.lbl_total_trees.setText("/" + str(len(self.stored_newick_tree_list)))
+        self.lbl_total_trees.setText("/" + str(len(self.bookmarked_newick_tree_list)))
 
         #self.current_treeobj_hash = self.stored_treeobj_hash
         #self.current_newick_tree_list = self.stored_newick_tree_list
@@ -411,11 +550,14 @@ class TreeViewer(QWidget):
             if self.tree_current_index < len(self.newick_tree_list):
             #self.stored_tree_list = PfTree.select().where(PfTree.analysis == self.analysis)        
             #self.stored_newick_tree_list = [tree.newick_text for tree in self.stored_tree_list]
-                tree = Phylo.read(io.StringIO(self.stored_newick_tree_list[self.tree_current_index]), "newick")
+                tree = Phylo.read(io.StringIO(self.bookmarked_newick_tree_list[self.tree_current_index]), "newick")
 
         if tree is None:
             return
+        self.current_tree = tree
         #print("selection changed. tree:", tree)
+        #self.edt_tree_width.setText(str(self.tree_label.width()))
+        #self.edt_tree_height.setText(str(self.tree_label.height()))
         self.tree_label.set_tree(tree)
         self.tree_label.update()
         return
@@ -488,20 +630,26 @@ class TreeViewer(QWidget):
         self.edt_tree_index.setText("1")
         self.on_slider_valueChanged(0)
 
-        self.stored_tree_list = PfTree.select().where(PfTree.analysis == self.analysis)        
-        self.stored_newick_tree_list = [tree.newick_text for tree in self.stored_tree_list]
+        self.bookmarked_tree_list = PfTree.select().where(PfTree.analysis == self.analysis)        
+        self.bookmarked_newick_tree_list = [tree.newick_text for tree in self.bookmarked_tree_list]
         #for tree in stored_tree_list:
         #    self.add_stored_tree(tree.newick_text)
 
     def set_tree_image(self, tree_image):
         self.tree_label.set_tree_image( tree_image)
 
+    def resizeEvent(self, a0: QResizeEvent | None) -> None:
+        #print("resizeEvent")
+        if self.cbx_fit_to_window.isChecked():
+            self.edt_tree_width.setText(str(self.tree_label.width()))
+            self.edt_tree_height.setText(str(self.tree_label.height()))
+        return super().resizeEvent(a0)
 
 class TreeLabel(QLabel):
     def __init__(self):
         super(TreeLabel, self).__init__()
         self.setMinimumSize(400,300)
-        self.bgcolor = "#EEEEEE"
+        self.bgcolor = "#888888"
         self.m_app = QApplication.instance()
         #self.read_settings()
         self.tree = None
@@ -534,6 +682,9 @@ class TreeLabel(QLabel):
         self.analysis_type = None
         self.italic_taxa_name = False
         self.leaf_count = 0
+        self.tree_image_width = 0
+        self.tree_image_height = 0
+        self.fit_to_window = True
 
     def _2canx(self, coord):
         return round((float(coord) / self.image_canvas_ratio) * self.scale) + self.pan_x + self.temp_pan_x
@@ -625,9 +776,9 @@ class TreeLabel(QLabel):
         #print("clade_depths", self.clade_depths)
         self.max_depth = max(self.clade_depths.values())
         #print("max_depth", self.max_depth)
-        self.branch_length_scale = ( self.width() * 0.8 ) / self.max_depth
-        self.row_height = int( self.height() * 0.9 ) / self.leaf_count
-        self.tree_unit_width = int( self.width() * 0.05 )
+        self.branch_length_scale = ( self.tree_image_width * 0.8 ) / self.max_depth
+        self.row_height = int( self.tree_image_height * 0.9 ) / self.leaf_count
+        self.tree_unit_width = int( self.tree_image_width * 0.05 )
         #self.
         v_pos = self.draw_node(painter, root, 0, 0)
 
@@ -703,11 +854,24 @@ class TreeLabel(QLabel):
         #print("tree paint", self.curr_pixmap)
         painter = QPainter(self)
         painter.fillRect(self.rect(), QBrush(QColor(self.bgcolor)))#as_qt_color(COLOR['BACKGROUND'])))
+        if self.fit_to_window:
+            self.tree_image_width = self.width()
+            self.tree_image_height = self.height()
+        
+        image_rect = QRect(self.pan_x+self.temp_pan_x, self.pan_y+self.temp_pan_y,self.tree_image_width, self.tree_image_height)
+        #print(self.rect(), self.pan_x+self.temp_pan_x, self.pan_y+self.temp_pan_y,self.tree_image_width, self.tree_image_height)
+        #image_pos = QPoint()
+        #print(self.rect(), image_rect)
+
+        painter.fillRect(image_rect, QBrush(QColor("#FFFFFF")))
 
         self.draw_tree(painter)
 
-        if self.curr_pixmap is not None:
-            painter.drawPixmap(self.pan_x+self.temp_pan_x, self.pan_y+self.temp_pan_y,self.curr_pixmap)
+        #self.setPixmap(self.pixmap)
+
+        #if self.curr_pixmap is not None:
+        #    painter.drawPixmap(self.pan_x+self.temp_pan_x, self.pan_y+self.temp_pan_y,self.curr_pixmap)
+        
 
     def calculate_resize(self):
         #print("calculate_resize", self.orig_pixmap, self.width(), self.height(), self)

@@ -734,7 +734,6 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
 
         consensus_tree = PfTree()
         #consensus_tree.project = analysis.project
-        consensus_tree.datamatrix = analysis.datamatrix
         consensus_tree.analysis = analysis
         consensus_tree.tree_type = TREE_TYPE_CONSENSUS
         consensus_tree.tree_name = "Consensus Tree"
