@@ -77,6 +77,7 @@ class PfDatamatrix(Model):
     n_taxa = IntegerField()
     n_chars = IntegerField()
     taxa_list_json = CharField(null=True)
+    taxa_timetable_json = CharField(null=True)
     character_list_json = CharField(null=True)
     datamatrix_json = CharField(null=True)
     whole_text = CharField(null=True)
@@ -91,6 +92,35 @@ class PfDatamatrix(Model):
 
     class Meta:
         database = gDatabase
+
+    def get_taxa_timetable(self):
+        timetable = []
+        if self.taxa_timetable_json is not None:
+            timetable = json.loads(self.taxa_timetable_json)
+        else:
+            timetable = [ [0,0] ] * self.n_taxa
+        return timetable
+
+    def is_timetable_valid(self):
+        if self.taxa_timetable_json:
+            timetable = json.loads(self.taxa_timetable_json)
+            all_zero = True
+            for row in timetable:
+                #print("row:",row)
+                if len(row) != 2:
+                    #print("row length not matching")
+                    return False
+                #if not isinstance(row[0], float) and not isinstance(row[0], int) or not isinstance(row[1], float) and isinstance(row[1], int):
+                #    return False
+                if float(row[0]) != 0.0 or float(row[1]) != 0.0:
+                    #print("row not all zero")
+                    all_zero = False
+            if all_zero:
+                #print("all zero")
+                return False
+            if len(timetable) == self.n_taxa:
+                return True
+        return False
 
     def copy(self):
         new_datamatrix = PfDatamatrix.create(

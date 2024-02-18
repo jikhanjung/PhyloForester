@@ -396,7 +396,7 @@ class PhyloTreefile:
         if self.file_type == 'Nexus':
             #print("nexus file")
             self.parse_nexus_file()
-            if self.block_hash['TREES']:
+            if 'TREES' in self.block_hash.keys():
                 tree_lines = self.block_hash['TREES']
                 taxa_begin = False
                 taxa_end = False

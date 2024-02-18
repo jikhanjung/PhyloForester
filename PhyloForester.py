@@ -1419,7 +1419,6 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         dir_layout.addWidget(edtAnalysisResultDirectory)
         dir_layout.addWidget(btnOpenDir)
 
-
         edtAnalysisStartDatetime = QLineEdit()
         edtAnalysisStartDatetime.setText(an.start_datetime.strftime("%Y-%m-%d %H:%M:%S"))
         edtAnalysisStartDatetime.setReadOnly(True)
