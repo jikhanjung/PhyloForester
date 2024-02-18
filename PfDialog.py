@@ -9,6 +9,9 @@ from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap, QResizeEvent, QStandard
 from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSize, QPoint,\
                          pyqtSlot, QItemSelectionModel, QTimer
 
+from PyQt5.QtSvg import QSvgGenerator  # For PyQt5
+# from PyQt6.QtSvg import QSvgGenerator  # For PyQt6, adjust import as needed
+
 from pathlib import Path
 import PfUtils as pu
 from PfModel import *
@@ -300,16 +303,43 @@ class TreeViewer(QWidget):
         self.cbx_align_taxa.setChecked(False)
         self.options_layout.addWidget(self.cbx_align_taxa)
         self.cbx_align_taxa.clicked.connect(self.on_cbx_align_taxa_clicked)
+        
+        self.font_option_widget = QWidget()
+        self.font_option_widget.setFixedWidth(200)
+        self.font_option_layout = QHBoxLayout()
+        self.font_option_widget.setLayout(self.font_option_layout)
+        self.options_layout.addWidget(self.font_option_widget)
+
+        self.lbl_font = QLabel()
+        self.lbl_font.setText("Font")
+        self.font_option_layout.addWidget(self.lbl_font)
+
         self.cbx_italic_taxa_name = QCheckBox()
         self.cbx_italic_taxa_name.setText("Italic")
         self.cbx_italic_taxa_name.setChecked(False)
-        self.options_layout.addWidget(self.cbx_italic_taxa_name)
+        self.font_option_layout.addWidget(self.cbx_italic_taxa_name)
         self.cbx_italic_taxa_name.clicked.connect(self.on_cbx_italic_taxa_name_clicked)
+
+        self.combo_font_size = QComboBox()
+        for i in [ 6, 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72 ]:
+            self.combo_font_size.addItem(str(i))
+        #self.combo_font_size.addItem("8")
+        self.combo_font_size.setFixedWidth(50)
+        self.font_option_layout.addWidget(self.combo_font_size)
+        self.combo_font_size.setCurrentIndex(3)
+        self.combo_font_size.currentIndexChanged.connect(self.on_combo_font_size_currentIndexChanged)
+
+        self.fit_widget = QWidget()
+        self.fit_widget.setFixedWidth(300)
+        self.fit_layout = QHBoxLayout()
+        self.fit_widget.setLayout(self.fit_layout)
+        self.options_layout.addWidget(self.fit_widget)
+
         self.cbx_fit_to_window = QCheckBox()
-        self.cbx_fit_to_window.setText("Fit")
-        self.cbx_fit_to_window.setFixedWidth(50)
+        self.cbx_fit_to_window.setText("Fit to window")
+        self.cbx_fit_to_window.setFixedWidth(120)
         self.cbx_fit_to_window.setChecked(True)
-        self.options_layout.addWidget(self.cbx_fit_to_window)
+        self.fit_layout.addWidget(self.cbx_fit_to_window)
         self.cbx_fit_to_window.clicked.connect(self.on_cbx_fit_to_window_clicked)
 
         self.edt_tree_width = QLineEdit()
@@ -320,11 +350,11 @@ class TreeViewer(QWidget):
         self.edt_tree_width.editingFinished.connect(self.on_edt_tree_width_change)
         #self.edt_tree_width.changeEvent = self.on_edt_tree_width_change
         #self.edt_tree_width.setText("0")
-        self.options_layout.addWidget(self.edt_tree_width)
+        self.fit_layout.addWidget(self.edt_tree_width)
         self.lbl_tree_x = QLabel()
         self.lbl_tree_x.setText("x")
         self.lbl_tree_x.setFixedWidth(10)
-        self.options_layout.addWidget(self.lbl_tree_x)        
+        self.fit_layout.addWidget(self.lbl_tree_x)        
         self.edt_tree_height = QLineEdit()
         self.edt_tree_height.setReadOnly(True)
         self.edt_tree_height.setEnabled(False)
@@ -333,21 +363,27 @@ class TreeViewer(QWidget):
         self.edt_tree_height.editingFinished.connect(self.on_edt_tree_height_change)
         #self.edt_tree_height.changeEvent = self.on_edt_tree_height_change
         #self.edt_tree_height.setText("0")
-        self.options_layout.addWidget(self.edt_tree_height)
+        self.fit_layout.addWidget(self.edt_tree_height)
+
+        self.btn_reset = QPushButton("Reset")
+        self.btn_reset.clicked.connect(self.on_btn_reset_clicked)
+        #self.btn_reset.setFixedWidth(80)
+        self.options_layout.addWidget(self.btn_reset)
+
 
         self.buttons_widget = QWidget()
         self.buttons_layout = QHBoxLayout()
         self.buttons_widget.setLayout(self.buttons_layout)
 
-        self.btn_reset = QPushButton("Reset")
-        self.btn_reset.clicked.connect(self.on_btn_reset_clicked)
-        #self.btn_reset.setFixedWidth(80)
-        self.buttons_layout.addWidget(self.btn_reset)
-
-        self.btn_bookmark = QPushButton("Bookmark")
+        self.btn_bookmark = QPushButton("Add Bookmark")
         self.btn_bookmark.clicked.connect(self.on_btn_bookmark_clicked)
         #self.btn_save.setFixedWidth(80)
         self.buttons_layout.addWidget(self.btn_bookmark)
+
+        self.btn_timetree = QPushButton("Time Tree")
+        self.btn_timetree.clicked.connect(self.on_btn_timetree_clicked)
+        #self.btn_reset.setFixedWidth(80)
+        self.buttons_layout.addWidget(self.btn_timetree)
 
         self.btn_export = QPushButton("Export")
         self.btn_export.clicked.connect(self.on_btn_export_clicked)
@@ -375,9 +411,25 @@ class TreeViewer(QWidget):
         self.lbl_total_trees2 = QLabel()
         self.tree_info_layout2.addWidget(self.lbl_total_trees2)
 
+        self.tree_widget = QWidget()
+        self.tree_layout = QHBoxLayout()
+        self.tree_widget.setLayout(self.tree_layout)
+        self.layout.addWidget(self.tree_widget)
+
+        self.tbl_timetree = QTableWidget()
+        self.tbl_timetree.setRowCount(10)
+        self.tbl_timetree.setColumnCount(2)
+        self.tbl_timetree.setHorizontalHeaderLabels([ "FAD", "LAD"])
+        self.tbl_timetree.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        #self.tbl_timetree.verticalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.tbl_timetree.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        #self.tbl_timetree.verticalHeader().hide()#
+        self.tree_layout.addWidget(self.tbl_timetree)
+        self.tbl_timetree.hide()
+
         self.tree_label = TreeLabel()
         #self.scroll_area.setWidget(self.tree_label)
-        self.layout.addWidget(self.tree_label)
+        self.tree_layout.addWidget(self.tree_label)
 
         self.tree_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.tree_list = []
@@ -397,36 +449,67 @@ class TreeViewer(QWidget):
 
         self.current_tree = None
 
+    def on_btn_timetree_clicked(self):
+        if self.tbl_timetree.isHidden():
+            self.tbl_timetree.show()
+        else:
+            self.tbl_timetree.hide()
 
+    def on_combo_font_size_currentIndexChanged(self, index):
+        font_size = int(self.combo_font_size.currentText())
+        self.tree_label.font_size = font_size
+        self.tree_label.repaint()
 
     def on_btn_export_clicked(self):
-        pass
+        if self.current_tree is None:
+            return
+        if self.combo_image_type.currentText() == "SVG":
+            filename, _ = QFileDialog.getSaveFileName(self, "Save File", "", "Scalable Vector Graphics (*.svg)")
+            if filename:
+                #print("export to svg:", filename)
+                self.tree_label.export_tree_as_svg(filename)
+
+        else:
+            if self.combo_image_type.currentText() == "PNG":
+                filename, _ = QFileDialog.getSaveFileName(self, "Save File", "", "Portable Network Graphics (*.png)")
+            #elif self.combo_image_type.currentText() == "PDF":
+            #    filename, _ = QFileDialog.getSaveFileName(self, "Save File", "", "Portable Document Format (*.pdf)")
+            if filename:
+                #print("export to png:", filename)
+                # get pixmap from tree_label
+                pixmap = self.tree_label.grab()
+                pixmap.save(filename)
 
     def on_btn_bookmark_clicked(self):
         if self.current_tree is None:
             return
-        consensus_tree = PfTree()
-        #consensus_tree.project = analysis.project
-        consensus_tree.analysis = self.analysis
-        if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
-            consensus_tree.tree_type = TREE_TYPE_MPT
-            consensus_tree.tree_name = TREE_TYPE_MPT + " " + str(self.tree_current_index+1)
-        elif self.analysis.analysis_type == ANALYSIS_TYPE_ML:
-            consensus_tree.tree_type = TREE_TYPE_BOOTSTRAP
-            consensus_tree.tree_name = TREE_TYPE_BOOTSTRAP + " " + str(self.tree_current_index+1)
-        elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
-            consensus_tree.tree_type = TREE_TYPE_POSTERIOR
-            consensus_tree.tree_name = TREE_TYPE_POSTERIOR + " " + str(self.tree_current_index+1)
-        string_io = io.StringIO()
-        # Write the tree in Newick format to the text stream
-        Phylo.write(self.current_tree, string_io, "newick")
-        # Get the Newick string from the text stream
-        newick_string = string_io.getvalue()
-        # Close the StringIO object if it's not needed anymore
-        string_io.close()
-        
-        consensus_tree.newick_text = newick_string
-        consensus_tree.save()
+        if self.tree_type == 1:
+            consensus_tree = PfTree()
+            #consensus_tree.project = analysis.project
+            consensus_tree.analysis = self.analysis
+            if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+                consensus_tree.tree_type = TREE_TYPE_MPT
+                consensus_tree.tree_name = TREE_TYPE_MPT + " " + str(self.tree_current_index+1)
+            elif self.analysis.analysis_type == ANALYSIS_TYPE_ML:
+                consensus_tree.tree_type = TREE_TYPE_BOOTSTRAP
+                consensus_tree.tree_name = TREE_TYPE_BOOTSTRAP + " " + str(self.tree_current_index+1)
+            elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
+                consensus_tree.tree_type = TREE_TYPE_POSTERIOR
+                consensus_tree.tree_name = TREE_TYPE_POSTERIOR + " " + str(self.tree_current_index+1)
+            string_io = io.StringIO()
+            # Write the tree in Newick format to the text stream
+            Phylo.write(self.current_tree, string_io, "newick")
+            # Get the Newick string from the text stream
+            newick_string = string_io.getvalue()
+            # Close the StringIO object if it's not needed anymore
+            string_io.close()
+            
+            consensus_tree.newick_text = newick_string
+            consensus_tree.save()
+            #self.add_stored_tree(newick_string)
+        else:
+            pass
+
     
     def on_btn_reset_clicked(self):
         self.set_analysis(self.analysis)
@@ -505,6 +588,8 @@ class TreeViewer(QWidget):
 
     def on_rb_tree_type1_clicked(self):
         #print("on_rb_tree_type1_clicked")
+        self.btn_bookmark.setText("Add Bookmark")
+
         self.tree_type = 1
         #self.current_treeobj_hash = self.treeobj_hash
         #self.current_newick_tree_list = self.newick_tree_list
@@ -515,6 +600,8 @@ class TreeViewer(QWidget):
 
     def on_rb_tree_type2_clicked(self):
         #print("on_rb_tree_type2_clicked")
+        self.btn_bookmark.setText("Remove Bookmark")
+
         self.tree_type = 2
         self.slider.setRange(0, len(self.bookmarked_newick_tree_list) - 1)
         self.slider.setValue(0)
@@ -598,6 +685,23 @@ class TreeViewer(QWidget):
             self.cbx_apply_branch_length.setChecked(True)
         self.on_cbx_show_branch_length_clicked()
         self.on_cbx_align_taxa_clicked()
+
+        dm = self.analysis.datamatrix
+        taxa_list = dm.get_taxa_list()
+        # set taxa_list as vertical header
+        #self.tree_label.tree_leaf_height = 30
+        # reset table
+        self.tbl_timetree.setRowCount(0)
+        for taxon in taxa_list:
+            # reset table and add taxon to table
+            row = self.tbl_timetree.rowCount()
+            self.tbl_timetree.setRowCount(row+1)
+            #self.tbl_timetree.setItem(row, 0, QTableWidgetItem(taxon))
+            self.tbl_timetree.setItem(row, 0, QTableWidgetItem("0"))
+            self.tbl_timetree.setItem(row, 1, QTableWidgetItem("0"))
+        self.tbl_timetree.setVerticalHeaderLabels(taxa_list)
+        self.tbl_timetree.resizeColumnsToContents()
+
 
     def load_trees(self):
         #print("load trees")
@@ -685,6 +789,7 @@ class TreeLabel(QLabel):
         self.tree_image_width = 0
         self.tree_image_height = 0
         self.fit_to_window = True
+        self.font_size = 10
 
     def _2canx(self, coord):
         return round((float(coord) / self.image_canvas_ratio) * self.scale) + self.pan_x + self.temp_pan_x
@@ -757,6 +862,31 @@ class TreeLabel(QLabel):
             self.temp_pan_y = 0
             self.repaint()
         return super().mouseReleaseEvent(ev)
+    '''
+    svgGenerator = QSvgGenerator()
+    svgGenerator.setFileName("test_output.svg")
+    svgGenerator.setSize(QSize(400, 400))
+    svgGenerator.setViewBox(QRect(0, 0, 400, 400))
+    svgGenerator.setTitle("SVG Test")
+    svgGenerator.setDescription("An SVG drawing example.")
+
+    painter = QPainter(svgGenerator)
+    painter.setPen(QColor(0, 0, 0))
+    painter.drawText(10, 20, "Hello, World!")
+    painter.drawRect(10, 30, 100, 100)
+    painter.end()
+    '''
+    def export_tree_as_svg(self, filename):
+        svgGenerator = QSvgGenerator()
+        svgGenerator.setFileName(filename)
+        svgGenerator.setSize(QSize(self.tree_image_width, self.tree_image_height))
+        svgGenerator.setViewBox(QRect(0, 0, self.tree_image_width, self.tree_image_height))
+        svgGenerator.setTitle("Phylogenetic Tree")
+        svgGenerator.setDescription("An SVG drawing of a phylogenetic tree")
+
+        painter = QPainter(svgGenerator)
+        self.draw_tree(painter)
+        painter.end()
 
     def draw_tree(self, painter):
         if self.tree is None:
@@ -833,7 +963,8 @@ class TreeLabel(QLabel):
         font = painter.font()
         if self.italic_taxa_name:
             font.setItalic(True)
-            painter.setFont(font)
+        font.setPointSize(self.font_size)
+        painter.setFont(font)
 
         #print("initial_font", font.family())
         #font = QFont("Arial", 12)  # Set the desired font and size
