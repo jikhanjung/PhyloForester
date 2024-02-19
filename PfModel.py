@@ -388,8 +388,19 @@ class PfTree(Model):
     tree_type = CharField()
     tree_desc = CharField(null=True)
     newick_text = CharField(null=True)
+    tree_options_json = CharField(null=True)
     comment = CharField(null=True)
     created_at = DateTimeField(default=datetime.datetime.now)
     modified_at = DateTimeField(default=datetime.datetime.now)
+
     class Meta:
         database = gDatabase
+
+    def get_tree_options(self):
+        if self.tree_options_json:
+            return json.loads(self.tree_options_json)
+        else:
+            return {'apply_branch_length': False, 'align_taxa': False, 'italic_taxa_name': False, 'font_size': 10, 'timetree': False, 'node_minimum_offset':0.1}
+    
+    def pack_tree_options(self, options_dict):
+        self.tree_options_json = json.dumps(options_dict)

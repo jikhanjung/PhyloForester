@@ -1,4 +1,4 @@
-"""Peewee migrations -- 001_20240218.py.
+"""Peewee migrations -- 001_20240219.py.
 
 Some examples (model - class or model name)::
 
@@ -94,7 +94,6 @@ def migrate(migrator: Migrator, database: pw.Database, *, fake=False):
         result_directory = pw.CharField(max_length=255, null=True)
         datafile = pw.CharField(max_length=255, null=True)
         taxa_list_json = pw.CharField(max_length=255, null=True)
-        taxa_timetable_json = pw.CharField(max_length=255, null=True)
         character_list_json = pw.CharField(max_length=255, null=True)
         datamatrix_json = pw.CharField(max_length=255, null=True)
         completion_percentage = pw.IntegerField(default=0)
@@ -127,6 +126,7 @@ def migrate(migrator: Migrator, database: pw.Database, *, fake=False):
         tree_type = pw.CharField(max_length=255)
         tree_desc = pw.CharField(max_length=255, null=True)
         newick_text = pw.CharField(max_length=255, null=True)
+        tree_options_json = pw.CharField(max_length=255, null=True)
         comment = pw.CharField(max_length=255, null=True)
         created_at = pw.DateTimeField()
         modified_at = pw.DateTimeField()

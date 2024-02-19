@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QTableWidgetItem, QHeaderView, QFileDialog, QCheckBo
                             QDialog, QLineEdit, QLabel, QPushButton, QAbstractItemView, QStatusBar, QMessageBox, \
                             QTableView, QSplitter, QRadioButton, QComboBox, QTextEdit, QSizePolicy, \
                             QTableWidget, QGridLayout, QAbstractButton, QButtonGroup, QGroupBox, \
-                            QTabWidget, QListWidget, QSlider, QScrollBar, QPlainTextEdit, QScrollArea
+                            QTabWidget, QListWidget, QSlider, QScrollBar, QPlainTextEdit, QInputDialog
 from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap, QResizeEvent, QStandardItemModel, QStandardItem, QImage,\
                         QFont, QPainter, QBrush, QMouseEvent, QWheelEvent, QDoubleValidator, QFontMetrics
 from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSize, QPoint,\
@@ -276,6 +276,16 @@ class TreeViewer(QWidget):
         self.tree_info_layout = QHBoxLayout()
         self.tree_info_widget1.setLayout(self.tree_info_layout)
         self.layout.addWidget(self.tree_info_widget1)
+
+        self.lbl_tree_name = QLabel()
+        self.lbl_tree_name.setText("Tree Name")
+        self.tree_info_layout.addWidget(self.lbl_tree_name)
+        self.edt_tree_name = QLineEdit()
+        #self.edt_tree_name.setReadOnly(True)
+        #self.edt_tree_name.setFixedWidth(50)
+        self.tree_info_layout.addWidget(self.edt_tree_name)
+
+
         self.lbl_tree_number = QLabel()
         self.lbl_tree_number.setText("Tree Index")
         self.tree_info_layout.addWidget(self.lbl_tree_number)
@@ -299,24 +309,37 @@ class TreeViewer(QWidget):
         self.options_layout.addWidget(self.cbx_apply_branch_length)
         self.cbx_apply_branch_length.clicked.connect(self.on_cbx_show_branch_length_clicked)
 
+        self.timetree_widget = QWidget()
+        self.timetree_widget.setFixedWidth(220)
+        self.timetree_layout = QHBoxLayout()
+        self.timetree_widget.setLayout(self.timetree_layout)
+        self.options_layout.addWidget(self.timetree_widget)
+
         self.cbx_timetree = QCheckBox()
         self.cbx_timetree.setText("Timetree")
+        self.cbx_timetree.setFixedWidth(75)
         self.cbx_timetree.setChecked(False)
-        self.options_layout.addWidget(self.cbx_timetree)
+        self.timetree_layout.addWidget(self.cbx_timetree)
         self.cbx_timetree.clicked.connect(self.on_cbx_timetree_clicked)
 
         self.lbl_node_minimum_offset = QLabel()
-        self.lbl_node_minimum_offset.setText("Min.Offset(Ma)")
-        self.options_layout.addWidget(self.lbl_node_minimum_offset)
+        self.lbl_node_minimum_offset.setText("Min.offset(Ma)")
+        self.timetree_layout.addWidget(self.lbl_node_minimum_offset)
 
         self.edt_node_minimum_offset = QLineEdit()
-        self.edt_node_minimum_offset.setFixedWidth(50)
+        self.edt_node_minimum_offset.setFixedWidth(30)
         self.edt_node_minimum_offset.setValidator(QDoubleValidator())
         self.edt_node_minimum_offset.setText("0.1")
         #self.edt_node_minimum_offset.setPlaceholderText("Node Min Offset")
         self.edt_node_minimum_offset.editingFinished.connect(self.on_edt_node_minimum_offset_change)
         #self.edt_tree_width.editingFinished.connect(self.on_edt_tree_width_change)
-        self.options_layout.addWidget(self.edt_node_minimum_offset)
+        self.timetree_layout.addWidget(self.edt_node_minimum_offset)
+
+        self.cbx_show_axis = QCheckBox()
+        self.cbx_show_axis.setText("Show axis")
+        self.cbx_show_axis.setChecked(False)
+        self.options_layout.addWidget(self.cbx_show_axis)
+        self.cbx_show_axis.clicked.connect(self.on_cbx_show_axis_clicked)
 
         self.cbx_align_taxa = QCheckBox()
         self.cbx_align_taxa.setText("Align Names")
@@ -325,7 +348,7 @@ class TreeViewer(QWidget):
         self.cbx_align_taxa.clicked.connect(self.on_cbx_align_taxa_clicked)
         
         self.font_option_widget = QWidget()
-        self.font_option_widget.setFixedWidth(200)
+        self.font_option_widget.setFixedWidth(150)
         self.font_option_layout = QHBoxLayout()
         self.font_option_widget.setLayout(self.font_option_layout)
         self.options_layout.addWidget(self.font_option_widget)
@@ -350,7 +373,7 @@ class TreeViewer(QWidget):
         self.combo_font_size.currentIndexChanged.connect(self.on_combo_font_size_currentIndexChanged)
 
         self.fit_widget = QWidget()
-        self.fit_widget.setFixedWidth(300)
+        self.fit_widget.setFixedWidth(210)
         self.fit_layout = QHBoxLayout()
         self.fit_widget.setLayout(self.fit_layout)
         self.options_layout.addWidget(self.fit_widget)
@@ -365,7 +388,7 @@ class TreeViewer(QWidget):
         self.edt_tree_width = QLineEdit()
         self.edt_tree_width.setReadOnly(True)
         self.edt_tree_width.setEnabled(False)
-        self.edt_tree_width.setFixedWidth(50)
+        self.edt_tree_width.setFixedWidth(35)
         # change event
         self.edt_tree_width.editingFinished.connect(self.on_edt_tree_width_change)
         #self.edt_tree_width.changeEvent = self.on_edt_tree_width_change
@@ -373,12 +396,12 @@ class TreeViewer(QWidget):
         self.fit_layout.addWidget(self.edt_tree_width)
         self.lbl_tree_x = QLabel()
         self.lbl_tree_x.setText("x")
-        self.lbl_tree_x.setFixedWidth(10)
+        self.lbl_tree_x.setFixedWidth(8)
         self.fit_layout.addWidget(self.lbl_tree_x)        
         self.edt_tree_height = QLineEdit()
         self.edt_tree_height.setReadOnly(True)
         self.edt_tree_height.setEnabled(False)
-        self.edt_tree_height.setFixedWidth(50)
+        self.edt_tree_height.setFixedWidth(35)
         # change event
         self.edt_tree_height.editingFinished.connect(self.on_edt_tree_height_change)
         #self.edt_tree_height.changeEvent = self.on_edt_tree_height_change
@@ -395,15 +418,20 @@ class TreeViewer(QWidget):
         self.buttons_layout = QHBoxLayout()
         self.buttons_widget.setLayout(self.buttons_layout)
 
+        self.btn_timetable = QPushButton("Edit Timetable")
+        self.btn_timetable.clicked.connect(self.on_btn_timetable_clicked)
+        #self.btn_reset.setFixedWidth(80)
+        self.buttons_layout.addWidget(self.btn_timetable)
+
         self.btn_bookmark = QPushButton("Add Bookmark")
         self.btn_bookmark.clicked.connect(self.on_btn_bookmark_clicked)
         #self.btn_save.setFixedWidth(80)
         self.buttons_layout.addWidget(self.btn_bookmark)
 
-        self.btn_timetable = QPushButton("Edit Timetable")
-        self.btn_timetable.clicked.connect(self.on_btn_timetable_clicked)
-        #self.btn_reset.setFixedWidth(80)
-        self.buttons_layout.addWidget(self.btn_timetable)
+        self.btn_copy_image = QPushButton("Copy image")
+        self.btn_copy_image.clicked.connect(self.on_btn_copy_image_clicked)
+        #self.btn_export.setFixedWidth(80)
+        self.buttons_layout.addWidget(self.btn_copy_image)
 
         self.btn_export = QPushButton("Export")
         self.btn_export.clicked.connect(self.on_btn_export_clicked)
@@ -482,6 +510,10 @@ class TreeViewer(QWidget):
         self.curr_tree_index = 0
         self.tree_type = 1
 
+    def on_cbx_show_axis_clicked(self):
+        self.tree_label.show_axis = self.cbx_show_axis.isChecked()
+        self.tree_label.repaint()
+
     def on_edt_node_minimum_offset_change(self):
         #print("on_edt_node_minimum_offset_change", self.edt_node_minimum_offset.text())
         self.tree_label.node_minimum_offset = float(self.edt_node_minimum_offset.text())
@@ -499,6 +531,7 @@ class TreeViewer(QWidget):
         self.analysis.datamatrix.taxa_timetable_json = json.dumps(timetable)
         self.analysis.datamatrix.save()
         #self.
+        self.tree_label.repaint()
         return
 
     def on_btn_timetable_clicked(self):
@@ -529,25 +562,37 @@ class TreeViewer(QWidget):
             if filename:
                 #print("export to png:", filename)
                 # get pixmap from tree_label
-                pixmap = self.tree_label.grab()
-                pixmap.save(filename)
+                self.tree_label.export_tree_as_png(filename)                
+
+    def on_btn_copy_image_clicked(self):
+        if self.current_tree is None:
+            return
+        self.tree_label.copy_tree_image()
 
     def on_btn_bookmark_clicked(self):
         if self.current_tree is None:
             return
         if self.tree_type == 1:
-            consensus_tree = PfTree()
+            # get tree name via messagebox
+            #tree_name, ok = QInputDialog.getText(self, 'Input Dialog', 'Enter tree name', text="")
+            #if ok:
+            #    pass
+            #else:
+            #    return
+            tree_to_save = PfTree()
+            #tree_to_save.tree_name = tree_name
+
             #consensus_tree.project = analysis.project
-            consensus_tree.analysis = self.analysis
+            tree_to_save.analysis = self.analysis
             if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
-                consensus_tree.tree_type = TREE_TYPE_MPT
-                consensus_tree.tree_name = TREE_TYPE_MPT + " " + str(self.tree_current_index+1)
+                tree_to_save.tree_type = TREE_TYPE_MPT
+                tree_to_save.tree_name = TREE_TYPE_MPT + " " + str(self.tree_current_index+1)
             elif self.analysis.analysis_type == ANALYSIS_TYPE_ML:
-                consensus_tree.tree_type = TREE_TYPE_BOOTSTRAP
-                consensus_tree.tree_name = TREE_TYPE_BOOTSTRAP + " " + str(self.tree_current_index+1)
+                tree_to_save.tree_type = TREE_TYPE_BOOTSTRAP
+                tree_to_save.tree_name = TREE_TYPE_BOOTSTRAP + " " + str(self.tree_current_index+1)
             elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
-                consensus_tree.tree_type = TREE_TYPE_POSTERIOR
-                consensus_tree.tree_name = TREE_TYPE_POSTERIOR + " " + str(self.tree_current_index+1)
+                tree_to_save.tree_type = TREE_TYPE_POSTERIOR
+                tree_to_save.tree_name = TREE_TYPE_POSTERIOR + " " + str(self.tree_current_index+1)
             string_io = io.StringIO()
             # Write the tree in Newick format to the text stream
             Phylo.write(self.current_tree, string_io, "newick")
@@ -556,20 +601,53 @@ class TreeViewer(QWidget):
             # Close the StringIO object if it's not needed anymore
             string_io.close()
             
-            consensus_tree.newick_text = newick_string
-            consensus_tree.save()
+            tree_to_save.newick_text = newick_string
+            tree_options = {}
+            tree_options['apply_branch_length'] = self.tree_label.apply_branch_length
+            tree_options['align_taxa'] = self.tree_label.align_taxa
+            tree_options['italic_taxa_name'] = self.tree_label.italic_taxa_name
+            tree_options['font_size'] = self.tree_label.font_size
+            tree_options['timetree'] = self.tree_label.timetree
+            tree_options['show_axis'] = self.tree_label.show_axis
+            tree_options['node_minimum_offset'] = self.tree_label.node_minimum_offset
+            tree_to_save.tree_options_json = json.dumps(tree_options)
+
+            tree_to_save.save()
             #self.add_stored_tree(newick_string)
+            self.bookmarked_tree_list = PfTree.select().where(PfTree.analysis == self.analysis)
+            self.bookmarked_newick_tree_list = [tree.newick_text for tree in self.bookmarked_tree_list]
+            #self.bookmarked_newick_tree_list = []
+            for i, tree in enumerate(self.bookmarked_tree_list):
+                self.bookmarked_treeobj_hash[i] = tree
+
+
         else:
-            pass
+            # save bookmark
+            tree = self.bookmarked_treeobj_hash[self.tree_current_index]
+            tree_options = {}
+            tree_options['apply_branch_length'] = self.tree_label.apply_branch_length
+            tree_options['align_taxa'] = self.tree_label.align_taxa
+            tree_options['italic_taxa_name'] = self.tree_label.italic_taxa_name
+            tree_options['font_size'] = self.tree_label.font_size
+            tree_options['timetree'] = self.tree_label.timetree
+            tree_options['show_axis'] = self.tree_label.show_axis
+            tree_options['node_minimum_offset'] = self.tree_label.node_minimum_offset
+            tree.tree_name = self.edt_tree_name.text()
+            tree.tree_options_json = json.dumps(tree_options)
+            tree.save()
 
     
     def on_btn_reset_clicked(self):
         self.set_analysis(self.analysis)
 
-        if self.rb_tree_type1.isChecked():
-            self.on_rb_tree_type1_clicked()
-        else:
-            self.on_rb_tree_type2_clicked()
+        #if self.rb_tree_type1.isChecked():
+        #    self.on_rb_tree_type1_clicked()
+        #else:
+        #    self.on_rb_tree_type2_clicked() 
+        self.cbx_timetree.setChecked(False)
+        self.on_cbx_timetree_clicked()
+        self.cbx_show_axis.setChecked(False)
+        self.on_cbx_show_axis_clicked()
         self.cbx_fit_to_window.setChecked(True)
         self.on_cbx_fit_to_window_clicked()
         self.cbx_align_taxa.setChecked(False)
@@ -616,6 +694,10 @@ class TreeViewer(QWidget):
         #timetable = json.loads(self.analysis.taxa_timetable_json)
         if timetree and self.analysis.datamatrix.is_timetable_valid():
             self.tree_label.timetree = timetree
+            self.cbx_apply_branch_length.setChecked(False)
+            self.tree_label.apply_branch_length = False
+            self.cbx_align_taxa.setChecked(False)
+            self.tree_label.align_taxa = False
         else:
             self.cbx_timetree.setChecked(False)
             self.tree_label.timetree = False
@@ -630,7 +712,9 @@ class TreeViewer(QWidget):
         if self.tree_label.apply_branch_length:
             #self.cbx_align_taxa.setEnabled(False)
             self.cbx_align_taxa.setChecked(False)
+            self.cbx_timetree.setChecked(False)
             self.tree_label.align_taxa = False
+            self.tree_label.timetree = False
         self.tree_label.repaint()
     
     def on_cbx_align_taxa_clicked(self):
@@ -639,6 +723,8 @@ class TreeViewer(QWidget):
             #self.cbx_show_branch_length.setEnabled(False)
             self.cbx_apply_branch_length.setChecked(False)
             self.tree_label.apply_branch_length = False
+            self.cbx_timetree.setChecked(False)
+            self.tree_label.timetree = False
         self.tree_label.repaint()
 
     def update_info(self, analysis):
@@ -659,10 +745,12 @@ class TreeViewer(QWidget):
         self.slider.setValue(0)
         self.on_slider_valueChanged(0)
         self.lbl_total_trees.setText("/" + str(len(self.newick_tree_list)))
+        self.lbl_tree_name.hide()
+        self.edt_tree_name.hide()        
 
     def on_rb_tree_type2_clicked(self):
         #print("on_rb_tree_type2_clicked")
-        self.btn_bookmark.setText("Remove Bookmark")
+        self.btn_bookmark.setText("Save Bookmark")
 
         self.tree_type = 2
         self.slider.setRange(0, len(self.bookmarked_newick_tree_list) - 1)
@@ -672,6 +760,8 @@ class TreeViewer(QWidget):
 
         #self.current_treeobj_hash = self.stored_treeobj_hash
         #self.current_newick_tree_list = self.stored_newick_tree_list
+        self.lbl_tree_name.show()
+        self.edt_tree_name.show()
 
     def on_slider_valueChanged(self, value):
         #print("scrollbar valueChanged", value)
@@ -696,10 +786,26 @@ class TreeViewer(QWidget):
             else:
                 tree = self.treeobj_hash[self.tree_current_index]
         elif self.tree_type == 2:
-            if self.tree_current_index < len(self.newick_tree_list):
+            if self.tree_current_index < len(self.bookmarked_newick_tree_list):
             #self.stored_tree_list = PfTree.select().where(PfTree.analysis == self.analysis)        
             #self.stored_newick_tree_list = [tree.newick_text for tree in self.stored_tree_list]
+                #print("tree_current_index:", self.tree_current_index, len(self.bookmarked_newick_tree_list),self.bookmarked_treeobj_hash.keys())
+                treeobj = self.bookmarked_treeobj_hash[self.tree_current_index]
                 tree = Phylo.read(io.StringIO(self.bookmarked_newick_tree_list[self.tree_current_index]), "newick")
+                tree_options = treeobj.get_tree_options()
+                self.cbx_apply_branch_length.setChecked(tree_options['apply_branch_length'])
+                self.cbx_align_taxa.setChecked(tree_options['align_taxa'])
+                self.cbx_italic_taxa_name.setChecked(tree_options['italic_taxa_name'])
+                self.combo_font_size.setCurrentText(str(tree_options['font_size']))
+                self.cbx_timetree.setChecked(tree_options['timetree'])
+                self.tree_label.apply_branch_length = tree_options['apply_branch_length']                
+                self.tree_label.align_taxa = tree_options['align_taxa']
+                self.tree_label.italic_taxa_name = tree_options['italic_taxa_name']
+                self.tree_label.font_size = tree_options['font_size']
+                self.tree_label.timetree = tree_options['timetree']
+                self.edt_tree_name.setText(treeobj.tree_name)
+                self.edt_node_minimum_offset.setText(str(tree_options['node_minimum_offset']))
+
 
         if tree is None:
             return
@@ -799,9 +905,13 @@ class TreeViewer(QWidget):
         self.lbl_total_trees.setText("/" + str(len(self.newick_tree_list)))
         self.edt_tree_index.setText("1")
         self.on_slider_valueChanged(0)
+        self.edt_tree_name.hide()
+        self.lbl_tree_name.hide()
 
-        self.bookmarked_tree_list = PfTree.select().where(PfTree.analysis == self.analysis)        
+        self.bookmarked_tree_list = PfTree.select().where(PfTree.analysis == self.analysis)
         self.bookmarked_newick_tree_list = [tree.newick_text for tree in self.bookmarked_tree_list]
+        for i, tree in enumerate(self.bookmarked_tree_list):
+            self.bookmarked_treeobj_hash[i] = tree
         #for tree in stored_tree_list:
         #    self.add_stored_tree(tree.newick_text)
 
@@ -858,6 +968,10 @@ class TreeLabel(QLabel):
         self.font_size = 10
         self.timetree = False
         self.node_minimum_offset = 0.1
+        self.min_clade_depth = 0
+        self.show_axis = False
+        self.x_padding = 50
+        self.y_padding = 50
 
     def _2canx(self, coord):
         return round((float(coord) / self.image_canvas_ratio) * self.scale) + self.pan_x + self.temp_pan_x
@@ -956,6 +1070,34 @@ class TreeLabel(QLabel):
         self.draw_tree(painter)
         painter.end()
 
+    def copy_tree_image(self):
+        clipboard = QApplication.clipboard()
+
+        pixmap = QPixmap(self.tree_image_width, self.tree_image_height)
+        pixmap.fill(QColor(QColor("#FFFFFF")))
+        painter = QPainter(pixmap)
+        # store pan_x, pan_y
+        pan_x, pan_y = self.pan_x, self.pan_y
+        self.pan_x = self.pan_y = 0
+        self.draw_tree(painter)
+        clipboard.setPixmap(pixmap)
+        painter.end()
+        self.pan_x, self.pan_y = pan_x, pan_y
+
+    def export_tree_as_png(self, filename):
+
+        #painter = Q
+        pixmap = QPixmap(self.tree_image_width, self.tree_image_height)
+        pixmap.fill(QColor(QColor("#FFFFFF")))
+        painter = QPainter(pixmap)
+        # store pan_x, pan_y
+        pan_x, pan_y = self.pan_x, self.pan_y
+        self.pan_x = self.pan_y = 0
+        self.draw_tree(painter)
+        pixmap.save(filename)
+        painter.end()
+
+
     def draw_tree(self, painter):
         #node_minimum_offset = 0.1
         if self.tree is None:
@@ -986,6 +1128,7 @@ class TreeLabel(QLabel):
         #print("clade_depths", self.clade_depths)
         self.max_depth = max(self.clade_depths.values())
 
+        self.min_clade_depth = 0
         if self.timetree:
             taxa_list = self.analysis.datamatrix.get_taxa_list()
             self.timetable = self.analysis.datamatrix.get_taxa_timetable()
@@ -998,6 +1141,7 @@ class TreeLabel(QLabel):
                 total_min_lad = min(total_min_lad, float(row[1]))
             self.max_depth = total_max_fad - total_min_lad
             self.max_fad = total_max_fad
+            self.min_lad = total_min_lad
 
             ''' timetable setting '''
             self.taxa_timetable = {}
@@ -1019,39 +1163,85 @@ class TreeLabel(QLabel):
                     self.clade_depths[clade] = total_max_fad - max_fad
 
             ''' adjust clade depths (apply minimum node offset) '''
+            self.min_clade_depth = 999999
             for clade in [ c for c in self.tree.find_clades(order='postorder') ]:
                 if clade.is_terminal():
                     continue
                 for child in clade:
                     if self.clade_depths[child] - self.clade_depths[clade] < self.node_minimum_offset:
                         self.clade_depths[clade] = self.clade_depths[child] - self.node_minimum_offset
+                self.min_clade_depth = min(self.min_clade_depth, self.clade_depths[clade])
 
                 #print(" "*int(self.clade_depths[clade]),"clade:", clade, clade.name, clade.branch_length, self.clade_depths[clade])
 
         #print("clade depths", self.clade_depths)
         #print("max_depth", self.max_depth)
-        self.branch_length_scale = ( self.tree_image_width * 0.9 - max_text_width ) / self.max_depth
-        self.row_height = int( self.tree_image_height * 0.9 ) / self.leaf_count
+        self.branch_length_scale = ( self.tree_image_width * 0.9 - max_text_width ) / (self.max_depth - self.min_clade_depth)
+        self.row_height = int( self.tree_image_height * 0.9 / self.leaf_count )
         self.tree_unit_width = int( self.tree_image_width * 0.05 )
         #self.
+
+        ''' row height adjustment based on text height
+        font = painter.font()
+        font.setPointSize(self.font_size)
+        fontMetrics = QFontMetrics(font)
+        textHeight = fontMetrics.height()
+        self.row_height = max(self.row_height, textHeight)
+        '''
+
+        ''' set text font '''
+        font = painter.font()
+        if self.italic_taxa_name:
+            font.setItalic(True)
+        font.setPointSize(self.font_size)
+        painter.setFont(font)
+
         v_pos = self.draw_node(painter, root, 0, 0)
 
-        #print("root:", root, root.count_terminals(), v_pos)
-        #for child in root:
-        #    print("child:", child, child.count_terminals())
+
+        ''' set axis font '''
+        if self.show_axis:
+            self.draw_axis(painter)
+
+    def draw_axis(self, painter):
+        #print("draw_axis")
+        axis_offset = 5
+
+        # draw x-axis
+        self.draw_line(painter, 0, self.max_depth - self.min_clade_depth, self.leaf_count, self.leaf_count, thickness=1)
+
+        # set axis font 
+        font = painter.font()
+        font.setItalic(False)
+        font.setPointSize(10)
+        painter.setFont(font)
+
+        # draw x-axis ticks
+        for i in range(0, int(self.max_depth)+1):
+            x, y = self.convert_coords(i - self.min_clade_depth, self.leaf_count)
+            painter.drawLine(x, y, x, y+axis_offset)
+            if self.timetree:
+                tick_number = str(self.min_lad + self.max_depth - i)
+            else:
+                tick_number = str(i)
+            fontMetrics = QFontMetrics(font)
+            textWidth = fontMetrics.width(tick_number)
+            painter.drawText(x-int(textWidth/2), y+axis_offset+15, str(tick_number))
+        
+        # draw y-axis if needed
+        #painter.drawLine(self.tree_unit_width-axis_offset, self.row_height, self.tree_unit_width-axis_offset, self.tree_image_height - self.row_height)
 
     def draw_node(self, painter, node, begin_row, depth ):
         #print(" "*depth*4, "draw_node", node, begin_row, depth, node.is_terminal())
-        #pass
         if node.is_terminal():
             if self.align_taxa:
                 depth = self.max_depth
             if self.apply_branch_length:
                 depth = self.clade_depths[node]
             if self.timetree:
-                depth = self.max_fad - self.taxa_timetable[node.name][1]
+                depth = self.max_fad - self.taxa_timetable[node.name][1] - self.min_clade_depth
             self.draw_text( painter, depth, begin_row, node.name )
-            return begin_row + 0.3
+            return begin_row
         else:
             #print("non-terminal:", node)
             traversed_row_count = 0
@@ -1072,11 +1262,12 @@ class TreeLabel(QLabel):
                     to_depth = self.clade_depths[child]
                 if self.timetree:
                     if child.is_terminal():
-                        terminal_from_depth = self.max_fad - self.taxa_timetable[child.name][0]
-                        terminal_to_depth = self.max_fad - self.taxa_timetable[child.name][1]
-                        self.draw_line(painter, terminal_from_depth, terminal_to_depth, v_pos, v_pos, thickness=3)
-                    from_depth = self.clade_depths[node]
-                    to_depth = self.clade_depths[child]
+                        terminal_from_depth = self.max_fad - self.taxa_timetable[child.name][0] - self.min_clade_depth
+                        terminal_to_depth = self.max_fad - self.taxa_timetable[child.name][1] - self.min_clade_depth
+                        if terminal_from_depth != terminal_to_depth:
+                            self.draw_line(painter, terminal_from_depth, terminal_to_depth, v_pos, v_pos, thickness=3)
+                    from_depth = self.clade_depths[node] - self.min_clade_depth
+                    to_depth = self.clade_depths[child] - self.min_clade_depth
                     #print("node:",node,"from_depth", from_depth, "to_depth", to_depth)
                 self.draw_line(painter, from_depth, to_depth, v_pos, v_pos )
                 traversed_row_count += child.count_terminals()
@@ -1084,15 +1275,22 @@ class TreeLabel(QLabel):
             if self.apply_branch_length:
                 depth = self.clade_depths[node]
             if self.timetree:
-                depth = self.clade_depths[node]
+                depth = self.clade_depths[node] - self.min_clade_depth
             self.draw_line(painter, depth, depth, v_pos_list[0], v_pos_list[-1])
             return v_pos_sum / len(node)
 
+    def convert_coords(self, x, y):
+        new_x = self.x_padding + int( x * self.branch_length_scale ) + self.pan_x + self.temp_pan_x
+        new_y = self.y_padding + int( y * self.row_height ) - int(self.row_height / 2) + self.pan_y + self.temp_pan_y
+        return new_x, new_y
+
     def draw_line(self, painter, x1, x2, y1, y2,thickness=1):
-        x1 = int( x1 * self.branch_length_scale ) + self.tree_unit_width + self.pan_x + self.temp_pan_x
-        x2 = int( x2 * self.branch_length_scale ) + self.tree_unit_width + self.pan_x + self.temp_pan_x
-        y1 = int( ( y1 + 1.5 ) * self.row_height ) - int(self.row_height / 2) + self.pan_y + self.temp_pan_y
-        y2 = int( ( y2 + 1.5 ) * self.row_height ) - int(self.row_height / 2) + self.pan_y + self.temp_pan_y
+        x1, y1 = self.convert_coords(x1, y1)
+        x2, y2 = self.convert_coords(x2, y2)
+        #x1 = int( x1 * self.branch_length_scale ) + self.tree_unit_width + self.pan_x + self.temp_pan_x
+        #x2 = int( x2 * self.branch_length_scale ) + self.tree_unit_width + self.pan_x + self.temp_pan_x
+        #y1 = int( ( y1 + 1.5 ) * self.row_height ) - int(self.row_height / 2) + self.pan_y + self.temp_pan_y
+        #y2 = int( ( y2 + 1.5 ) * self.row_height ) - int(self.row_height / 2) + self.pan_y + self.temp_pan_y
 
         # adjust thickness
         #painter.drawRect(x1, y1-thickness, x2, y2+thickness)
@@ -1105,26 +1303,13 @@ class TreeLabel(QLabel):
             painter.fillRect(x1, y1-int(thickness/2), x2-x1+1, thickness, QColor("#000000"))
 
     def draw_text(self, painter, x, y, text):
-        font = painter.font()
-        if self.italic_taxa_name:
-            font.setItalic(True)
-        font.setPointSize(self.font_size)
-        painter.setFont(font)
 
-        #print("initial_font", font.family())
-        #font = QFont("Arial", 12)  # Set the desired font and size
-        #font.setItalic(True)  # Set the font to italic
-        #font.setPointSize(12)
-        #painter.setFont(font)
+        x1, y1 = self.convert_coords(x, y)
+        fontMetrics = QFontMetrics(painter.font())
+        textWidth = fontMetrics.width(text)
+        textHeight = fontMetrics.height()
 
-        # Get font metrics to determine text width and height
-        #fontMetrics = QFontMetrics(font)
-        #textWidth = fontMetrics.width(text)
-        #textHeight = fontMetrics.height()     
-
-        x1 = int( x * self.branch_length_scale ) + self.tree_unit_width + self.text_offset + self.pan_x + self.temp_pan_x
-        y1 = int( ( y + 1.5 ) * self.row_height ) + self.pan_y + self.temp_pan_y
-        painter.drawText(x1, y1, text)
+        painter.drawText(x1+5, y1+int(textHeight/2), text)
 
     def paintEvent(self, event):
         #print("tree paint", self.curr_pixmap)
