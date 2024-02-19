@@ -310,14 +310,14 @@ class TreeViewer(QWidget):
         self.cbx_apply_branch_length.clicked.connect(self.on_cbx_show_branch_length_clicked)
 
         self.timetree_widget = QWidget()
-        self.timetree_widget.setFixedWidth(220)
+        #self.timetree_widget.setFixedWidth(220)
         self.timetree_layout = QHBoxLayout()
         self.timetree_widget.setLayout(self.timetree_layout)
         self.options_layout.addWidget(self.timetree_widget)
 
         self.cbx_timetree = QCheckBox()
         self.cbx_timetree.setText("Timetree")
-        self.cbx_timetree.setFixedWidth(75)
+        #self.cbx_timetree.setFixedWidth(75)
         self.cbx_timetree.setChecked(False)
         self.timetree_layout.addWidget(self.cbx_timetree)
         self.cbx_timetree.clicked.connect(self.on_cbx_timetree_clicked)
@@ -327,7 +327,7 @@ class TreeViewer(QWidget):
         self.timetree_layout.addWidget(self.lbl_node_minimum_offset)
 
         self.edt_node_minimum_offset = QLineEdit()
-        self.edt_node_minimum_offset.setFixedWidth(30)
+        #self.edt_node_minimum_offset.setFixedWidth(30)
         self.edt_node_minimum_offset.setValidator(QDoubleValidator())
         self.edt_node_minimum_offset.setText("0.1")
         #self.edt_node_minimum_offset.setPlaceholderText("Node Min Offset")
@@ -348,7 +348,7 @@ class TreeViewer(QWidget):
         self.cbx_align_taxa.clicked.connect(self.on_cbx_align_taxa_clicked)
         
         self.font_option_widget = QWidget()
-        self.font_option_widget.setFixedWidth(150)
+        #self.font_option_widget.setFixedWidth(150)
         self.font_option_layout = QHBoxLayout()
         self.font_option_widget.setLayout(self.font_option_layout)
         self.options_layout.addWidget(self.font_option_widget)
@@ -367,20 +367,20 @@ class TreeViewer(QWidget):
         for i in [ 6, 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72 ]:
             self.combo_font_size.addItem(str(i))
         #self.combo_font_size.addItem("8")
-        self.combo_font_size.setFixedWidth(50)
+        #self.combo_font_size.setFixedWidth(50)
         self.font_option_layout.addWidget(self.combo_font_size)
         self.combo_font_size.setCurrentIndex(3)
         self.combo_font_size.currentIndexChanged.connect(self.on_combo_font_size_currentIndexChanged)
 
         self.fit_widget = QWidget()
-        self.fit_widget.setFixedWidth(210)
+        #self.fit_widget.setFixedWidth(210)
         self.fit_layout = QHBoxLayout()
         self.fit_widget.setLayout(self.fit_layout)
         self.options_layout.addWidget(self.fit_widget)
 
         self.cbx_fit_to_window = QCheckBox()
         self.cbx_fit_to_window.setText("Fit to window")
-        self.cbx_fit_to_window.setFixedWidth(120)
+        #self.cbx_fit_to_window.setFixedWidth(120)
         self.cbx_fit_to_window.setChecked(True)
         self.fit_layout.addWidget(self.cbx_fit_to_window)
         self.cbx_fit_to_window.clicked.connect(self.on_cbx_fit_to_window_clicked)
@@ -388,7 +388,7 @@ class TreeViewer(QWidget):
         self.edt_tree_width = QLineEdit()
         self.edt_tree_width.setReadOnly(True)
         self.edt_tree_width.setEnabled(False)
-        self.edt_tree_width.setFixedWidth(35)
+        self.edt_tree_width.setFixedWidth(40)
         # change event
         self.edt_tree_width.editingFinished.connect(self.on_edt_tree_width_change)
         #self.edt_tree_width.changeEvent = self.on_edt_tree_width_change
@@ -396,12 +396,12 @@ class TreeViewer(QWidget):
         self.fit_layout.addWidget(self.edt_tree_width)
         self.lbl_tree_x = QLabel()
         self.lbl_tree_x.setText("x")
-        self.lbl_tree_x.setFixedWidth(8)
+        #self.lbl_tree_x.setFixedWidth(8)
         self.fit_layout.addWidget(self.lbl_tree_x)        
         self.edt_tree_height = QLineEdit()
         self.edt_tree_height.setReadOnly(True)
         self.edt_tree_height.setEnabled(False)
-        self.edt_tree_height.setFixedWidth(35)
+        self.edt_tree_height.setFixedWidth(40)
         # change event
         self.edt_tree_height.editingFinished.connect(self.on_edt_tree_height_change)
         #self.edt_tree_height.changeEvent = self.on_edt_tree_height_change
