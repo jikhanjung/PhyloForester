@@ -1596,7 +1596,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
 
         #horizontalHeader = self.treeView.horizontalHeader()
         verticalHeader = self.treeView.header()
-        verticalHeader.resizeSection(0, 300)
+        verticalHeader.resizeSection(0, 250)
         verticalHeader.resizeSection(1, 100)
 
         self.treeView.expandAll()

@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QTableWidgetItem, QHeaderView, QFileDialog, QCheckBo
 from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap, QResizeEvent, QStandardItemModel, QStandardItem, QImage,\
                         QFont, QPainter, QBrush, QMouseEvent, QWheelEvent, QDoubleValidator, QFontMetrics
 from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSize, QPoint,\
-                         pyqtSlot, QItemSelectionModel, QTimer
+                         pyqtSlot, QItemSelectionModel, QTimer, pyqtSignal
 
 from PyQt5.QtSvg import QSvgGenerator  # For PyQt5
 # from PyQt6.QtSvg import QSvgGenerator  # For PyQt6, adjust import as needed
@@ -338,7 +338,7 @@ class TreeViewer(QWidget):
         self.timetree_layout.addWidget(self.lbl_node_minimum_offset)
 
         self.edt_node_minimum_offset = QLineEdit()
-        #self.edt_node_minimum_offset.setFixedWidth(30)
+        self.edt_node_minimum_offset.setFixedWidth(40)
         self.edt_node_minimum_offset.setValidator(QDoubleValidator())
         self.edt_node_minimum_offset.setText("0.1")
         #self.edt_node_minimum_offset.setPlaceholderText("Node Min Offset")
@@ -395,7 +395,7 @@ class TreeViewer(QWidget):
         self.cbx_fit_to_window.setChecked(True)
         self.fit_layout.addWidget(self.cbx_fit_to_window)
         self.cbx_fit_to_window.clicked.connect(self.on_cbx_fit_to_window_clicked)
-
+        
         self.edt_tree_width = QLineEdit()
         self.edt_tree_width.setReadOnly(True)
         self.edt_tree_width.setEnabled(False)
@@ -504,6 +504,7 @@ class TreeViewer(QWidget):
         #self.scroll_area.setWidget(self.tree_label)
         self.tree_layout.addWidget(self.tree_label)
         self.tree_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.tree_label.resized.connect(self.handle_label_resize)
 
         self.layout.addWidget(self.buttons_widget)
 
@@ -866,6 +867,7 @@ class TreeViewer(QWidget):
         self.on_cbx_show_branch_length_clicked()
         self.on_cbx_align_taxa_clicked()
         self.on_cbx_fit_to_window_clicked()
+        #print("load trees tree label size", self.tree_label.width(), self.tree_label.height())
 
         dm = self.analysis.datamatrix
         taxa_list = dm.get_taxa_list()
@@ -931,18 +933,28 @@ class TreeViewer(QWidget):
         self.tree_label.set_tree_image( tree_image)
 
     def resizeEvent(self, a0: QResizeEvent | None) -> None:
-        #print("resizeEvent")
+        #print("treeViewer resizeEvent")
+        super().resizeEvent(a0)
+        #print("tree label size:", self.tree_label.width(), self.tree_label.height())
         if self.cbx_fit_to_window.isChecked():
             self.edt_tree_width.setText(str(self.tree_label.width()))
             self.edt_tree_height.setText(str(self.tree_label.height()))
-        return super().resizeEvent(a0)
+        return
+    def handle_label_resize(self, new_size: QSize):
+        #print("handle_label_resize")
+        if self.cbx_fit_to_window.isChecked():
+            self.edt_tree_width.setText(str(self.tree_label.width()))
+            self.edt_tree_height.setText(str(self.tree_label.height()))
+        return
 
 class TreeLabel(QLabel):
+    resized = pyqtSignal(QSize)
     def __init__(self):
         super(TreeLabel, self).__init__()
         self.setMinimumSize(400,300)
         self.bgcolor = "#888888"
         self.m_app = QApplication.instance()
+
         #self.read_settings()
         self.tree = None
         self.orig_pixmap = None
@@ -1363,10 +1375,11 @@ class TreeLabel(QLabel):
 
 
     def resizeEvent(self, event):
-        #print("resizeEvent", self, self.size())
+        #print("tree label resizeEvent", self, self.size())
         self.calculate_resize()
         #QLabel.resizeEvent(self, event)
         super(TreeLabel, self).resizeEvent(event)
+        self.resized.emit(self.size())
 
     '''
     def updatePixmapSize(self):
