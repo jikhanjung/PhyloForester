@@ -17,6 +17,9 @@ import PfUtils as pu
 from PfModel import *
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_svg
+import sys
+import os
+import subprocess 
 
 class PfInputDialog(QDialog):
     def __init__(self, parent=None):
@@ -234,8 +237,16 @@ class AnalysisViewer(QWidget):
             return
         result_dir = self.analysis.result_directory
         if os.path.isdir(result_dir):
-            os.startfile(result_dir)
-
+            #os.startfile(result_dir)
+            try:
+                if sys.platform == "win32":
+                    os.startfile(path)
+                elif sys.platform == "darwin":
+                    subprocess.run(["open", result_dir])
+                elif sys.platform == "linux":
+                    subprocess.run(["xdg-open", result_dir])
+            except Exception as e:
+                print(f"Error opening {result_dir}: {e}")
     def append_output(self, text):
         self.edtAnalysisOutput.appendPlainText(text)
 
@@ -883,11 +894,12 @@ class TreeViewer(QWidget):
         
         if self.analysis.analysis_type == ANALYSIS_TYPE_ML:
             tf = pu.PhyloTreefile()
-            filename = os.path.join(tree_dir, self.analysis.datamatrix.datamatrix_name + ".phy.boottrees")
+            filename = os.path.join(tree_dir, self.analysis.datamatrix.datamatrix_name.replace(" ","_") + ".phy.boottrees")
             #print("ML tree filename:", filename)
             tf.readtree(filename, 'treefile')
             self.newick_tree_list = tf.tree_list
-
+            #print("tree list:", self.newick_tree_list)
+    
         elif self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
             tf = pu.PhyloTreefile()
             tf.readtree(os.path.join(tree_dir, "tmp.tre"), 'tre')
