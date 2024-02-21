@@ -1747,6 +1747,48 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             return
         self.run_analysis(self.selected_datamatrix)
 
+from Bio.Phylo.TreeConstruction import _Matrix
+
+# Function to reconstruct ancestral states for all characters in the data matrix
+def reconstruct_ancestral_states_for_all_characters(tree, morphological_data):
+    # Initialize ancestral states for each character
+    for character in range(_Matrix.get_dimension(morphological_data)):
+        for node in tree.find_clades():
+            node.confidence[character] = None
+
+    # Perform the first pass (bottom-up traversal)
+    bottom_up_pass(tree, morphological_data)
+
+    # Perform the second pass (top-down traversal)
+    top_down_pass(tree, morphological_data)
+
+# Function to perform the first pass of the Fitch algorithm (bottom-up traversal)
+def bottom_up_pass(node, morphological_data):
+    if node.is_terminal():
+        for character, state in enumerate(morphological_data[node.name]):
+            node.confidence[character] = state
+    else:
+        for character in range(_Matrix.get_dimension(morphological_data)):
+            bottom_up_pass(node.clades[0], morphological_data)
+            bottom_up_pass(node.clades[1], morphological_data)
+            left_states = set(node.clades[0].confidence[character])
+            right_states = set(node.clades[1].confidence[character])
+            node.confidence[character] = left_states.intersection(right_states)
+
+# Function to perform the second pass of the Fitch algorithm (top-down traversal)
+def top_down_pass(node, morphological_data):
+    if not node.is_terminal():
+        for character in range(_Matrix.get_dimension(morphological_data)):
+            if len(node.confidence[character]) == 0:
+                for child in node.clades:
+                    for state in child.confidence[character]:
+                        node.confidence[character].add(state)
+
+    for child in node.clades:
+        top_down_pass(child, morphological_data)
+
+# Example usage:
+#reconstruct_ancestral_states_for_all_characters(tree, morphological_data)
 
 if __name__ == "__main__":
     #QApplication : 프로그램을 실행시켜주는 클래스
