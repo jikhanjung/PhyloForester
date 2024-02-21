@@ -240,7 +240,7 @@ class AnalysisViewer(QWidget):
             #os.startfile(result_dir)
             try:
                 if sys.platform == "win32":
-                    os.startfile(path)
+                    os.startfile(result_dir)
                 elif sys.platform == "darwin":
                     subprocess.run(["open", result_dir])
                 elif sys.platform == "linux":
