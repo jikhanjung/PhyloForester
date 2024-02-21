@@ -64,14 +64,17 @@ from Bio.Phylo.TreeConstruction import _Matrix
 # Function to reconstruct ancestral states for all characters in the data matrix
 def reconstruct_ancestral_states_for_all_characters(tree, morphological_data):
     # Initialize ancestral states for each character
-    for character in range(len(morphological_data[0])):
-        for node in tree.find_clades():
-            node.confidence[character] = None
+    print("morphological_data:", morphological_data, len(morphological_data[0]))
+    for node in tree.find_clades():
+        node.confidence = [None] * len(morphological_data[0])
+        #for character in range(len(morphological_data[0])):
+        #    node.confidence[character] = None
 
     clade_list = [ c for c in tree.find_clades() ]
     root = clade_list[0]
     # Perform the first pass (bottom-up traversal)
     bottom_up_pass(root, morphological_data)
+    print("bottom up done, root.confidence:", root.confidence)
 
     # Perform the second pass (top-down traversal)
     top_down_pass(root, morphological_data)
@@ -80,21 +83,43 @@ def reconstruct_ancestral_states_for_all_characters(tree, morphological_data):
 def bottom_up_pass(node, morphological_data):
     if node.is_terminal():
         taxon_idx = taxa_list.index(node.name)
+        print("taxon:", node.name, morphological_data[taxon_idx])
+        #print("node.confidence:", node.confidence)
         for character, state in enumerate(morphological_data[taxon_idx]):
-            node.confidence[character] = state
+            node.confidence[character] = set([state])
+            print(character, state)
+        #print("node.confidence:", node.confidence)
     else:
+        for child in node:
+            bottom_up_pass(child, morphological_data)
         for character in range(len(morphological_data[0])):
-            for child in node:
-                bottom_up_pass(child, morphological_data)
             children_states = [child.confidence[character] for child in node]
-            left_states = set(node[0].confidence[character])
-            right_states = set(node[1].confidence[character])
-            node.confidence[character] = left_states.intersection(right_states)
+            print("children_states:", children_states)
+            children_sets = [s for s in children_states if isinstance(s, set)]
+            print("children_sets:", children_sets)
+            intersection = set.intersection(*children_sets) if children_sets else set()
+            print("intersection:", intersection)
+            # check if intersection is empty
+            if not intersection:
+                union = set.union(*children_sets) if children_sets else set()
+                node.confidence[character] = union
+                print("union:", union)
+            else:
+                node.confidence[character] = intersection
+            node.confidence[character] = set.union(*children_sets) if children_sets else set()
+        print("node.confidence:", node.confidence)
+
+            #left_states = set(children_states[0])
+            #right_states = set(children_states[1])
+            #left_states = set(node[0].confidence[character])
+            #right_states = set(node[1].confidence[character])
+            #node.confidence[character] = left_states.intersection(right_states)
 
 # Function to perform the second pass of the Fitch algorithm (top-down traversal)
 def top_down_pass(node, morphological_data):
     if not node.is_terminal():
-        for character in range(_Matrix.get_dimension(morphological_data)):
+        print("node.confidence:", node.confidence)
+        for character in range(len(morphological_data[0])):
             if len(node.confidence[character]) == 0:
                 for child in node.clades:
                     for state in child.confidence[character]:
