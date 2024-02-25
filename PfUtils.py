@@ -638,4 +638,80 @@ class PhyloTreefile:
             elif in_block:
                 curr_block['text'].append(line)
         return #block_list
-            
+
+# Function to reconstruct ancestral states for all characters in the data matrix
+def reconstruct_ancestral_states(tree, datamatrix, taxa_list ):
+    # Initialize ancestral states for each character
+    #print("taxa list:", taxa_list)
+    #print("morphological_data:", datamatrix, len(datamatrix[0]))
+    ''' initialize confidence for each node in the tree '''
+    for node in tree.find_clades():
+        node.character_states = [None] * len(datamatrix[0])
+        node.changed_characters = []
+        # initialize terminal nodes with their character states
+        if node.is_terminal():
+            taxon_idx = taxa_list.index(node.name)
+            #print("taxon:", node.name, datamatrix[taxon_idx])
+            #print("node.confidence:", node.confidence)
+            for character, state in enumerate(datamatrix[taxon_idx]):
+                node.character_states[character] = set([state])
+                print( character, state)
+
+    bottom_up_pass(tree.root, datamatrix )
+    print("bottom up done, root.confidence:", tree.root.character_states)
+
+    # Perform the second pass (top-down traversal)
+    top_down_pass(tree.root, datamatrix)
+
+# Function to perform the first pass of the Fitch algorithm (bottom-up traversal)
+def bottom_up_pass(node, datamatrix ):
+    if node.is_terminal():
+        return
+    else:
+        for child in node:
+            bottom_up_pass(child, datamatrix)
+        for character in range(len(datamatrix[0])):
+            children_states = [child.character_states[character] for child in node]
+            #print("children_states:", children_states)
+            children_sets = [s for s in children_states if isinstance(s, set)]
+            #print("children_sets:", children_sets)
+            intersection = set.intersection(*children_sets) if children_sets else set()
+            #print("intersection:", intersection)
+            # check if intersection is empty
+            if not intersection:
+                union = set.union(*children_sets) if children_sets else set()
+                node.character_states[character] = union
+                #print("union:", union)
+            else:
+                node.character_states[character] = intersection
+            node.character_states[character] = set.union(*children_sets) if children_sets else set()
+        #print("node.confidence:", node.confidence)
+
+# Function to perform the second pass of the Fitch algorithm (top-down traversal)
+def top_down_pass(node, morphological_data, parent_states=None):
+    if not node.is_terminal():
+        #print("topdown node.confidence:", node.name, node.confidence, "parent confidence:", parent_state)
+        for character_index in range(len(morphological_data[0])):
+            if parent_states and parent_states[character_index] in node.character_states[character_index]:
+                node.character_states[character_index] = parent_states[character_index]
+            else:
+                node.character_states[character_index] = next(iter(node.character_states[character_index]))
+            if parent_states and parent_states[character_index] != node.character_states[character_index]:
+                #print("changed character:", character_index, "parent:", parent_state[character_index], "node:", node.confidence[character_index])
+                node.changed_characters.append(character_index)
+    else:
+        #print("topdown terminal node.confidence:", node.name, node.confidence)
+        for character_index in range(len(morphological_data[0])):
+            final_state = next(iter(node.character_states[character_index]))
+            node.character_states[character_index] = final_state
+            if parent_states and parent_states[character_index] != node.character_states[character_index]:
+                #print("changed character:", character_index, "parent:", parent_state[character_index], "node:", node.confidence[character_index])
+                node.changed_characters.append(character_index)
+            #print("node.confidence:", node.confidence)
+#            if len(node.confidence[character_index]) == 0:
+#                for child in node.clades:
+#                    for state in child.confidence[character_index]:
+#                        node.confidence[character_index].add(state)
+
+    for child in node.clades:
+        top_down_pass(child, morphological_data,node.character_states)

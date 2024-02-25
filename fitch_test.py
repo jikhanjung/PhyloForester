@@ -67,6 +67,7 @@ def reconstruct_ancestral_states_for_all_characters(tree, morphological_data):
     print("morphological_data:", morphological_data, len(morphological_data[0]))
     for node in tree.find_clades():
         node.confidence = [None] * len(morphological_data[0])
+        node.changed_characters = []
         #for character in range(len(morphological_data[0])):
         #    node.confidence[character] = None
 
@@ -87,7 +88,7 @@ def bottom_up_pass(node, morphological_data):
         #print("node.confidence:", node.confidence)
         for character, state in enumerate(morphological_data[taxon_idx]):
             node.confidence[character] = set([state])
-            print(character, state)
+            print( character, state)
         #print("node.confidence:", node.confidence)
     else:
         for child in node:
@@ -116,17 +117,33 @@ def bottom_up_pass(node, morphological_data):
             #node.confidence[character] = left_states.intersection(right_states)
 
 # Function to perform the second pass of the Fitch algorithm (top-down traversal)
-def top_down_pass(node, morphological_data):
+def top_down_pass(node, morphological_data, parent_state=None):
     if not node.is_terminal():
-        print("node.confidence:", node.confidence)
-        for character in range(len(morphological_data[0])):
-            if len(node.confidence[character]) == 0:
-                for child in node.clades:
-                    for state in child.confidence[character]:
-                        node.confidence[character].add(state)
+        #print("topdown node.confidence:", node.name, node.confidence, "parent confidence:", parent_state)
+        for character_index in range(len(morphological_data[0])):
+            if parent_state and parent_state[character_index] in node.confidence[character_index]:
+                node.confidence[character_index] = parent_state[character_index]
+            else:
+                node.confidence[character_index] = next(iter(node.confidence[character_index]))
+            if parent_state and parent_state[character_index] != node.confidence[character_index]:
+                print("changed character:", character_index, "parent:", parent_state[character_index], "node:", node.confidence[character_index])
+                node.changed_characters.append(character_index)
+    else:
+        #print("topdown terminal node.confidence:", node.name, node.confidence)
+        for character_index in range(len(morphological_data[0])):
+            final_state = next(iter(node.confidence[character_index]))
+            node.confidence[character_index] = final_state
+            if parent_state and parent_state[character_index] != node.confidence[character_index]:
+                print("changed character:", character_index, "parent:", parent_state[character_index], "node:", node.confidence[character_index])
+                node.changed_characters.append(character_index)
+            #print("node.confidence:", node.confidence)
+#            if len(node.confidence[character_index]) == 0:
+#                for child in node.clades:
+#                    for state in child.confidence[character_index]:
+#                        node.confidence[character_index].add(state)
 
     for child in node.clades:
-        top_down_pass(child, morphological_data)
+        top_down_pass(child, morphological_data,node.confidence)
 
 taxa_list = ["A", "B", "C", "D"]
 morphological_data = [
@@ -142,10 +159,21 @@ from io import StringIO
 tree = Phylo.read(StringIO(tree_str), "newick")
 Phylo.draw_ascii(tree)
 print("tree:", tree)
-for node in tree.find_clades():
-    node.confidence = [None] * len(morphological_data)
 
 ancestral_states = reconstruct_ancestral_states_for_all_characters(tree, morphological_data)
-print(ancestral_states)
+for node in tree.find_clades():
+    #node.confidence = [None] * len(morphological_data[0])
+    print("final node confidence:", node.name, node.confidence)
+#print(ancestral_states)
+
 # Example usage:
 #reconstruct_ancestral_states_for_all_characters(tree, morphological_data)
+    
+print("tree:", tree)
+def print_character_states(node, depth=0):
+    print(" "*4*depth,node.name, node.confidence, node.changed_characters, len(node.changed_characters) )
+    for child in node:
+        print_character_states(child, depth + 1)
+
+        
+print_character_states(tree.root)

@@ -21,6 +21,10 @@ import sys
 import os
 import subprocess 
 
+TREE_STYLE_TOPOLOGY = 0
+TREE_STYLE_BRANCH_LENGTH = 1
+TREE_STYLE_TIMETREE = 2
+
 class PfInputDialog(QDialog):
     def __init__(self, parent=None):
         super(PfInputDialog, self).__init__(parent)
@@ -314,28 +318,34 @@ class TreeViewer(QWidget):
         self.options_widget.setLayout(self.options_layout)
         self.layout.addWidget(self.options_widget)
 
-        self.cbx_apply_branch_length = QCheckBox()
-        self.cbx_apply_branch_length.setText("Branch Length")
-        self.cbx_apply_branch_length.setChecked(False)
-        self.options_layout.addWidget(self.cbx_apply_branch_length)
-        self.cbx_apply_branch_length.clicked.connect(self.on_cbx_show_branch_length_clicked)
+        self.lbl_tree_style = QLabel("Style")
+        self.combo_tree_style = QComboBox()
+        self.combo_tree_style.addItem("Topology")
+        self.combo_tree_style.addItem("Branch length")
+        self.combo_tree_style.addItem("Timetree")
+        self.combo_tree_style.currentIndexChanged.connect(self.on_combo_tree_style_currentIndexChanged)
+        self.options_layout.addWidget(self.lbl_tree_style)
+        self.options_layout.addWidget(self.combo_tree_style)
 
-        self.timetree_widget = QWidget()
-        #self.timetree_widget.setFixedWidth(220)
-        self.timetree_layout = QHBoxLayout()
-        self.timetree_widget.setLayout(self.timetree_layout)
-        self.options_layout.addWidget(self.timetree_widget)
+        ''' topology option: character mapping, align taxa names'''
+        self.cbx_char_mapping = QCheckBox()
+        self.cbx_char_mapping.setText("Char. Mapping")
+        self.cbx_char_mapping.setChecked(False)
+        self.options_layout.addWidget(self.cbx_char_mapping)
+        self.cbx_char_mapping.clicked.connect(self.on_cbx_char_mapping_clicked)
 
-        self.cbx_timetree = QCheckBox()
-        self.cbx_timetree.setText("Timetree")
-        #self.cbx_timetree.setFixedWidth(75)
-        self.cbx_timetree.setChecked(False)
-        self.timetree_layout.addWidget(self.cbx_timetree)
-        self.cbx_timetree.clicked.connect(self.on_cbx_timetree_clicked)
+        self.cbx_align_taxa = QCheckBox()
+        self.cbx_align_taxa.setText("Align Names")
+        self.cbx_align_taxa.setChecked(False)
+        self.options_layout.addWidget(self.cbx_align_taxa)
+        self.cbx_align_taxa.clicked.connect(self.on_cbx_align_taxa_clicked)
 
+        ''' branch length options: none '''
+
+        ''' timetree options: node minimum offset '''
         self.lbl_node_minimum_offset = QLabel()
         self.lbl_node_minimum_offset.setText("Min.offset(Ma)")
-        self.timetree_layout.addWidget(self.lbl_node_minimum_offset)
+        self.options_layout.addWidget(self.lbl_node_minimum_offset)
 
         self.edt_node_minimum_offset = QLineEdit()
         self.edt_node_minimum_offset.setFixedWidth(40)
@@ -344,19 +354,32 @@ class TreeViewer(QWidget):
         #self.edt_node_minimum_offset.setPlaceholderText("Node Min Offset")
         self.edt_node_minimum_offset.editingFinished.connect(self.on_edt_node_minimum_offset_change)
         #self.edt_tree_width.editingFinished.connect(self.on_edt_tree_width_change)
-        self.timetree_layout.addWidget(self.edt_node_minimum_offset)
+        self.options_layout.addWidget(self.edt_node_minimum_offset)
+
+        #self.cbx_apply_branch_length = QCheckBox()
+        #self.cbx_apply_branch_length.setText("Branch Length")
+        #self.cbx_apply_branch_length.setChecked(False)
+        #self.options_layout.addWidget(self.cbx_apply_branch_length)
+        #self.cbx_apply_branch_length.clicked.connect(self.on_cbx_show_branch_length_clicked)
+
+        #self.timetree_widget = QWidget()
+        #self.timetree_widget.setFixedWidth(220)
+        #self.timetree_layout = QHBoxLayout()
+        #self.timetree_widget.setLayout(self.timetree_layout)
+        #self.options_layout.addWidget(self.timetree_widget)
+
+        #self.cbx_timetree = QCheckBox()
+        #self.cbx_timetree.setText("Timetree")
+        #self.cbx_timetree.setFixedWidth(75)
+        #self.cbx_timetree.setChecked(False)
+        #self.timetree_layout.addWidget(self.cbx_timetree)
+        #self.cbx_timetree.clicked.connect(self.on_cbx_timetree_clicked)
 
         self.cbx_show_axis = QCheckBox()
         self.cbx_show_axis.setText("Show axis")
         self.cbx_show_axis.setChecked(False)
         self.options_layout.addWidget(self.cbx_show_axis)
         self.cbx_show_axis.clicked.connect(self.on_cbx_show_axis_clicked)
-
-        self.cbx_align_taxa = QCheckBox()
-        self.cbx_align_taxa.setText("Align Names")
-        self.cbx_align_taxa.setChecked(False)
-        self.options_layout.addWidget(self.cbx_align_taxa)
-        self.cbx_align_taxa.clicked.connect(self.on_cbx_align_taxa_clicked)
         
         self.font_option_widget = QWidget()
         #self.font_option_widget.setFixedWidth(150)
@@ -375,7 +398,7 @@ class TreeViewer(QWidget):
         self.cbx_italic_taxa_name.clicked.connect(self.on_cbx_italic_taxa_name_clicked)
 
         self.combo_font_size = QComboBox()
-        for i in [ 6, 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72 ]:
+        for i in [ 6, 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28 ]:
             self.combo_font_size.addItem(str(i))
         #self.combo_font_size.addItem("8")
         #self.combo_font_size.setFixedWidth(50)
@@ -521,6 +544,59 @@ class TreeViewer(QWidget):
         self.tree_info_layout.addWidget(self.slider)
         self.curr_tree_index = 0
         self.tree_type = 1
+        self.tree_style = 0
+
+    def on_cbx_char_mapping_clicked(self):
+        self.tree_label.char_mapping = self.cbx_char_mapping.isChecked()
+        # if checked, show char mapping widget
+        # else, hide char mapping widget
+
+        self.tree_label.repaint()
+
+    def on_combo_tree_style_currentIndexChanged(self, index):
+        # hide all options
+        if index == TREE_STYLE_TIMETREE and not self.analysis.datamatrix.is_timetable_valid():
+            self.combo_tree_style.setCurrentIndex(self.tree_style)
+            self.lbl_node_minimum_offset.hide()
+            self.edt_node_minimum_offset.hide()
+            return
+
+        self.cbx_char_mapping.hide()
+        self.cbx_align_taxa.hide()
+        self.lbl_node_minimum_offset.hide()
+        self.edt_node_minimum_offset.hide()
+
+        self.tree_label.topology_only = False
+        self.tree_label.timetree = False
+        self.tree_label.apply_branch_length = False
+
+
+        if index == TREE_STYLE_TOPOLOGY:
+            self.tree_label.tree_style = TREE_STYLE_TOPOLOGY
+            self.tree_label.apply_branch_length = True
+            self.cbx_char_mapping.show()
+            self.cbx_align_taxa.show()
+        elif index == TREE_STYLE_BRANCH_LENGTH:
+            self.tree_label.tree_style = TREE_STYLE_BRANCH_LENGTH
+            self.tree_label.apply_branch_length = True
+        elif index == TREE_STYLE_TIMETREE:
+            #timetree = self.cbx_timetree.isChecked()
+            #timetable = json.loads(self.analysis.taxa_timetable_json)
+            if self.analysis.datamatrix.is_timetable_valid():
+                self.tree_label.tree_style = TREE_STYLE_TIMETREE
+                self.tree_label.timetree = True
+                # check if timetree is available
+                # if yes
+                self.lbl_node_minimum_offset.show()
+                self.edt_node_minimum_offset.show()
+            else:
+                self.combo_tree_style.setCurrentIndex(self.tree_label.tree_style)
+                self.tree_label.tree_style = TREE_STYLE_TOPOLOGY
+                self.tree_label.apply_branch_length = True
+                self.cbx_char_mapping.show()
+                self.cbx_align_taxa.show()
+
+        self.tree_label.repaint()
 
     def on_cbx_show_axis_clicked(self):
         self.tree_label.show_axis = self.cbx_show_axis.isChecked()
@@ -706,12 +782,12 @@ class TreeViewer(QWidget):
         #timetable = json.loads(self.analysis.taxa_timetable_json)
         if timetree and self.analysis.datamatrix.is_timetable_valid():
             self.tree_label.timetree = timetree
-            self.cbx_apply_branch_length.setChecked(False)
+            #self.cbx_apply_branch_length.setChecked(False)
             self.tree_label.apply_branch_length = False
             self.cbx_align_taxa.setChecked(False)
             self.tree_label.align_taxa = False
         else:
-            self.cbx_timetree.setChecked(False)
+            #self.cbx_timetree.setChecked(False)
             self.tree_label.timetree = False
         self.tree_label.repaint()
 
@@ -720,6 +796,7 @@ class TreeViewer(QWidget):
         self.tree_label.repaint()
 
     def on_cbx_show_branch_length_clicked(self):
+        return
         self.tree_label.apply_branch_length = self.cbx_apply_branch_length.isChecked()
         if self.tree_label.apply_branch_length:
             #self.cbx_align_taxa.setEnabled(False)
@@ -733,9 +810,9 @@ class TreeViewer(QWidget):
         self.tree_label.align_taxa = self.cbx_align_taxa.isChecked()
         if self.tree_label.align_taxa:
             #self.cbx_show_branch_length.setEnabled(False)
-            self.cbx_apply_branch_length.setChecked(False)
+            #self.cbx_apply_branch_length.setChecked(False)
             self.tree_label.apply_branch_length = False
-            self.cbx_timetree.setChecked(False)
+            #self.cbx_timetree.setChecked(False)
             self.tree_label.timetree = False
         self.tree_label.repaint()
 
@@ -855,15 +932,17 @@ class TreeViewer(QWidget):
         if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
             self.cbx_align_taxa.setEnabled(True)
             #self.cbx_show_branch_length.setEnabled(False)
-            self.cbx_apply_branch_length.setChecked(False)
+            #self.cbx_apply_branch_length.setChecked(False)
         elif self.analysis.analysis_type == ANALYSIS_TYPE_ML:
             #self.cbx_align_taxa.setEnabled(False)
-            self.cbx_apply_branch_length.setEnabled(True)
-            self.cbx_apply_branch_length.setChecked(True)
+            #self.cbx_apply_branch_length.setEnabled(True)
+            #self.cbx_apply_branch_length.setChecked(True)
+            pass
         elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
             #self.cbx_align_taxa.setEnabled(False)
-            self.cbx_apply_branch_length.setEnabled(True)
-            self.cbx_apply_branch_length.setChecked(True)
+            #self.cbx_apply_branch_length.setEnabled(True)
+            #self.cbx_apply_branch_length.setChecked(True)
+            pass
         self.on_cbx_show_branch_length_clicked()
         self.on_cbx_align_taxa_clicked()
         self.on_cbx_fit_to_window_clicked()
@@ -995,7 +1074,7 @@ class TreeLabel(QLabel):
         self.min_clade_depth = 0
         self.show_axis = False
         self.x_padding = 50
-        self.y_padding = 50
+        self.y_padding = 25
 
     def _2canx(self, coord):
         return round((float(coord) / self.image_canvas_ratio) * self.scale) + self.pan_x + self.temp_pan_x
@@ -1132,6 +1211,7 @@ class TreeLabel(QLabel):
         clade_list = [ c for c in self.tree.find_clades() ]
         root = clade_list[0]
         self.leaf_count = root.count_terminals()
+        #print("leaf_count", self.leaf_count)
 
         taxa_list = [ clade.name for clade in clade_list if clade.name is not None ]
         # get font
@@ -1201,7 +1281,8 @@ class TreeLabel(QLabel):
         #print("clade depths", self.clade_depths)
         #print("max_depth", self.max_depth)
         self.branch_length_scale = ( self.tree_image_width * 0.9 - max_text_width ) / (self.max_depth - self.min_clade_depth)
-        self.row_height = int( self.tree_image_height * 0.9 / self.leaf_count )
+        self.row_height = int( ( self.tree_image_height - self.y_padding * 2 ) * 0.9 / self.leaf_count )
+        #print("row_height", self.row_height, "tree_image_height", self.tree_image_height, "leaf_count", self.leaf_count)
         self.tree_unit_width = int( self.tree_image_width * 0.05 )
         #self.
 
@@ -1305,7 +1386,7 @@ class TreeLabel(QLabel):
 
     def convert_coords(self, x, y):
         new_x = self.x_padding + int( x * self.branch_length_scale ) + self.pan_x + self.temp_pan_x
-        new_y = self.y_padding + int( y * self.row_height ) - int(self.row_height / 2) + self.pan_y + self.temp_pan_y
+        new_y = self.y_padding + int( ( y + 0.5 ) * self.row_height ) + self.pan_y + self.temp_pan_y
         return new_x, new_y
 
     def draw_line(self, painter, x1, x2, y1, y2,thickness=1):
