@@ -1577,7 +1577,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                         for analysis in dm.analyses:
                             analysis = PfAnalysis.get_by_id(analysis.id)
                             item5 = QStandardItem(analysis.analysis_name)
-                            item5.setIcon(QIcon(pu.resource_path(ICON['analysis'])))
+                            item5.setIcon(QIcon(pu.resource_path(ICON['analysis'])))    
                             item5.setData(analysis)
                             item6 = QStandardItem("")
                             item6.setData(analysis.completion_percentage, Qt.UserRole + 10)

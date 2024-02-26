@@ -654,11 +654,14 @@ def reconstruct_ancestral_states(tree, datamatrix, taxa_list ):
             #print("taxon:", node.name, datamatrix[taxon_idx])
             #print("node.confidence:", node.confidence)
             for character, state in enumerate(datamatrix[taxon_idx]):
-                node.character_states[character] = set([state])
-                print( character, state)
+                if isinstance(state, list):
+                    node.character_states[character] = set(state)
+                else:
+                    node.character_states[character] = set([state])
+                #print( character, state)
 
     bottom_up_pass(tree.root, datamatrix )
-    print("bottom up done, root.confidence:", tree.root.character_states)
+    #print("bottom up done, root.confidence:", tree.root.character_states)
 
     # Perform the second pass (top-down traversal)
     top_down_pass(tree.root, datamatrix)
@@ -695,14 +698,16 @@ def top_down_pass(node, morphological_data, parent_states=None):
             if parent_states and parent_states[character_index] in node.character_states[character_index]:
                 node.character_states[character_index] = parent_states[character_index]
             else:
-                node.character_states[character_index] = next(iter(node.character_states[character_index]))
+                #node.character_states[character_index] = next(iter(node.character_states[character_index]))
+                node.character_states[character_index] = min(node.character_states[character_index])
             if parent_states and parent_states[character_index] != node.character_states[character_index]:
                 #print("changed character:", character_index, "parent:", parent_state[character_index], "node:", node.confidence[character_index])
                 node.changed_characters.append(character_index)
     else:
         #print("topdown terminal node.confidence:", node.name, node.confidence)
         for character_index in range(len(morphological_data[0])):
-            final_state = next(iter(node.character_states[character_index]))
+            #final_state = next(iter(node.character_states[character_index]))
+            final_state = min(node.character_states[character_index])
             node.character_states[character_index] = final_state
             if parent_states and parent_states[character_index] != node.character_states[character_index]:
                 #print("changed character:", character_index, "parent:", parent_state[character_index], "node:", node.confidence[character_index])
@@ -715,3 +720,9 @@ def top_down_pass(node, morphological_data, parent_states=None):
 
     for child in node.clades:
         top_down_pass(child, morphological_data,node.character_states)
+
+def print_character_states(node, depth=0):
+
+    print(" "*4*depth,node.name, node.character_states, node.changed_characters, len(node.changed_characters) )
+    for child in node:
+        print_character_states(child, depth + 1)

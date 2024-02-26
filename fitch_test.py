@@ -124,14 +124,14 @@ def top_down_pass(node, morphological_data, parent_state=None):
             if parent_state and parent_state[character_index] in node.confidence[character_index]:
                 node.confidence[character_index] = parent_state[character_index]
             else:
-                node.confidence[character_index] = next(iter(node.confidence[character_index]))
+                node.confidence[character_index] = min(node.confidence[character_index])
             if parent_state and parent_state[character_index] != node.confidence[character_index]:
                 print("changed character:", character_index, "parent:", parent_state[character_index], "node:", node.confidence[character_index])
                 node.changed_characters.append(character_index)
     else:
         #print("topdown terminal node.confidence:", node.name, node.confidence)
         for character_index in range(len(morphological_data[0])):
-            final_state = next(iter(node.confidence[character_index]))
+            final_state = min(node.confidence[character_index])
             node.confidence[character_index] = final_state
             if parent_state and parent_state[character_index] != node.confidence[character_index]:
                 print("changed character:", character_index, "parent:", parent_state[character_index], "node:", node.confidence[character_index])
