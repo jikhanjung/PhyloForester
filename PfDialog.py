@@ -553,6 +553,11 @@ class TreeViewer(QWidget):
         self.buttons_layout = QHBoxLayout()
         self.buttons_widget.setLayout(self.buttons_layout)
 
+        self.btn_characters = QPushButton("Show Characters")
+        self.btn_characters.clicked.connect(self.on_btn_characters_clicked)
+        #self.btn_characters.setFixedWidth(80)
+        self.buttons_layout.addWidget(self.btn_characters)
+
         self.btn_timetable = QPushButton("Edit Timetable")
         self.btn_timetable.clicked.connect(self.on_btn_timetable_clicked)
         #self.btn_reset.setFixedWidth(80)
@@ -780,6 +785,14 @@ class TreeViewer(QWidget):
         #self.
         self.tree_label.repaint()
         return
+
+    def on_btn_characters_clicked(self):
+        if self.character_list_widget.isHidden():
+            self.character_list_widget.show()
+            self.btn_characters.setText("Hide Characters")
+        else:
+            self.character_list_widget.hide()
+            self.btn_characters.setText("Show Characters")
 
     def on_btn_timetable_clicked(self):
         if self.timetable_widget.isHidden():
@@ -1407,7 +1420,7 @@ class TreeLabel(QLabel):
         max_text_width = 0
         max_text = ''
         for taxon in taxa_list:
-            textWidth = fontMetrics.width(taxon)
+            textWidth = fontMetrics.width(taxon + " " * len(self.character_index_list))
             if textWidth > max_text_width:
                 max_text_width = textWidth
                 max_text = taxon
@@ -1581,7 +1594,7 @@ class TreeLabel(QLabel):
                 depth = self.max_fad - self.taxa_timetable[node.name][1] - self.min_clade_depth
             elif self.tree_style == TREE_STYLE_TOPOLOGY and self.char_mapping:
                 depth = self.clade_depths[node]
-                #text += "[" + " ".join([ str(x) for x in node.character_states]) + "]"
+                text = "".join([ str(node.character_states[x]) for x in self.character_index_list]) + " " + text
             self.draw_text( painter, depth, begin_row, text )
             return begin_row
         else:
@@ -1636,8 +1649,8 @@ class TreeLabel(QLabel):
                 depth = self.clade_depths[node]
             self.draw_line(painter, depth, depth, v_pos_list[0], v_pos_list[-1])
             average_v_pos = v_pos_sum / len(node)
-            #if self.tree_style == TREE_STYLE_TOPOLOGY and self.char_mapping:
-            #    self.draw_text(painter, from_depth, average_v_pos, " ".join([ str(x) for x in node.character_states]))
+            if self.tree_style == TREE_STYLE_TOPOLOGY and self.char_mapping:
+                self.draw_text(painter, from_depth, average_v_pos, "".join([ str(node.character_states[x]) for x in self.character_index_list]))
             return average_v_pos
 
     def convert_coords(self, x, y):
