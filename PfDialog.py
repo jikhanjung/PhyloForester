@@ -92,12 +92,21 @@ class AnalysisViewer(QWidget):
         self.edtAnalysisStatus = QLineEdit()
         self.edtAnalysisStatus.setReadOnly(True)
 
+        self.layout0 = QGridLayout()
         self.layout1 = QFormLayout()
-        self.analysis_info_widget.setLayout(self.layout1)
-        self.layout1.addRow("Analysis Name", self.edtAnalysisName) # 0
-        self.layout1.addRow("Analysis Type", self.edtAnalysisType) # 1
-        self.layout1.addRow("Analysis Package", self.edtAnalysisPackage) # 2
-        self.layout1.addRow("Analysis Status", self.edtAnalysisStatus) # 3
+        self.analysis_info_widget.setLayout(self.layout0)
+        self.layout0.addWidget(QLabel("Analysis Name"), 0, 0 )
+        self.layout0.addWidget(self.edtAnalysisName, 0, 1 ) # 0
+        self.layout0.addWidget(QLabel("Analysis Type"), 1, 0 )
+        self.layout0.addWidget(self.edtAnalysisType, 1, 1 ) # 1
+        self.layout0.addWidget(QLabel("Analysis Package"), 2, 0 )
+        self.layout0.addWidget(self.edtAnalysisPackage, 2, 1 )
+        self.layout0.addWidget(QLabel("Analysis Status"), 3, 0 )
+        self.layout0.addWidget(self.edtAnalysisStatus, 3, 1 )
+
+        #self.layout1.addRow(QLabel("Analysis Type"), self.edtAnalysisType) # 1
+        #self.layout1.addRow(QLabel("Analysis Package"), self.edtAnalysisPackage) # 2
+        #self.layout1.addRow(QLabel("Analysis Status"), self.edtAnalysisStatus) # 3
 
         self.edtBootstrapCount = QLineEdit()
         self.edtBootstrapCount.setReadOnly(True)
@@ -105,9 +114,17 @@ class AnalysisViewer(QWidget):
         self.edtBootstrapType.setReadOnly(True)
         self.edtSubstitutionModel = QLineEdit()
         self.edtSubstitutionModel.setReadOnly(True)
-        self.layout1.addRow("Bootstrap Count", self.edtBootstrapCount) # 4
-        self.layout1.addRow("Bootstrap Type", self.edtBootstrapType) # 5
-        self.layout1.addRow("Substitution Model", self.edtSubstitutionModel) # 6
+
+        self.layout0.addWidget(QLabel("Bootstrap Count"), 4, 0 )
+        self.layout0.addWidget(self.edtBootstrapCount, 4, 1 )
+        self.layout0.addWidget(QLabel("Bootstrap Type"), 5, 0 )
+        self.layout0.addWidget(self.edtBootstrapType, 5, 1 )
+        self.layout0.addWidget(QLabel("Substitution Model"), 6, 0 )
+        self.layout0.addWidget(self.edtSubstitutionModel, 6, 1 )
+
+        #self.layout1.addRow("Bootstrap Count", self.edtBootstrapCount) # 4
+        #self.layout1.addRow("Bootstrap Type", self.edtBootstrapType) # 5
+        #self.layout1.addRow("Substitution Model", self.edtSubstitutionModel) # 6
 
         self.edtMCMCBurnin = QLineEdit()
         self.edtMCMCBurnin.setReadOnly(True)
@@ -127,6 +144,26 @@ class AnalysisViewer(QWidget):
         self.edtMCMCNRuns.setReadOnly(True)
         self.edtMCMCNChains = QLineEdit()
         self.edtMCMCNChains.setReadOnly(True)
+
+        self.layout0.addWidget(QLabel("MCMC Burnin"), 7, 0 )
+        self.layout0.addWidget(self.edtMCMCBurnin, 7, 1 )
+        self.layout0.addWidget(QLabel("MCMC Rel Burnin"), 8, 0 )
+        self.layout0.addWidget(self.edtMCMCRelBurnin, 8, 1 )
+        self.layout0.addWidget(QLabel("MCMC Burnin Frac"), 9, 0 )
+        self.layout0.addWidget(self.edtMCMCBurninFrac, 9, 1 )
+        self.layout0.addWidget(QLabel("MCMC NGen"), 10, 0 )
+        self.layout0.addWidget(self.edtMCMCNGen, 10, 1 )
+        self.layout0.addWidget(QLabel("MCMC NRates"), 11, 0 )
+        self.layout0.addWidget(self.edtMCMCNRates, 11, 1 )
+        self.layout0.addWidget(QLabel("MCMC Print Freq"), 12, 0 )
+        self.layout0.addWidget(self.edtMCMCPrintFreq, 12, 1 )
+        self.layout0.addWidget(QLabel("MCMC Sample Freq"), 13, 0 )
+        self.layout0.addWidget(self.edtMCMCSampleFreq, 13, 1 )
+        self.layout0.addWidget(QLabel("MCMC NRuns"), 14, 0 )
+        self.layout0.addWidget(self.edtMCMCNRuns, 14, 1 )
+        self.layout0.addWidget(QLabel("MCMC NChains"), 15, 0 )
+        self.layout0.addWidget(self.edtMCMCNChains, 15, 1 )
+        '''
         self.layout1.addRow("MCMC Burnin", self.edtMCMCBurnin) # 7
         self.layout1.addRow("MCMC Rel Burnin", self.edtMCMCRelBurnin) # 8
         self.layout1.addRow("MCMC Burnin Frac", self.edtMCMCBurninFrac) # 9
@@ -136,17 +173,18 @@ class AnalysisViewer(QWidget):
         self.layout1.addRow("MCMC Sample Freq", self.edtMCMCSampleFreq) # 13
         self.layout1.addRow("MCMC NRuns", self.edtMCMCNRuns) # 14
         self.layout1.addRow("MCMC NChains", self.edtMCMCNChains) # 15
+        '''
 
         self.edtAnalysisResultDirectory = QLineEdit()
         self.edtAnalysisResultDirectory.setReadOnly(True)
         self.dir_widget = QWidget()
         self.dir_layout = QHBoxLayout()
         self.dir_widget.setLayout(self.dir_layout)
+        self.dir_widget.setFixedHeight(40)
         self.btnOpenDir = QPushButton("Open Directory")
         self.btnOpenDir.clicked.connect(self.on_btn_open_result_dir_clicked)
         self.dir_layout.addWidget(self.edtAnalysisResultDirectory)
         self.dir_layout.addWidget(self.btnOpenDir)
-
 
         self.edtAnalysisStartDatetime = QLineEdit()
         self.edtAnalysisStartDatetime.setReadOnly(True)
@@ -155,11 +193,25 @@ class AnalysisViewer(QWidget):
         self.edtAnalysisCompletionPercentage = QLineEdit()
         self.edtAnalysisCompletionPercentage.setReadOnly(True)
 
-        #an_layout.addRow("Analysis Output", edtAnalysisOutput)
-        self.layout1.addRow("Result Directory", self.dir_widget)
-        self.layout1.addRow("Start Datetime", self.edtAnalysisStartDatetime)
-        self.layout1.addRow("Finish Datetime", self.edtAnalysisFinishDatetime)
-        self.layout1.addRow("Completion %", self.edtAnalysisCompletionPercentage)
+        row_num = 16
+        self.layout0.addWidget(QLabel("Result Directory"), row_num, 0 )
+        self.layout0.addWidget(self.dir_widget, row_num, 1 )
+        row_num += 1
+        self.layout0.addWidget(QLabel("Start Datetime"), row_num, 0 )
+        self.layout0.addWidget(self.edtAnalysisStartDatetime, row_num, 1 )
+        row_num += 1
+        self.layout0.addWidget(QLabel("Finish Datetime"), row_num, 0 )
+        self.layout0.addWidget(self.edtAnalysisFinishDatetime, row_num, 1 )
+        row_num += 1
+        self.layout0.addWidget(QLabel(""), row_num, 0 )
+        self.layout0.setRowStretch(row_num, 1)
+        #self.layout0.addWidget(self.edtAnalysisFinishDatetime, row_num, 1 )
+
+        #self.layout1.addRow("Start Datetime", self.edtAnalysisStartDatetime)
+        #self.layout1.addRow("Result Directory", self.dir_widget)
+        #self.layout1.addRow("Start Datetime", self.edtAnalysisStartDatetime)
+        #self.layout1.addRow("Finish Datetime", self.edtAnalysisFinishDatetime)
+        #self.layout1.addRow("Completion %", self.edtAnalysisCompletionPercentage)
 
     def set_analysis(self,analysis):
         self.analysis = analysis
@@ -168,21 +220,26 @@ class AnalysisViewer(QWidget):
         if analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
             for i in range(4,16):
                 #print("i:", i)
-                self.layout1.itemAt(4,QFormLayout.FieldRole).widget().hide()
-                self.layout1.itemAt(4,QFormLayout.LabelRole).widget().hide()
-                self.layout1.removeRow(4)
+                self.layout0.itemAtPosition(i,0).widget().hide()
+                self.layout0.itemAtPosition(i,1).widget().hide()
+                #self.layout0.itemAt(4,QFormLayout.LabelRole).widget().hide()
+                #self.layout0.removeRow(4)
         elif analysis.analysis_type == ANALYSIS_TYPE_ML:
             for i in range(7,16):
                 #print("i:", i)
-                self.layout1.itemAt(7,QFormLayout.FieldRole).widget().hide()
-                self.layout1.itemAt(7,QFormLayout.LabelRole).widget().hide()
-                self.layout1.removeRow(7)
+                self.layout0.itemAtPosition(i,0).widget().hide()
+                self.layout0.itemAtPosition(i,1).widget().hide()
+                #self.layout1.itemAt(7,QFormLayout.FieldRole).widget().hide()
+                #self.layout1.itemAt(7,QFormLayout.LabelRole).widget().hide()
+                #self.layout1.removeRow(7)
         elif analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
             for i in range(4,7):
                 #print("i:", i)
-                self.layout1.itemAt(4,QFormLayout.FieldRole).widget().hide()
-                self.layout1.itemAt(4,QFormLayout.LabelRole).widget().hide()
-                self.layout1.removeRow(4)
+                self.layout0.itemAtPosition(i,0).widget().hide()
+                self.layout0.itemAtPosition(i,1).widget().hide()
+                #self.layout1.itemAt(4,QFormLayout.FieldRole).widget().hide()
+                #self.layout1.itemAt(4,QFormLayout.LabelRole).widget().hide()
+                #self.layout1.removeRow(4)
         #    for i in range(5,8):
         #        self.layout1.itemAt(i).widget().hide()
             #for i in range(13,17):
