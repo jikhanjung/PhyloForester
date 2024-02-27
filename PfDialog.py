@@ -861,11 +861,11 @@ class TreeViewer(QWidget):
             
             tree_to_save.newick_text = newick_string
             tree_options = {}
-            tree_options['apply_branch_length'] = self.tree_label.apply_branch_length
+            tree_options['tree_style'] = self.tree_label.tree_style
             tree_options['align_taxa'] = self.tree_label.align_taxa
             tree_options['italic_taxa_name'] = self.tree_label.italic_taxa_name
             tree_options['font_size'] = self.tree_label.font_size
-            tree_options['timetree'] = self.tree_label.timetree
+            #tree_options['timetree'] = self.tree_label.timetree
             tree_options['show_axis'] = self.tree_label.show_axis
             tree_options['node_minimum_offset'] = self.tree_label.node_minimum_offset
             tree_to_save.tree_options_json = json.dumps(tree_options)
@@ -883,11 +883,11 @@ class TreeViewer(QWidget):
             # save bookmark
             tree = self.bookmarked_treeobj_hash[self.tree_current_index]
             tree_options = {}
-            tree_options['apply_branch_length'] = self.tree_label.apply_branch_length
+            tree_options['tree_style'] = self.tree_label.tree_style
             tree_options['align_taxa'] = self.tree_label.align_taxa
             tree_options['italic_taxa_name'] = self.tree_label.italic_taxa_name
             tree_options['font_size'] = self.tree_label.font_size
-            tree_options['timetree'] = self.tree_label.timetree
+            #tree_options['timetree'] = self.tree_label.timetree
             tree_options['show_axis'] = self.tree_label.show_axis
             tree_options['node_minimum_offset'] = self.tree_label.node_minimum_offset
             tree.tree_name = self.edt_tree_name.text()
@@ -1046,6 +1046,10 @@ class TreeViewer(QWidget):
                                 clade.name = taxa_list[taxon_index]
                             except:
                                 pass
+                    if self.analysis and self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
+                        self.combo_tree_style.setCurrentIndex(0)
+                    else:
+                        self.combo_tree_style.setCurrentIndex(1)
             else:
                 tree = self.treeobj_hash[self.tree_current_index]
         elif self.tree_type == 2:
@@ -1073,6 +1077,9 @@ class TreeViewer(QWidget):
 
 
         if tree is None:
+            self.tree_label.set_tree(tree)
+            #self.tree_label.clear()
+            self.tree_label.repaint()
             return
         self.current_tree = tree
         #print("selection changed. tree:", tree)
@@ -1795,6 +1802,12 @@ class TreeLabel(QLabel):
         self.analysis = analysis
 
     def set_tree(self, tree):
+        if tree is None:
+            # clear label
+            self.tree = None
+            self.repaint()
+            return
+
         self.tree = tree
         #parents = {}
         for clade in tree.find_clades(order="level"):

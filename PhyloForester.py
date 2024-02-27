@@ -707,7 +707,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
 
         elif analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
             tree_name = "Bayesian Consensus tree"
-            tree_filename = os.path.join( analysis.result_directory, analysis.datamatrix.datamatrix_name.replace(" ","_") + ".nex1.con.tre" )
+            tree_filename = os.path.join( analysis.result_directory, analysis.datamatrix.datamatrix_name.replace(" ","_") + ".nex.con.tre" )
             #print(tree_filename)
             tf = pu.PhyloTreefile()
             ret = tf.readtree(tree_filename,'Nexus')
