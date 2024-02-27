@@ -1884,9 +1884,12 @@ class AnalysisDialog(QDialog):
         self.tabML = QWidget()
         self.tabBayesian = QWidget()
 
-        self.tabParsimony.setLayout(QFormLayout())
-        self.tabML.setLayout(QFormLayout())
-        self.tabBayesian.setLayout(QFormLayout())
+        self.parsimony_layout = QGridLayout()
+        self.tabParsimony.setLayout(self.parsimony_layout)
+        self.ml_layout = QGridLayout()
+        self.tabML.setLayout(self.ml_layout)
+        self.bayesian_layout = QGridLayout()
+        self.tabBayesian.setLayout(self.bayesian_layout)
 
         
         #self.lblAnalysisNameParsimony = QLabel("Analysis Name")
@@ -1895,16 +1898,25 @@ class AnalysisDialog(QDialog):
         
         self.edtAnalysisNameParsimony = QLineEdit(ANALYSIS_TYPE_PARSIMONY)
         # bootstrap type: normal, ultrafast
-        self.tabParsimony.layout().addRow("Name",self.edtAnalysisNameParsimony)
+        self.parsimony_layout.addWidget(QLabel("Name"),0,0)
+        self.parsimony_layout.addWidget(self.edtAnalysisNameParsimony,0,1)
 
         self.edtAnalysisNameML = QLineEdit(ANALYSIS_TYPE_ML)
         self.cbBootstrapType = QComboBox()
         self.cbBootstrapType.addItem(BOOTSTRAP_TYPE_NORMAL)
         self.cbBootstrapType.addItem(BOOTSTRAP_TYPE_ULTRAFAST)
         self.edtBootstrapCount = QLineEdit("1000")
-        self.tabML.layout().addRow("Name",self.edtAnalysisNameML)
-        self.tabML.layout().addRow("Bootstrap Type",self.cbBootstrapType)
-        self.tabML.layout().addRow("Bootstrap Count",self.edtBootstrapCount)
+        row_idx = 0
+        self.ml_layout.addWidget(QLabel("Name"),row_idx,1)
+        self.ml_layout.addWidget(self.edtAnalysisNameML,row_idx,2)
+        row_idx += 1
+        self.ml_layout.addWidget(QLabel("Bootstrap Type"),row_idx,1)
+        self.ml_layout.addWidget(self.cbBootstrapType,row_idx,2)
+        row_idx += 1
+        self.ml_layout.addWidget(QLabel("Bootstrap Count"),row_idx,1)
+        self.ml_layout.addWidget(self.edtBootstrapCount,row_idx,2)
+        #self.tabML.layout().addRow("Bootstrap Type",self.cbBootstrapType)
+        #self.tabML.layout().addRow("Bootstrap Count",self.edtBootstrapCount)
 
         '''
             mcmc_burnin = IntegerField(default=1000)
@@ -1936,6 +1948,41 @@ class AnalysisDialog(QDialog):
         self.edtNRuns = QLineEdit("1")
         self.edtNChains = QLineEdit("1")
 
+        row_idx = 0
+        self.bayesian_layout.addWidget(QLabel("Name"),row_idx,0)
+        self.bayesian_layout.addWidget(self.edtAnalysisNameBayesian,row_idx,1)
+        row_idx += 1
+        self.bayesian_layout.addWidget(QLabel("Burnin"),row_idx,0)
+        self.bayesian_layout.addWidget(self.edtMCMCBurnin,row_idx,1)
+        row_idx += 1
+        self.bayesian_layout.addWidget(QLabel("Relative Burnin"),row_idx,0)
+        self.bayesian_layout.addWidget(self.edtMCMCRelBurnin,row_idx,1)
+        row_idx += 1
+        self.bayesian_layout.addWidget(QLabel("Burnin Fraction"),row_idx,0)
+        self.bayesian_layout.addWidget(self.edtMCMCBurninFrac,row_idx,1)
+        row_idx += 1
+        self.bayesian_layout.addWidget(QLabel("NGen"),row_idx,0)
+        self.bayesian_layout.addWidget(self.edtMCMCNGen,row_idx,1)
+        row_idx += 1
+        self.bayesian_layout.addWidget(QLabel("NSt"),row_idx,0)
+        self.bayesian_layout.addWidget(self.edtMCMCNst,row_idx,1)
+        row_idx += 1
+        self.bayesian_layout.addWidget(QLabel("NRates"),row_idx,0)
+        self.bayesian_layout.addWidget(self.cbMCMCNRates,row_idx,1)
+        row_idx += 1
+        self.bayesian_layout.addWidget(QLabel("Print Freq"),row_idx,0)
+        self.bayesian_layout.addWidget(self.edtPrintFreq,row_idx,1)
+        row_idx += 1
+        self.bayesian_layout.addWidget(QLabel("Sample Freq"),row_idx,0)
+        self.bayesian_layout.addWidget(self.edtSampleFreq,row_idx,1)
+        row_idx += 1
+        self.bayesian_layout.addWidget(QLabel("NRuns"),row_idx,0)
+        self.bayesian_layout.addWidget(self.edtNRuns,row_idx,1)
+        row_idx += 1
+        self.bayesian_layout.addWidget(QLabel("NChains"),row_idx,0)
+        self.bayesian_layout.addWidget(self.edtNChains,row_idx,1)
+
+        '''
         self.tabBayesian.layout().addRow("Name",self.edtAnalysisNameBayesian)
         self.tabBayesian.layout().addRow("Burnin",self.edtMCMCBurnin)
         self.tabBayesian.layout().addRow("Relative Burnin",self.edtMCMCRelBurnin)
@@ -1947,6 +1994,7 @@ class AnalysisDialog(QDialog):
         self.tabBayesian.layout().addRow("Sample Freq",self.edtSampleFreq)
         self.tabBayesian.layout().addRow("NRuns",self.edtNRuns)
         self.tabBayesian.layout().addRow("NChains",self.edtNChains)
+        '''
         
         self.on_cbxParsimony_clicked()
 
@@ -2213,14 +2261,35 @@ class DatamatrixDialog(QDialog):
         self.taxa_layout_widget.layout().setStretch(0,1)
         self.taxa_layout_widget.layout().setStretch(1,0)
 
-        self.main_layout = QFormLayout()
+        self.main_layout = QGridLayout()
         self.setLayout(self.main_layout)
+        row_idx = 0
+        self.main_layout.addWidget(QLabel("Project Name"),row_idx,0)
+        self.main_layout.addWidget(self.edtProjectName,row_idx,1)
+        row_idx += 1
+        self.main_layout.addWidget(QLabel("Datamatrix Name"),row_idx,0)
+        self.main_layout.addWidget(self.edtDatamatrixName,row_idx,1)
+        row_idx += 1
+        self.main_layout.addWidget(QLabel("Description"),row_idx,0)
+        self.main_layout.addWidget(self.edtDatamatrixDesc,row_idx,1)
+        row_idx += 1
+        self.main_layout.addWidget(QLabel("Data Type"),row_idx,0)
+        self.main_layout.addLayout(datatype_layout,row_idx,1)
+        row_idx += 1
+        self.main_layout.addWidget(QLabel("Characters"),row_idx,0)
+        self.main_layout.addWidget(self.characters_layout_widget,row_idx,1)
+        row_idx += 1
+        self.main_layout.addWidget(QLabel("Taxa"),row_idx,0)
+        self.main_layout.addWidget(self.taxa_layout_widget,row_idx,1)
+        row_idx += 1
+        '''
         self.main_layout.addRow("Project Name", self.edtProjectName)
         self.main_layout.addRow("Datamatrix Name", self.edtDatamatrixName)
         self.main_layout.addRow("Description", self.edtDatamatrixDesc)
         self.main_layout.addRow("Data Type", datatype_layout)
         self.main_layout.addRow("Taxa", self.taxa_layout_widget)
         self.main_layout.addRow("Characters", self.characters_layout_widget)
+        '''
         self.btnOkay = QPushButton()
         self.btnOkay.setText("Save")
         self.btnOkay.clicked.connect(self.Okay)
@@ -2233,11 +2302,14 @@ class DatamatrixDialog(QDialog):
         self.btnCancel.setText("Cancel")
         self.btnCancel.clicked.connect(self.Cancel)
 
+        btn_widget = QWidget()
+
         btn_layout = QHBoxLayout()
+        btn_widget.setLayout(btn_layout)
         btn_layout.addWidget(self.btnOkay)
         btn_layout.addWidget(self.btnDelete)
         btn_layout.addWidget(self.btnCancel)
-        self.main_layout.addRow(btn_layout)
+        self.main_layout.addWidget(btn_widget,row_idx,1,1,2)
 
     def on_lstCharacters_itemSelectionChanged(self):
         items = self.lstCharacters.selectedItems()
@@ -2456,10 +2528,15 @@ class ProjectDialog(QDialog):
         self.taxa_layout_widget.layout().setStretch(1,0)
         '''
 
-        self.main_layout = QFormLayout()
+        self.main_layout = QGridLayout()
         self.setLayout(self.main_layout)
-        self.main_layout.addRow("Project Name", self.edtProjectName)
-        self.main_layout.addRow("Description", self.edtProjectDesc)
+        self.main_layout.addWidget(QLabel("Project Name"),0,0)
+        self.main_layout.addWidget(self.edtProjectName,0,1)
+        self.main_layout.addWidget(QLabel("Description"),1,0)
+        self.main_layout.addWidget(self.edtProjectDesc,1,1)
+
+        #self.main_layout.addRow("Project Name", self.edtProjectName)
+        #self.main_layout.addRow("Description", self.edtProjectDesc)
         #self.main_layout.addRow("Data Type", datatype_layout)
         #self.main_layout.addRow("Taxa", self.taxa_layout_widget)
 
@@ -2479,7 +2556,10 @@ class ProjectDialog(QDialog):
         btn_layout.addWidget(self.btnOkay)
         btn_layout.addWidget(self.btnDelete)
         btn_layout.addWidget(self.btnCancel)
-        self.main_layout.addRow(btn_layout)
+        # merge two cells for buttons
+        self.main_layout.addLayout(btn_layout,2,0,1,2)
+
+        
 
         self.project = None
     
