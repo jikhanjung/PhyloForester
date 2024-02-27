@@ -579,7 +579,7 @@ class PhyloForesterMainWindow(QMainWindow):
    set autoclose=yes nowarn=yes;
    execute {dfname};
    lset nst={nst} rates={nrates};
-   mcmc nruns={nruns} ngen={ngen} samplefreq={samplefreq} file={dfname}1 burnin={burnin} Savebrlens=No;
+   mcmc nruns={nruns} ngen={ngen} samplefreq={samplefreq} file={dfname} burnin={burnin} Savebrlens=No;
    sump burnin={burnin};
    sumt burnin={burnin} Showtreeprobs=No;
 end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcmc_nrates, nruns=analysis.mcmc_nruns, ngen=analysis.mcmc_ngen, samplefreq=analysis.mcmc_samplefreq,burnin=analysis.mcmc_burnin)

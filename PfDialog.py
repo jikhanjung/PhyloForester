@@ -21,10 +21,6 @@ import sys
 import os
 import subprocess 
 
-TREE_STYLE_TOPOLOGY = 0
-TREE_STYLE_BRANCH_LENGTH = 1
-TREE_STYLE_TIMETREE = 2
-
 class PfInputDialog(QDialog):
     def __init__(self, parent=None):
         super(PfInputDialog, self).__init__(parent)
@@ -694,10 +690,10 @@ class TreeViewer(QWidget):
         self.tree_label.char_mapping = char_mapping
         if char_mapping:
             self.character_list_widget.show()
+            self.btn_characters.setText("Hide Characters")
         else:
             self.character_list_widget.hide()
-        # if checked, show char mapping widget
-        # else, hide char mapping widget
+            self.btn_characters.setText("Show Characters")
 
         self.tree_label.repaint()
 
@@ -711,7 +707,7 @@ class TreeViewer(QWidget):
 
     def tree_style_changed(self, index):
         # hide all options
-        if index == TREE_STYLE_TIMETREE and not self.analysis.datamatrix.is_timetable_valid():
+        if index == pu.TREE_STYLE_TIMETREE and not self.analysis.datamatrix.is_timetable_valid():
             self.combo_tree_style.setCurrentIndex(self.tree_style)
             self.lbl_node_minimum_offset.hide()
             self.edt_node_minimum_offset.hide()
@@ -729,19 +725,19 @@ class TreeViewer(QWidget):
         self.tree_label.apply_branch_length = False
         self.tree_label.align_taxa = False
 
-        if index == TREE_STYLE_TOPOLOGY:
-            self.tree_label.tree_style = TREE_STYLE_TOPOLOGY
+        if index == pu.TREE_STYLE_TOPOLOGY:
+            self.tree_label.tree_style = pu.TREE_STYLE_TOPOLOGY
             self.tree_label.apply_branch_length = True
             self.cbx_char_mapping.show()
             self.cbx_align_taxa.show()
-        elif index == TREE_STYLE_BRANCH_LENGTH:
-            self.tree_label.tree_style = TREE_STYLE_BRANCH_LENGTH
+        elif index == pu.TREE_STYLE_BRANCH_LENGTH:
+            self.tree_label.tree_style = pu.TREE_STYLE_BRANCH_LENGTH
             self.tree_label.apply_branch_length = True
-        elif index == TREE_STYLE_TIMETREE:
+        elif index == pu.TREE_STYLE_TIMETREE:
             #timetree = self.cbx_timetree.isChecked()
             #timetable = json.loads(self.analysis.taxa_timetable_json)
             if self.analysis.datamatrix.is_timetable_valid():
-                self.tree_label.tree_style = TREE_STYLE_TIMETREE
+                self.tree_label.tree_style = pu.TREE_STYLE_TIMETREE
                 self.tree_label.timetree = True
                 # check if timetree is available
                 # if yes
@@ -749,7 +745,7 @@ class TreeViewer(QWidget):
                 self.edt_node_minimum_offset.show()
             else:
                 self.combo_tree_style.setCurrentIndex(self.tree_label.tree_style)
-                self.tree_label.tree_style = TREE_STYLE_TOPOLOGY
+                self.tree_label.tree_style = pu.TREE_STYLE_TOPOLOGY
                 self.tree_label.apply_branch_length = True
                 self.cbx_char_mapping.show()
                 self.cbx_align_taxa.show()
@@ -1060,12 +1056,14 @@ class TreeViewer(QWidget):
                 treeobj = self.bookmarked_treeobj_hash[self.tree_current_index]
                 tree = Phylo.read(io.StringIO(self.bookmarked_newick_tree_list[self.tree_current_index]), "newick")
                 tree_options = treeobj.get_tree_options()
-                self.cbx_apply_branch_length.setChecked(tree_options['apply_branch_length'])
+                #self.cbx_apply_branch_length.setChecked(tree_options['apply_branch_length'])
+                self.combo_tree_style.setCurrentIndex(tree_options['tree_style'])
                 self.cbx_align_taxa.setChecked(tree_options['align_taxa'])
                 self.cbx_italic_taxa_name.setChecked(tree_options['italic_taxa_name'])
                 self.combo_font_size.setCurrentText(str(tree_options['font_size']))
-                self.cbx_timetree.setChecked(tree_options['timetree'])
-                self.tree_label.apply_branch_length = tree_options['apply_branch_length']                
+                #self.cbx_timetree.setChecked(tree_options['timetree'])
+                #self.tree_label.apply_branch_length = tree_options['apply_branch_length']
+                self.tree_label.tree_style = tree_options['tree_style']
                 self.tree_label.align_taxa = tree_options['align_taxa']
                 self.tree_label.italic_taxa_name = tree_options['italic_taxa_name']
                 self.tree_label.font_size = tree_options['font_size']
@@ -1182,7 +1180,7 @@ class TreeViewer(QWidget):
 
         elif self.analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
             tf = pu.PhyloTreefile()
-            tf.readtree(os.path.join(tree_dir, self.analysis.datamatrix.datamatrix_name.replace(" ","_") + ".nex1.t"), 'Nexus')
+            tf.readtree(os.path.join(tree_dir, self.analysis.datamatrix.datamatrix_name.replace(" ","_") + ".nex.t"), 'Nexus')
             self.newick_tree_list = tf.tree_list
 
         self.slider.setRange(0, len(self.newick_tree_list) - 1)
@@ -1256,7 +1254,7 @@ class TreeLabel(QLabel):
         self.tree_node_parents = {}
         self.analysis_type = None
 
-        self.tree_style = TREE_STYLE_TOPOLOGY
+        self.tree_style = pu.TREE_STYLE_TOPOLOGY
         #self.apply_branch_length = False
         #self.timetree = False
         self.char_mapping = False
@@ -1413,24 +1411,13 @@ class TreeLabel(QLabel):
         self.leaf_count = root.count_terminals()
         #print("leaf_count", self.leaf_count)
 
-        taxa_list = [ clade.name for clade in clade_list if clade.name is not None ]
-        # get font
-        font = painter.font()
-        fontMetrics = QFontMetrics(font)
-        max_text_width = 0
-        max_text = ''
-        for taxon in taxa_list:
-            textWidth = fontMetrics.width(taxon + " " * len(self.character_index_list))
-            if textWidth > max_text_width:
-                max_text_width = textWidth
-                max_text = taxon
         self.min_clade_depth = 0
         tree_length = 0
 
         ''' calculate depths '''
-        if self.tree_style == TREE_STYLE_BRANCH_LENGTH and self.analysis_type != ANALYSIS_TYPE_PARSIMONY:
+        if self.tree_style == pu.TREE_STYLE_BRANCH_LENGTH and self.analysis_type != ANALYSIS_TYPE_PARSIMONY:
             self.clade_depths = self.tree.depths()
-        elif self.tree_style == TREE_STYLE_TOPOLOGY and self.char_mapping:
+        elif self.tree_style == pu.TREE_STYLE_TOPOLOGY and self.char_mapping:
             #self.clade_depths = self.tree.depths(unit_branch_lengths=True)
             self.clade_depths = self.map_characters_to_nodes()
             #print("clade_depths", self.clade_depths)
@@ -1450,7 +1437,25 @@ class TreeLabel(QLabel):
         #print("clade_depths", self.clade_depths)
         self.max_depth = max(self.clade_depths.values())
 
-        if self.tree_style == TREE_STYLE_TIMETREE:
+        taxa_list = [ clade.name for clade in clade_list if clade.name is not None ]
+        if self.tree_style == pu.TREE_STYLE_TOPOLOGY and self.char_mapping:
+            character_states_list = [ clade.character_states for clade in clade_list if clade.name is not None ]
+        # get font
+        font = painter.font()
+        fontMetrics = QFontMetrics(font)
+        max_text_width = 0
+        max_text = ''
+        for idx, taxon in enumerate(taxa_list):
+            taxon_text = taxon
+            if self.tree_style == pu.TREE_STYLE_TOPOLOGY and self.char_mapping:
+                taxon_text = "".join( [ character_states_list[idx][i] for i in self.character_index_list ] ) + " " + taxon
+            textWidth = fontMetrics.width( taxon_text )
+            if textWidth > max_text_width:
+                max_text_width = textWidth
+                max_text = taxon_text
+
+
+        if self.tree_style == pu.TREE_STYLE_TIMETREE:
             taxa_list = self.analysis.datamatrix.get_taxa_list()
             self.timetable = self.analysis.datamatrix.get_taxa_timetable()
             
@@ -1498,6 +1503,7 @@ class TreeLabel(QLabel):
 
         #print("clade depths", self.clade_depths)
         #print("max_depth", self.max_depth)
+        #print("max text width", max_text, max_text_width)
         self.branch_length_scale = ( self.tree_image_width * 0.9 - max_text_width ) / (self.max_depth - self.min_clade_depth)
         self.row_height = int( ( self.tree_image_height - self.y_padding * 2 ) * 0.9 / self.leaf_count )
         #print("row_height", self.row_height, "tree_image_height", self.tree_image_height, "leaf_count", self.leaf_count)
@@ -1525,9 +1531,9 @@ class TreeLabel(QLabel):
         if self.show_axis:
             self.draw_axis(painter)
 
-        if self.tree_style == TREE_STYLE_TOPOLOGY and self.char_mapping:
+        if self.tree_style == pu.TREE_STYLE_TOPOLOGY and self.char_mapping:
             #self.draw_character_mapping(painter, tree_length)
-            self.draw_text( painter, 0, self.leaf_count, "Tree Length: " + str(tree_length) )
+            self.draw_text( painter, 0, self.leaf_count - 1, "Tree Length: " + str(tree_length) )
 
     def map_characters_to_nodes(self):
         #return
@@ -1571,7 +1577,7 @@ class TreeLabel(QLabel):
         for i in range(0, int(self.max_depth)+1):
             x, y = self.convert_coords(i - self.min_clade_depth, self.leaf_count)
             painter.drawLine(x, y, x, y+axis_offset)
-            if self.tree_style == TREE_STYLE_TIMETREE:
+            if self.tree_style == pu.TREE_STYLE_TIMETREE:
                 tick_number = str(self.min_lad + self.max_depth - i)
             else:
                 tick_number = str(i)
@@ -1588,11 +1594,11 @@ class TreeLabel(QLabel):
             text = node.name
             if self.align_taxa:
                 depth = self.max_depth
-            if self.tree_style == TREE_STYLE_BRANCH_LENGTH:
+            if self.tree_style == pu.TREE_STYLE_BRANCH_LENGTH:
                 depth = self.clade_depths[node]
-            elif self.tree_style == TREE_STYLE_TIMETREE:
+            elif self.tree_style == pu.TREE_STYLE_TIMETREE:
                 depth = self.max_fad - self.taxa_timetable[node.name][1] - self.min_clade_depth
-            elif self.tree_style == TREE_STYLE_TOPOLOGY and self.char_mapping:
+            elif self.tree_style == pu.TREE_STYLE_TOPOLOGY and self.char_mapping:
                 depth = self.clade_depths[node]
                 text = "".join([ str(node.character_states[x]) for x in self.character_index_list]) + " " + text
             self.draw_text( painter, depth, begin_row, text )
@@ -1614,13 +1620,13 @@ class TreeLabel(QLabel):
                 to_depth = depth +1
                 if self.align_taxa and child.is_terminal():
                     to_depth = self.max_depth
-                if self.tree_style == TREE_STYLE_BRANCH_LENGTH:
+                if self.tree_style == pu.TREE_STYLE_BRANCH_LENGTH:
                     from_depth = self.clade_depths[node]
                     to_depth = self.clade_depths[child]
-                elif self.tree_style == TREE_STYLE_TOPOLOGY and self.char_mapping:
+                elif self.tree_style == pu.TREE_STYLE_TOPOLOGY and self.char_mapping:
                     from_depth = self.clade_depths[node]
                     to_depth = self.clade_depths[child]
-                elif self.tree_style == TREE_STYLE_TIMETREE:
+                elif self.tree_style == pu.TREE_STYLE_TIMETREE:
                     if child.is_terminal():
                         terminal_from_depth = self.max_fad - self.taxa_timetable[child.name][0] - self.min_clade_depth
                         terminal_to_depth = self.max_fad - self.taxa_timetable[child.name][1] - self.min_clade_depth
@@ -1632,7 +1638,7 @@ class TreeLabel(QLabel):
                 self.draw_line(painter, from_depth, to_depth, v_pos, v_pos )
 
                 ''' if char_mapping, write changed character num '''
-                if self.tree_style == TREE_STYLE_TOPOLOGY and self.char_mapping:
+                if self.tree_style == pu.TREE_STYLE_TOPOLOGY and self.char_mapping:
                     transition_list = []
                     for i in child.changed_characters:
                         #print(i, node.character_states[i], child.character_states[i])
@@ -1641,15 +1647,15 @@ class TreeLabel(QLabel):
 
                 traversed_row_count += child.count_terminals()
             #print(v_pos_list)
-            if self.tree_style == TREE_STYLE_BRANCH_LENGTH:
+            if self.tree_style == pu.TREE_STYLE_BRANCH_LENGTH:
                 depth = self.clade_depths[node]
-            elif self.tree_style == TREE_STYLE_TIMETREE:
+            elif self.tree_style == pu.TREE_STYLE_TIMETREE:
                 depth = self.clade_depths[node] - self.min_clade_depth
-            elif self.tree_style == TREE_STYLE_TOPOLOGY and self.char_mapping:
+            elif self.tree_style == pu.TREE_STYLE_TOPOLOGY and self.char_mapping:
                 depth = self.clade_depths[node]
             self.draw_line(painter, depth, depth, v_pos_list[0], v_pos_list[-1])
             average_v_pos = v_pos_sum / len(node)
-            if self.tree_style == TREE_STYLE_TOPOLOGY and self.char_mapping:
+            if self.tree_style == pu.TREE_STYLE_TOPOLOGY and self.char_mapping:
                 self.draw_text(painter, from_depth, average_v_pos, "".join([ str(node.character_states[x]) for x in self.character_index_list]))
             return average_v_pos
 

@@ -397,10 +397,15 @@ class PfTree(Model):
         database = gDatabase
 
     def get_tree_options(self):
+        default_options = { 'tree_style': pu.TREE_STYLE_TOPOLOGY, 'char_mapping': False, 'align_taxa': False, 'italic_taxa_name': False, 'font_size': 10, 'timetree': False, 'node_minimum_offset':0.1 }
         if self.tree_options_json:
-            return json.loads(self.tree_options_json)
+            tree_options = json.loads(self.tree_options_json)
+            for key in default_options.keys():
+                if key not in tree_options:
+                    tree_options[key] = default_options[key]
+            return tree_options
         else:
-            return {'apply_branch_length': False, 'align_taxa': False, 'italic_taxa_name': False, 'font_size': 10, 'timetree': False, 'node_minimum_offset':0.1}
+            return default_options
     
     def pack_tree_options(self, options_dict):
         self.tree_options_json = json.dumps(options_dict)
