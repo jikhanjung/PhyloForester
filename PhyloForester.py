@@ -484,12 +484,15 @@ class PhyloForesterMainWindow(QMainWindow):
         #self.move(300, 300)
         #self.show(
 
-    def startAnalysis(self):
+    def startAnalysis(self, analysis = None):
         # Command to run (example: list directory contents)
-        analysis_list = PfAnalysis.select().where(PfAnalysis.analysis_status == ANALYSIS_STATUS_QUEUED).order_by(PfAnalysis.created_at)
-        if len(analysis_list) == 0:
-            return
-        self.analysis = analysis_list[0]
+        if not analysis:
+            analysis_list = PfAnalysis.select().where(PfAnalysis.analysis_status == ANALYSIS_STATUS_QUEUED).order_by(PfAnalysis.created_at)
+            if len(analysis_list) == 0:
+                return
+            self.analysis = analysis_list[0]
+        else:
+            self.analysis = analysis
         #print("analysis:", self.analysis.analysis_name)
         datamatrix = self.analysis.datamatrix
 
@@ -788,8 +791,12 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             action_delete_datamatrix.triggered.connect(self.on_action_delete_datamatrix_triggered)
             action_edit_datamatrix = QAction("Edit datamatrix")
             action_edit_datamatrix.triggered.connect(self.on_action_edit_datamatrix_triggered)
+            action_add_analysis = QAction("Add analysis")
+            action_add_analysis.triggered.connect(self.on_action_add_analysis_triggered)
             action_run_analysis = QAction("Run analysis")
             action_run_analysis.triggered.connect(self.on_action_run_analysis_triggered)
+            action_stop_analysis = QAction("Stop analysis")
+            action_stop_analysis.triggered.connect(self.on_action_stop_analysis_triggered)
             action_delete_analysis = QAction("Delete analysis")
             action_delete_analysis.triggered.connect(self.on_action_delete_analysis_triggered)
             action_refresh_tree = QAction("Reload")
@@ -798,22 +805,27 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             level = 0
             index = indexes[0]
             item1 =self.project_model.itemFromIndex(index)
-            ds = item1.data()
+            obj = item1.data()
 
             menu = QMenu()
 
-            if isinstance(ds, PfProject):
+            if isinstance(obj, PfProject):
                 level = 1
                 menu.addAction(action_edit_project)
                 menu.addAction(action_add_datamatrix)
-            elif isinstance(ds, PfDatamatrix):                
+            elif isinstance(obj, PfDatamatrix):                
                 level = 2
                 menu.addAction(action_edit_datamatrix)
                 menu.addAction(action_delete_datamatrix)
-                menu.addAction(action_run_analysis)
-            elif isinstance(ds, PfAnalysis):
+                menu.addAction(action_add_analysis)
+            elif isinstance(obj, PfAnalysis):
                 level = 3
-                menu.addAction(action_delete_analysis)
+                if obj.analysis_status == ANALYSIS_STATUS_QUEUED:
+                    menu.addAction(action_run_analysis)
+                elif obj.analysis_status == ANALYSIS_STATUS_RUNNING:
+                    menu.addAction(action_stop_analysis)
+                elif obj.analysis_status == ANALYSIS_STATUS_FINISHED:
+                    menu.addAction(action_delete_analysis)
 
 
             #menu.addAction(action_add_project)
@@ -851,26 +863,36 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             elif ret == 1:
                 self.load_treeview()
                 self.update_datamatrix_table()
-                #self.reset_tableView()                
+                #self.reset_tableView()
 
     def on_action_run_analysis_triggered(self):
         indexes = self.treeView.selectedIndexes()
         index = indexes[0]
         item1 =self.project_model.itemFromIndex(index)
-        dm = item1.data()
-        if isinstance(dm, PfDatamatrix):
-            self.run_analysis(dm)
+        obj = item1.data()
+        if not isinstance(obj, PfAnalysis):
+            return
 
-    def run_analysis(self, selected_datamatrix):
+        self.startAnalysis(obj)
+
+
+    def on_action_add_analysis_triggered(self):
+        indexes = self.treeView.selectedIndexes()
+        index = indexes[0]
+        item1 =self.project_model.itemFromIndex(index)
+        dm = item1.data()
+        if not isinstance(dm, PfDatamatrix):
+            return
+
         self.analysis_dialog = AnalysisDialog(self)
-        self.analysis_dialog.set_datamatrix(selected_datamatrix)
+        self.analysis_dialog.set_datamatrix(dm)
         self.analysis_dialog.setModal(True)
         #self.analysis_dialog.show()
 
         ret = self.analysis_dialog.exec_()
 
         project = self.selected_project
-        datamatrix = selected_datamatrix
+        #datamatrix = dm
         self.load_treeview()
         self.reset_tableView()
         self.select_project(project)
@@ -882,6 +904,26 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
 
         #self.load_datamatrices()
         #self.select_datamatrix(datamatrix)
+
+    def on_action_stop_analysis_triggered(self):
+        indexes = self.treeView.selectedIndexes()
+        index = indexes[0]
+        item1 =self.project_model.itemFromIndex(index)
+        an = item1.data()
+        if not isinstance(an, PfAnalysis):
+            return
+            #self.stop_analysis(an)
+
+        self.process.terminate()
+        if self.process.state() == QProcess.NotRunning:
+            print("Successfully stopped the process")
+            an.analysis_status = ANALYSIS_STATUS_STOPPED
+            an.finish_datetime = datetime.datetime.now()
+            an.save()
+
+        self.update_analysis_info(an)
+
+
 
     def on_action_add_datamatrix_triggered(self):
         indexes = self.treeView.selectedIndexes()
@@ -1745,7 +1787,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
     def on_btn_analyze_clicked(self):
         if self.selected_datamatrix is None:
             return
-        self.run_analysis(self.selected_datamatrix)
+        self.add_analysis(self.selected_datamatrix)
 
 if __name__ == "__main__":
     #QApplication : 프로그램을 실행시켜주는 클래스
