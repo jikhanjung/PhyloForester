@@ -52,7 +52,6 @@ def setup_database_location(database_dir):
     database_handle = SqliteDatabase(database_path,pragmas={'foreign_keys': 1})
     return database_handle
 
-
 class PfProject(Model):
     project_name = CharField()
     project_desc = CharField(null=True)

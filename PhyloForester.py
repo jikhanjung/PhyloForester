@@ -811,15 +811,18 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
 
             if isinstance(obj, PfProject):
                 level = 1
+                obj = PfProject.get(PfProject.id == obj.id)
                 menu.addAction(action_edit_project)
                 menu.addAction(action_add_datamatrix)
             elif isinstance(obj, PfDatamatrix):                
                 level = 2
+                obj = PfDatamatrix.get(PfDatamatrix.id == obj.id)
                 menu.addAction(action_edit_datamatrix)
                 menu.addAction(action_delete_datamatrix)
                 menu.addAction(action_add_analysis)
             elif isinstance(obj, PfAnalysis):
                 level = 3
+                obj = PfAnalysis.get(PfAnalysis.id == obj.id)
                 if obj.analysis_status == ANALYSIS_STATUS_QUEUED:
                     menu.addAction(action_run_analysis)
                 elif obj.analysis_status == ANALYSIS_STATUS_RUNNING:
@@ -910,16 +913,24 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         index = indexes[0]
         item1 =self.project_model.itemFromIndex(index)
         an = item1.data()
+        print("stop analysis 1")
         if not isinstance(an, PfAnalysis):
             return
             #self.stop_analysis(an)
 
+        print("stop analysis 2")
         self.process.terminate()
+        if not self.process.waitForFinished(3000):  # Wait for up to 3000 ms
+            self.process.kill()  # Forcefully kill the process if it didn't terminate
+            self.process.waitForFinished()  # Wait for the process to be killed
+
         if self.process.state() == QProcess.NotRunning:
             print("Successfully stopped the process")
             an.analysis_status = ANALYSIS_STATUS_STOPPED
             an.finish_datetime = datetime.datetime.now()
             an.save()
+        else:
+            print("Failed to stop the process")
 
         self.update_analysis_info(an)
 
