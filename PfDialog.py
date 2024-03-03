@@ -87,6 +87,8 @@ class AnalysisViewer(QWidget):
         self.edtAnalysisPackage.setReadOnly(True)
         self.edtAnalysisStatus = QLineEdit()
         self.edtAnalysisStatus.setReadOnly(True)
+        #self.edtCompletionPer = QLineEdit()
+        #self.edtAnalysisStatus.setReadOnly(True)
 
         self.layout0 = QGridLayout()
         self.layout1 = QFormLayout()
@@ -198,6 +200,9 @@ class AnalysisViewer(QWidget):
         row_num += 1
         self.layout0.addWidget(QLabel("Finish Datetime"), row_num, 0 )
         self.layout0.addWidget(self.edtAnalysisFinishDatetime, row_num, 1 )
+        row_num += 1
+        self.layout0.addWidget(QLabel("Completion %"), row_num, 0 )
+        self.layout0.addWidget(self.edtAnalysisCompletionPercentage, row_num, 1 )
         row_num += 1
         self.layout0.addWidget(QLabel(""), row_num, 0 )
         self.layout0.setRowStretch(row_num, 1)
@@ -2133,7 +2138,7 @@ class AnalysisDialog(QDialog):
                 analysis.result_directory = os.path.join( result_directory_base, directory_name.replace(" ","_") )
                 #analysis.result_directory = os.path.join( result_directory_base, directory_name )
 
-            analysis.analysis_status = ANALYSIS_STATUS_QUEUED
+            analysis.analysis_status = ANALYSIS_STATUS_READY
             analysis.analysis_type = analysis_type
             analysis.taxa_list_json = analysis.datamatrix.taxa_list_json
             analysis.character_list_json = analysis.datamatrix.character_list_json

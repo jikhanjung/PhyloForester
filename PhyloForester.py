@@ -37,35 +37,23 @@ class PfItemDelegate(QStyledItemDelegate):
         super().paint(painter, option, index)  # Draw default item content
 
         if index.column() == 1:  # Check if it's the progress bar column
-            progress_value = index.model().data(index, Qt.UserRole + 10) or -1 # Access progress data
-            #print("progress value:", progress_value)
+            item_data = index.model().data(index, Qt.UserRole + 10) or -1 # Access progress data
             rect = option.rect
-
-            if isinstance(progress_value, str):
+            if isinstance( item_data, str ):
+                # datamatrix, not analysis
                 text_x = rect.x() + 10
                 text_y = rect.y() + rect.height() - 5
-                painter.drawText(text_x, text_y, progress_value)
+                painter.drawText(text_x, text_y, item_data)
                 return
 
-            if progress_value == 0:
-                text_x = rect.x() + 10
-                text_y = rect.y() + rect.height() - 5
-                painter.drawText(text_x, text_y, "Pending")
-            elif progress_value == -1:
-                text_x = rect.x() + 10
-                text_y = rect.y() + rect.height() - 5
-                painter.drawText(text_x, text_y, " ")
-                return
-            elif progress_value == 100:
-                # Draw background
-                #painter.fillRect(rect, QColor(0xf0f0f0))  # Light gray background
-                # Optionally draw a checkmark when the progress is complete
-                #checkmark = QIcon(pu.resource_path('icons/checkmark.png')).pixmap(16, 16)
-                text_x = rect.x() + 10
-                text_y = rect.y() + rect.height() - 5
-                painter.drawText(text_x, text_y, "✔")
-            else:
-                # Calculate progress bar dimensions and position
+            progress_value = item_data.get('percentage', -1)
+            status = item_data.get('status', -1)
+            #print("item_data:", item_data)
+            #print("progress value:", progress_value)
+
+            #if isinstance(progress_value, str):
+
+            if 0 < progress_value < 100 and status == ANALYSIS_STATUS_RUNNING:
                 bar_width = int(0.9 * rect.width())
                 bar_height = int(0.9 * rect.height())
                 bar_x = rect.x() + int((rect.width() - bar_width) / 2)
@@ -84,6 +72,11 @@ class PfItemDelegate(QStyledItemDelegate):
                 text_x = rect.x() + 10
                 text_y = rect.y() + rect.height() - 5
                 painter.drawText(text_x, text_y, f"{progress_value}%")
+            else:
+                text_x = rect.x() + 10
+                text_y = rect.y() + rect.height() - 5
+                painter.drawText(text_x, text_y, status)
+
 
 
 class PfTabBar(QTabBar):
@@ -439,6 +432,7 @@ class PhyloForesterMainWindow(QMainWindow):
         self.hsplitter = QSplitter(Qt.Horizontal)
 
 
+        #self.treeView = PfTreeView()
         self.treeView = PfTreeView()
         #self.tabView = PfTabWidget()
         #self.tabView.main_window = self
@@ -487,7 +481,7 @@ class PhyloForesterMainWindow(QMainWindow):
     def startAnalysis(self, analysis = None):
         # Command to run (example: list directory contents)
         if not analysis:
-            analysis_list = PfAnalysis.select().where(PfAnalysis.analysis_status == ANALYSIS_STATUS_QUEUED).order_by(PfAnalysis.created_at)
+            analysis_list = PfAnalysis.select().where(PfAnalysis.analysis_status == ANALYSIS_STATUS_READY).order_by(PfAnalysis.created_at)
             if len(analysis_list) == 0:
                 return
             self.analysis = analysis_list[0]
@@ -631,6 +625,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         # Here, you can also handle process exit code and status
         exitCode = self.process.exitCode()
         self.analysis.analysis_status = ANALYSIS_STATUS_FINISHED
+        print('status:', self.analysis.analysis_status)
         self.analysis.completion_percentage = 100
         self.analysis.finish_datetime = datetime.datetime.now()
         self.analysis.save()
@@ -744,13 +739,16 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
 
     def update_analysis_info(self, analysis):
         #self.data_storage['analysis'][analysis.id]['tree_item'].setData(analysis.completion_percentage, Qt.UserRole + 10)
+        analysis = PfAnalysis.get(PfAnalysis.id == analysis.id)
         av = self.data_storage['analysis'][analysis.id]['widget']
         #analysis_view.set_analysis(analysis)
         av.update_info(analysis)
 
         if self.data_storage['analysis'][analysis.id]['tree_item'] is not None:
             #print("item:", self.data_storage['analysis'][analysis.id]['tree_item'])
-            self.data_storage['analysis'][analysis.id]['tree_item'].setData(analysis.completion_percentage, Qt.UserRole + 10)
+            analysis_status = { 'status': analysis.analysis_status, 'percentage': analysis.completion_percentage }
+            #print("status:", analysis_status)
+            self.data_storage['analysis'][analysis.id]['tree_item'].setData(analysis_status, Qt.UserRole + 10)
             self.treeView.update()
         #else:
             #print("item is none")
@@ -823,11 +821,11 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             elif isinstance(obj, PfAnalysis):
                 level = 3
                 obj = PfAnalysis.get(PfAnalysis.id == obj.id)
-                if obj.analysis_status == ANALYSIS_STATUS_QUEUED:
+                if obj.analysis_status == ANALYSIS_STATUS_READY:
                     menu.addAction(action_run_analysis)
                 elif obj.analysis_status == ANALYSIS_STATUS_RUNNING:
                     menu.addAction(action_stop_analysis)
-                elif obj.analysis_status == ANALYSIS_STATUS_FINISHED:
+                elif obj.analysis_status in [ ANALYSIS_STATUS_FINISHED, ANALYSIS_STATUS_STOPPED ]:
                     menu.addAction(action_delete_analysis)
 
 
@@ -913,16 +911,21 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         index = indexes[0]
         item1 =self.project_model.itemFromIndex(index)
         an = item1.data()
+        
+
         print("stop analysis 1")
         if not isinstance(an, PfAnalysis):
             return
             #self.stop_analysis(an)
+        # refresh analysis object
+        an = PfAnalysis.get(PfAnalysis.id == an.id)
 
         print("stop analysis 2")
-        self.process.terminate()
-        if not self.process.waitForFinished(3000):  # Wait for up to 3000 ms
-            self.process.kill()  # Forcefully kill the process if it didn't terminate
-            self.process.waitForFinished()  # Wait for the process to be killed
+        self.process.kill()
+        if self.process.state() != QProcess.NotRunning:
+            if not self.process.waitForFinished(3000):  # Wait for up to 3000 ms
+                self.process.kill()  # Forcefully kill the process if it didn't terminate
+                self.process.waitForFinished()  # Wait for the process to be killed
 
         if self.process.state() == QProcess.NotRunning:
             print("Successfully stopped the process")
@@ -1014,12 +1017,16 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
 
 
     def reset_treeView(self):
-        self.project_model = QStandardItemModel()
+        self.project_model = QStandardItemModel(0,2,self)
+        #self.project_model.setHeaderData(1, Qt.Horizontal, "bbb")
         self.treeView.setModel(self.project_model)
-        self.treeView.setHeaderHidden(True)
+        #self.treeView.setHeaderHidden(True)
         self.project_selection_model = self.treeView.selectionModel()
         self.project_selection_model.selectionChanged.connect(self.on_treeview_selection_changed)
-        header = self.treeView.header()
+        #header = self.treeView.header()
+        # set horizontal header text
+        #header.set
+        
         #self.treeView.setSelectionBehavior(QTreeView.SelectRows)
 
         self.treeView.setDragEnabled(True)
@@ -1061,6 +1068,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             # datamatrix copy or move
             target_index=self.treeView.indexAt(event.pos())
             target_item = self.project_model.itemFromIndex(target_index)
+            if not target_item:
+                return
             target_object = target_item.data()
             if target_object is None:
                 return
@@ -1602,6 +1611,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         #print("load treeview begins at", datetime.datetime.now())
 
         self.project_model.clear()
+        self.project_model.setHeaderData(0, Qt.Horizontal, "Project")
+        self.project_model.setHeaderData(1, Qt.Horizontal, "Status")
         self.selected_project = None
         project_list = PfProject.select()
         for project in project_list:
@@ -1611,7 +1622,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             item1.setIcon(QIcon(pu.resource_path(ICON['project'])))
             item1.setData(project)
             item2 = QStandardItem()
-            item2.setData(" ", Qt.UserRole + 10)
+            analysis_status = " "            
+            item2.setData(analysis_status, Qt.UserRole + 10)
             self.data_storage['project'][project.id] = { 'object': project, 'item': item1, 'datamatrices': []}
             
             self.project_model.appendRow([item1,item2])#,item2,item3] )
@@ -1633,7 +1645,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                             item5.setIcon(QIcon(pu.resource_path(ICON['analysis'])))    
                             item5.setData(analysis)
                             item6 = QStandardItem("")
-                            item6.setData(analysis.completion_percentage, Qt.UserRole + 10)
+                            analysis_status = { 'status': analysis.analysis_status, 'percentage': analysis.completion_percentage}
+                            item6.setData(analysis_status, Qt.UserRole + 10)
                             item3.appendRow([item5,item6])
                             if analysis.id not in self.data_storage['analysis']:
                                 self.data_storage['analysis'][analysis.id] = { 'object': analysis, 'tree_item': item6, 'widget': None }
