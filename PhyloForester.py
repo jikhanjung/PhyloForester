@@ -770,8 +770,11 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             self.treeView.clearSelection()
             self.treeView.setCurrentIndex(QModelIndex())  # Deselect current item
             #self.tabView.clear()
-            self.hsplitter.replaceWidget(1,self.empty_widget)
             self.selected_project = None
+            widget = self.hsplitter.widget(1)
+            if widget == self.empty_widget:
+                return
+            self.hsplitter.replaceWidget(1,self.empty_widget)
 
     def open_treeview_menu(self, position):
         indexes = self.treeView.selectedIndexes()
@@ -966,6 +969,20 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         if isinstance(dm, PfDatamatrix):
             #print("deleting datamatrix:", dm.datamatrix_name)
             selected_project = dm.project
+            analysis_list = dm.analyses
+            if len(analysis_list) > 0:
+                for an in analysis_list:
+                    
+                    if self.empty_widget != self.hsplitter.widget(1):
+                        self.hsplitter.replaceWidget(1,self.empty_widget)
+                    self.data_storage['analysis'][an.id]['widget'].close()
+                    self.data_storage['analysis'][an.id]['object'] = None
+                    self.data_storage['analysis'][an.id]['widget'] = None
+                    self.data_storage['analysis'][an.id]['tree_item'] = None
+                    # remove self.data_storage['analysis'][an_id]
+                    del self.data_storage['analysis'][an.id]
+                    #an.delete_instance()
+
             dm.delete_instance()
             self.load_treeview()
             self.selected_project = selected_project
@@ -1020,7 +1037,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         self.project_model = QStandardItemModel(0,2,self)
         #self.project_model.setHeaderData(1, Qt.Horizontal, "bbb")
         self.treeView.setModel(self.project_model)
-        #self.treeView.setHeaderHidden(True)
+        self.treeView.setHeaderHidden(True)
         self.project_selection_model = self.treeView.selectionModel()
         self.project_selection_model.selectionChanged.connect(self.on_treeview_selection_changed)
         #header = self.treeView.header()
