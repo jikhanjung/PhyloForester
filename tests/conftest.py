@@ -195,7 +195,10 @@ Taxon_C 001
 @pytest.fixture
 def sample_tnt_file(temp_dir):
     """Create a sample TNT file for testing"""
-    tnt_content = """xread 'Test data' 3 3
+    # TNT format: xread on one line, then dataset name and dimensions on next lines
+    tnt_content = """xread
+'Test data'
+3 3
 Taxon_A 010
 Taxon_B 101
 Taxon_C 001
