@@ -3,6 +3,7 @@ from peewee import *
 import datetime
 import os
 import hashlib
+import logging
 from PIL import Image, ExifTags
 from PIL.ExifTags import TAGS
 import io
@@ -17,6 +18,10 @@ import shutil
 import copy
 import json
 from Bio import Phylo
+
+# Initialize logger
+logger = logging.getLogger(__name__)
+
 ANALYSIS_TYPE_ML = 'Maximum Likelihood'
 ANALYSIS_TYPE_PARSIMONY = 'Parsimony'
 ANALYSIS_TYPE_BAYESIAN = 'Bayesian'
@@ -170,7 +175,7 @@ class PfDatamatrix(Model):
             if not ret:
                 raise pu.DataParsingError(f"Failed to parse file: {file_path}")
         except (pu.FileOperationError, pu.DataParsingError) as e:
-            print(f"Import failed: {e}")
+            logger.error(f"Data matrix import failed for {file_path}: {e}")
             return False
 
         if ret:

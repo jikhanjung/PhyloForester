@@ -1,10 +1,14 @@
 import sys, os, re
 import copy
 import json
+import logging
 
 import numpy as np
 #from stl import mesh
 import tempfile
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 # ============================================================================
 # Exception Classes
@@ -238,7 +242,7 @@ class PhyloDatafile():
         try:
             self.file_text = safe_file_read(a_filepath)
         except FileOperationError as e:
-            print(f"Error loading file: {e}")
+            logger.error(f"Error loading file {a_filepath}: {e}")
             return False
 
         self.line_list = self.file_text.split('\n')
@@ -261,7 +265,7 @@ class PhyloDatafile():
                 self.parse_nexus_block(self.block_hash['TAXA'])
                 #print('nchar, ntax', self.n_chars, self.n_taxa)
             if 'CHARACTERS' in self.block_hash.keys():
-                print('characters block')
+                logger.debug('Processing CHARACTERS block')
                 self.parse_nexus_block(self.block_hash['CHARACTERS'])
                 #print('nchar, ntax', self.n_chars, self.n_taxa)
             if 'MRBAYES' in self.block_hash.keys():
@@ -400,10 +404,10 @@ class PhyloDatafile():
                 self.n_chars = count_match.group(2)
                 self.n_taxa = count_match.group(1)
                 if int(total_linenum) > 2 * int(self.n_taxa):
-                    print("interleaved format")
+                    logger.debug("Detected interleaved PHYLIP format")
                     interleaved_format = True
                 else:
-                    print("sequential format")
+                    logger.debug("Detected sequential PHYLIP format")
                     sequential_format = True
 
             if not count_match and data_match:
@@ -498,7 +502,7 @@ class PhyloTreefile:
         try:
             self.file_text = safe_file_read(a_filepath)
         except FileOperationError as e:
-            print(f"Error reading tree file: {e}")
+            logger.error(f"Error reading tree file {a_filepath}: {e}")
             return False
 
         self.line_list = self.file_text.split('\n')
@@ -839,6 +843,7 @@ def top_down_pass(node, morphological_data, parent_states=None):
 
 def print_character_states(node, depth=0):
 
-    print(" "*4*depth,node.name, node.character_states, node.changed_characters, len(node.changed_characters) )
+    logger.info("%sNode %s: character_states=%s, changed_chars=%s (count=%d)",
+                " "*4*depth, node.name, node.character_states, node.changed_characters, len(node.changed_characters))
     for child in node:
         print_character_states(child, depth + 1)
