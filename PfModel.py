@@ -101,7 +101,11 @@ class PfDatamatrix(Model):
     def get_taxa_timetable(self):
         timetable = []
         if self.taxa_timetable_json is not None:
-            timetable = json.loads(self.taxa_timetable_json)
+            try:
+                timetable = json.loads(self.taxa_timetable_json)
+            except json.JSONDecodeError as e:
+                logger.error(f"Error parsing taxa timetable JSON for {self.datamatrix_name}: {e}")
+                timetable = [ [0,0] ] * self.n_taxa
         else:
             timetable = [ [0,0] ] * self.n_taxa
         return timetable
@@ -146,7 +150,12 @@ class PfDatamatrix(Model):
     def get_character_list(self):
         self.character_list = []
         if self.character_list_json:
-            self.character_list = json.loads(self.character_list_json)
+            try:
+                self.character_list = json.loads(self.character_list_json)
+            except json.JSONDecodeError as e:
+                logger.error(f"Error parsing character list JSON for {self.datamatrix_name}: {e}")
+                self.character_list = []
+
         if len(self.character_list) == 0:
             if self.n_chars is not None:
                 self.character_list = [""] * self.n_chars
@@ -155,15 +164,22 @@ class PfDatamatrix(Model):
 
     def datamatrix_as_list(self):
         if self.datamatrix_json:
-            formatted_data_list = json.loads(self.datamatrix_json)
-            return formatted_data_list
+            try:
+                formatted_data_list = json.loads(self.datamatrix_json)
+                return formatted_data_list
+            except json.JSONDecodeError as e:
+                logger.error(f"Error parsing datamatrix JSON for {self.datamatrix_name}: {e}")
+                return []
         else:
             return []
 
     def get_taxa_list(self):
         if self.taxa_list_json:
-            #formatted_data_list = json.loads(self.datamatrix_json)
-            return json.loads(self.taxa_list_json)
+            try:
+                return json.loads(self.taxa_list_json)
+            except json.JSONDecodeError as e:
+                logger.error(f"Error parsing taxa list JSON for {self.datamatrix_name}: {e}")
+                return []
         else:
             return []
 
@@ -411,11 +427,15 @@ class PfTree(Model):
     def get_tree_options(self):
         default_options = { 'tree_style': pu.TREE_STYLE_TOPOLOGY, 'char_mapping': False, 'align_taxa': False, 'italic_taxa_name': False, 'font_size': 10, 'timetree': False, 'node_minimum_offset':0.1 }
         if self.tree_options_json:
-            tree_options = json.loads(self.tree_options_json)
-            for key in default_options.keys():
-                if key not in tree_options:
-                    tree_options[key] = default_options[key]
-            return tree_options
+            try:
+                tree_options = json.loads(self.tree_options_json)
+                for key in default_options.keys():
+                    if key not in tree_options:
+                        tree_options[key] = default_options[key]
+                return tree_options
+            except json.JSONDecodeError as e:
+                logger.error(f"Error parsing tree options JSON for {self.tree_name}: {e}")
+                return default_options
         else:
             return default_options
     

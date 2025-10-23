@@ -495,10 +495,26 @@ class PhyloForesterMainWindow(QMainWindow):
     def startAnalysis(self, analysis = None):
         # Command to run (example: list directory contents)
         if not analysis:
-            analysis_list = PfAnalysis.select().where(PfAnalysis.analysis_status == ANALYSIS_STATUS_READY).order_by(PfAnalysis.created_at)
-            if len(analysis_list) == 0:
+            try:
+                analysis_list = PfAnalysis.select().where(
+                    PfAnalysis.analysis_status == ANALYSIS_STATUS_READY
+                ).order_by(PfAnalysis.created_at)
+
+                if len(analysis_list) == 0:
+                    self.logger.info("No ready analyses to start")
+                    return
+
+                self.analysis = analysis_list[0]
+                self.logger.info(f"Starting analysis: {self.analysis.analysis_name}")
+
+            except OperationalError as e:
+                self.logger.error(f"Database error while fetching analysis: {e}")
+                QMessageBox.critical(self, "Database Error",
+                                   f"Failed to access database:\n{e}")
                 return
-            self.analysis = analysis_list[0]
+            except Exception as e:
+                self.logger.error(f"Unexpected error while fetching analysis: {e}")
+                return
         else:
             self.analysis = analysis
         #print("analysis:", self.analysis.analysis_name)
@@ -1745,7 +1761,15 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         self.project_model.setHeaderData(0, Qt.Horizontal, "Project")
         self.project_model.setHeaderData(1, Qt.Horizontal, "Status")
         self.selected_project = None
-        project_list = PfProject.select()
+
+        try:
+            project_list = PfProject.select()
+        except OperationalError as e:
+            self.logger.error(f"Database error while loading projects: {e}")
+            QMessageBox.critical(self, "Database Error",
+                               f"Failed to load projects:\n{e}")
+            return
+
         for project in project_list:
             #rec.unpack_wireframe()
             item1 = QStandardItem(project.project_name)# + " (" + str(rec.object_list.count()) + ")")
