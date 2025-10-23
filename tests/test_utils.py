@@ -174,8 +174,8 @@ class TestSafeJsonLoads:
 
     def test_empty_string_with_default(self):
         """Test empty string with default"""
-        data = safe_json_loads('', default=None)
-        assert data is None
+        data = safe_json_loads('', default={})
+        assert data == {}
 
     def test_empty_string_no_default(self):
         """Test empty string without default"""
