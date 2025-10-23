@@ -9,6 +9,9 @@ import re,os,sys
 import logging
 from pathlib import Path
 from peewee import *
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 from PIL.ExifTags import TAGS
 import shutil, platform
 import copy
@@ -93,8 +96,8 @@ class PfTabBar(QTabBar):
     def mousePressEvent(self, event):
         index = self.tabAt(event.pos())
         if index >= 0:
-            print(f"Tab {index} clicked")
-            self.tabClicked.emit(index)             
+            logger.debug(f"Tab {index} clicked")
+            self.tabClicked.emit(index)
         super().mousePressEvent(event)
 
     def mouseDoubleClickEvent(self, event):
@@ -144,7 +147,7 @@ class PfTabWidget(QTabWidget):
 
     def onTabClicked(self, index):
         self.selected_index = index
-        print(f"Tab {index} clicked in parent window")
+        logger.debug(f"Tab {index} clicked in parent window")
         self.main_window.tabView_changed(index)
         #selected_datamatrix = self.main_window.datamatrix_list[index]
 
@@ -425,7 +428,7 @@ class PhyloForesterMainWindow(QMainWindow):
         tables = gDatabase.get_tables()
         if tables:
             return
-            print(tables)
+            #print(tables)
         else:
             gDatabase.create_tables([PfProject, PfDatamatrix,PfAnalysis,PfPackage,PfTree])
 
@@ -803,7 +806,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             tf = pu.PhyloTreefile()
             ret = tf.readtree(tree_filename,'Nexus')
             if not ret:
-                print("Error reading treefile")
+                self.logger.error(f"Error reading treefile: {tree_filename}")
                 return
             #print(tf.tree_text_hash)
             #tree_text = tf.tree_text_hash['con_50_majrule']
@@ -1031,9 +1034,9 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         self.reset_tableView()
         self.select_project(project)
         if ret == 0:
-            print(" analysis ret 0")
+            self.logger.debug("Analysis dialog returned 0 (cancelled)")
         elif ret == 1:
-            print("analysis dialog ret 1")
+            self.logger.debug("Analysis dialog returned 1 (start analysis)")
             self.startAnalysis()
 
         #self.load_datamatrices()
@@ -1044,16 +1047,16 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         index = indexes[0]
         item1 =self.project_model.itemFromIndex(index)
         an = item1.data()
-        
 
-        print("stop analysis 1")
+
+        self.logger.debug("Stopping analysis - validating analysis object")
         if not isinstance(an, PfAnalysis):
             return
             #self.stop_analysis(an)
         # refresh analysis object
         an = PfAnalysis.get(PfAnalysis.id == an.id)
 
-        print("stop analysis 2")
+        self.logger.debug("Stopping analysis - killing process")
         self.process.kill()
         if self.process.state() != QProcess.NotRunning:
             if not self.process.waitForFinished(3000):  # Wait for up to 3000 ms
@@ -1061,12 +1064,12 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
                 self.process.waitForFinished()  # Wait for the process to be killed
 
         if self.process.state() == QProcess.NotRunning:
-            print("Successfully stopped the process")
+            self.logger.info(f"Successfully stopped analysis: {an.analysis_name}")
             an.analysis_status = ANALYSIS_STATUS_STOPPED
             an.finish_datetime = datetime.datetime.now()
             an.save()
         else:
-            print("Failed to stop the process")
+            self.logger.warning(f"Failed to stop analysis process: {an.analysis_name}")
 
         self.update_analysis_info(an)
 
@@ -1282,7 +1285,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             if msgBox.clickedButton() == createButton:
                 # Logic to create a new project
                 create_new_project = True
-                print("Creating a new project...")
+                self.logger.info("Creating a new project...")
             elif msgBox.clickedButton() == cancelButton:
                 # Cancel logic or do nothing
                 #print("Cancelled")            
@@ -1747,7 +1750,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         selected_object_list = []
         for index in selected_indexes:
             item = self.datamatrix_model.itemFromIndex(index)
-            print( item.text() )
+            self.logger.debug(f"Selected datamatrix item: {item.text()}")
             #object_id = int(object_id)
             #object = MdObject.get_by_id(object_id)
             #selected_object_list.append(object)
@@ -1952,11 +1955,11 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             data_list.append(data_row)
         #print(data_list)
 
-        
+
         #self.tabView.selected_index
         #return
         if self.selected_datamatrix is None:
-            print("no selected_dm")
+            self.logger.warning("No datamatrix selected for saving")
             return
         dm = self.selected_datamatrix
 
