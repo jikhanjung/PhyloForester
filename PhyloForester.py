@@ -518,10 +518,18 @@ class PhyloForesterMainWindow(QMainWindow):
         data_filename = data_filename.replace(" ","_")
 
         data_file_location = os.path.join( result_directory, data_filename )#.replace(" ","_")
-        data_fd = open(data_file_location,mode='w')
-        #print("writing data file:", data_file_location)
-        data_fd.write(datamatrix_str)
-        data_fd.close()
+
+        # Write data file with error handling
+        try:
+            pu.safe_file_write(data_file_location, datamatrix_str)
+            print(f"Data file written: {data_file_location}")
+        except pu.FileOperationError as e:
+            print(f"Failed to write data file: {e}")
+            QMessageBox.critical(self, "File Error",
+                                f"Failed to save analysis data:\n{e}")
+            self.analysis.analysis_status = ANALYSIS_STATUS_FAILED
+            self.analysis.save()
+            return
 
         self.process.setWorkingDirectory(result_directory)
         #print("working directory:", self.process.workingDirectory())
@@ -533,7 +541,14 @@ class PhyloForesterMainWindow(QMainWindow):
 
         if self.analysis.analysis_type == ANALYSIS_TYPE_PARSIMONY:
             run_file_name = os.path.join( pu.resource_path("data/aquickie.run") )
-            shutil.copy( run_file_name, result_directory )
+            try:
+                shutil.copy( run_file_name, result_directory )
+                print(f"Run file copied: {run_file_name}")
+            except (FileNotFoundError, PermissionError, OSError) as e:
+                print(f"Failed to copy run file: {e}")
+                QMessageBox.warning(self, "File Warning",
+                                   f"Failed to copy run file:\n{e}\n\nAnalysis may not work correctly.")
+                # Continue anyway as this might not be critical
             my_os = platform.system()
             if my_os == 'Linux':
                 argument_separator = ","
@@ -559,10 +574,57 @@ class PhyloForesterMainWindow(QMainWindow):
             #run_argument_list = [package.run_path, command_filename]
             print(command, run_argument_list)
 
-        self.process.start(command, run_argument_list)
-        print("process started")
-        if self.process.state() == QProcess.NotRunning:
-            print("Failed to start the process")
+        # Start process with error handling
+        try:
+            # Check if executable exists
+            if not os.path.isfile(command):
+                raise pu.ProcessExecutionError(
+                    f"Analysis software not found: {command}\n\n"
+                    f"Please configure the path in Preferences.\n"
+                    f"(Edit → Preferences → Software Paths)")
+
+            # Check execute permission (Linux/macOS)
+            if platform.system() != 'Windows':
+                if not os.access(command, os.X_OK):
+                    raise pu.ProcessExecutionError(
+                        f"No execute permission for: {command}\n\n"
+                        f"Please make the file executable with:\n"
+                        f"chmod +x {command}")
+
+            self.process.start(command, run_argument_list)
+
+            # Wait for process to start (max 5 seconds)
+            if not self.process.waitForStarted(5000):
+                error_msg = self.process.errorString()
+                raise pu.ProcessExecutionError(
+                    f"Failed to start analysis process.\n\n"
+                    f"Command: {command}\n"
+                    f"Error: {error_msg}")
+
+            print(f"Process started successfully: {command}")
+            self.data_storage['analysis'][self.analysis.id]['widget'].append_output(
+                "Analysis started successfully")
+
+        except pu.ProcessExecutionError as e:
+            print(f"Process execution failed: {e}")
+            QMessageBox.critical(self, "Execution Error", str(e))
+
+            # Mark analysis as failed
+            self.analysis.analysis_status = ANALYSIS_STATUS_FAILED
+            self.analysis.save()
+
+            # Update UI
+            if self.analysis.id in self.data_storage['analysis']:
+                self.data_storage['analysis'][self.analysis.id]['widget'].append_output(
+                    f"ERROR: {e}")
+                # Update analysis viewer if visible
+                widget = self.hsplitter.widget(1)
+                if hasattr(widget, 'set_analysis'):
+                    widget.set_analysis(self.analysis)
+
+            # Try to start next analysis in queue
+            self.startAnalysis()
+            return
         
         self.data_storage['analysis'][self.analysis.id]['widget'].append_output("process started")
         #edtOutput = self.data_storage['analysis'][self.analysis.id]['output']
@@ -761,8 +823,45 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         #pass
 
     def handleError(self, error):
-        print("Error occurred:", error)
-        print("Error message:", self.process.errorString())
+        """Handle QProcess errors"""
+        error_messages = {
+            QProcess.FailedToStart: "Failed to start (file not found or no permission)",
+            QProcess.Crashed: "Process crashed unexpectedly",
+            QProcess.Timedout: "Process timed out",
+            QProcess.WriteError: "Write error to process",
+            QProcess.ReadError: "Read error from process",
+            QProcess.UnknownError: "Unknown error"
+        }
+
+        error_type = error_messages.get(error, "Unknown error")
+        error_detail = self.process.errorString()
+
+        print(f"Process error: {error_type}")
+        print(f"Error details: {error_detail}")
+
+        # Update analysis status
+        if hasattr(self, 'analysis') and self.analysis:
+            self.analysis.analysis_status = ANALYSIS_STATUS_FAILED
+            self.analysis.save()
+
+            # Update UI
+            if self.analysis.id in self.data_storage['analysis']:
+                self.data_storage['analysis'][self.analysis.id]['widget'].append_output(
+                    f"ERROR: {error_type}\n{error_detail}")
+
+                # Update analysis viewer
+                widget = self.hsplitter.widget(1)
+                if hasattr(widget, 'set_analysis'):
+                    widget.set_analysis(self.analysis)
+
+            # Show error dialog
+            QMessageBox.critical(self, "Analysis Error",
+                                f"Analysis failed: {error_type}\n\n"
+                                f"Details: {error_detail}\n\n"
+                                f"The analysis has been marked as failed.")
+
+        # Try to start next analysis
+        self.startAnalysis()
 
     def on_treeView_clicked(self, event):
         index = self.treeView.indexAt(event.pos())

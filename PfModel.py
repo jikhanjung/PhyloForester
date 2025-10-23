@@ -163,8 +163,15 @@ class PfDatamatrix(Model):
             return []
 
     def import_file(self, file_path):
-        datafile_obj = pu.PhyloDatafile()
-        ret = datafile_obj.loadfile(file_path)
+        try:
+            datafile_obj = pu.PhyloDatafile()
+            ret = datafile_obj.loadfile(file_path)
+
+            if not ret:
+                raise pu.DataParsingError(f"Failed to parse file: {file_path}")
+        except (pu.FileOperationError, pu.DataParsingError) as e:
+            print(f"Import failed: {e}")
+            return False
 
         if ret:
             self.datamatrix_name = datafile_obj.dataset_name

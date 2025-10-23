@@ -1,9 +1,116 @@
 import sys, os, re
 import copy
+import json
 
 import numpy as np
 #from stl import mesh
 import tempfile
+
+# ============================================================================
+# Exception Classes
+# ============================================================================
+
+class PhyloForesterException(Exception):
+    """Base exception for PhyloForester"""
+    pass
+
+class FileOperationError(PhyloForesterException):
+    """File I/O related errors"""
+    pass
+
+class ProcessExecutionError(PhyloForesterException):
+    """External process execution errors"""
+    pass
+
+class DataParsingError(PhyloForesterException):
+    """Data parsing errors"""
+    pass
+
+# ============================================================================
+# Safe File Operations
+# ============================================================================
+
+def safe_file_read(filepath, mode='r', encoding='utf-8'):
+    """Safely read file with error handling
+
+    Args:
+        filepath: Path to file to read
+        mode: File open mode (default: 'r')
+        encoding: File encoding (default: 'utf-8')
+
+    Returns:
+        str: File contents
+
+    Raises:
+        FileOperationError: If file cannot be read
+    """
+    try:
+        with open(filepath, mode=mode, encoding=encoding) as f:
+            return f.read()
+    except FileNotFoundError:
+        raise FileOperationError(f"File not found: {filepath}")
+    except PermissionError:
+        raise FileOperationError(f"Permission denied: {filepath}")
+    except UnicodeDecodeError as e:
+        raise FileOperationError(f"Encoding error in {filepath}: {e}")
+    except Exception as e:
+        raise FileOperationError(f"Error reading file {filepath}: {e}")
+
+def safe_file_write(filepath, content, mode='w', encoding='utf-8'):
+    """Safely write file with error handling
+
+    Args:
+        filepath: Path to file to write
+        content: Content to write
+        mode: File open mode (default: 'w')
+        encoding: File encoding (default: 'utf-8')
+
+    Raises:
+        FileOperationError: If file cannot be written
+    """
+    try:
+        # Ensure parent directory exists
+        parent_dir = os.path.dirname(filepath)
+        if parent_dir and not os.path.exists(parent_dir):
+            os.makedirs(parent_dir)
+
+        with open(filepath, mode=mode, encoding=encoding) as f:
+            f.write(content)
+    except PermissionError:
+        raise FileOperationError(f"Permission denied: {filepath}")
+    except OSError as e:
+        raise FileOperationError(f"OS error writing {filepath}: {e}")
+    except Exception as e:
+        raise FileOperationError(f"Error writing file {filepath}: {e}")
+
+def safe_json_loads(json_str, default=None):
+    """Safely parse JSON with fallback
+
+    Args:
+        json_str: JSON string to parse
+        default: Default value if parsing fails (None means raise exception)
+
+    Returns:
+        Parsed JSON object or default value
+
+    Raises:
+        DataParsingError: If parsing fails and no default provided
+    """
+    if json_str is None or json_str == '':
+        if default is not None:
+            return default
+        raise DataParsingError("Empty JSON string")
+
+    try:
+        return json.loads(json_str)
+    except (json.JSONDecodeError, TypeError) as e:
+        if default is not None:
+            return default
+        raise DataParsingError(f"Invalid JSON: {e}")
+
+# ============================================================================
+# Constants
+# ============================================================================
 
 COMPANY_NAME = "PaleoBytes"
 PROGRAM_NAME = "PhyloForester"
@@ -126,11 +233,13 @@ class PhyloDatafile():
         elif fileext.upper() in ['.TNT']:
             self.file_type='TNT'
         #print("filetype:", self.file_type, filename, fileext)
-        
-        #read first line
-        file = open(a_filepath,mode='r')
-        self.file_text = file.read()
-        file.close()
+
+        # Read file with error handling
+        try:
+            self.file_text = safe_file_read(a_filepath)
+        except FileOperationError as e:
+            print(f"Error loading file: {e}")
+            return False
 
         self.line_list = self.file_text.split('\n')
         if not self.file_type:
@@ -385,10 +494,12 @@ class PhyloTreefile:
             return False
 
         #print("file type 2:", self.file_type, a_filepath)
-        #read first line
-        file = open(a_filepath,mode='r')
-        self.file_text = file.read()
-        file.close()
+        # Read file with error handling
+        try:
+            self.file_text = safe_file_read(a_filepath)
+        except FileOperationError as e:
+            print(f"Error reading tree file: {e}")
+            return False
 
         self.line_list = self.file_text.split('\n')
         if not self.file_type:
