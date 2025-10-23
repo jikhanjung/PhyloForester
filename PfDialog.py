@@ -15,6 +15,7 @@ from PyQt5.QtSvg import QSvgGenerator  # For PyQt5
 from pathlib import Path
 import PfUtils as pu
 from PfModel import *
+import PfLogger
 import matplotlib.pyplot as plt
 import matplotlib.backends.backend_svg
 import sys
@@ -45,8 +46,9 @@ class PfInputDialog(QDialog):
         self.reject()
 
 class AnalysisViewer(QWidget):
-    def __init__(self):
+    def __init__(self, logger=None):
         super(AnalysisViewer, self).__init__()
+        self.logger = logger or PfLogger.get_logger(__name__)
         self.setMinimumSize(400,300)
         self.bgcolor = "#000000"
 
@@ -355,8 +357,9 @@ class CheckboxTableModel(QAbstractTableModel):
         return selected_indices
 
 class TreeViewer(QWidget):
-    def __init__(self):
+    def __init__(self, logger=None):
         super(TreeViewer, self).__init__()
+        self.logger = logger or PfLogger.get_logger(__name__)
         self.setMinimumSize(400,300)
         self.bgcolor = "#000000"
         self.layout = QVBoxLayout()
@@ -1834,8 +1837,9 @@ class TreeLabel(QLabel):
         #buf.seek(0)
 
 class AnalysisDialog(QDialog):
-    def __init__(self,parent):
+    def __init__(self,parent, logger=None):
         super().__init__()
+        self.logger = logger or PfLogger.get_logger(__name__)
         self.setWindowTitle("PhyloForester - Run Analysis")
         self.parent = parent
         self.remember_geometry = True
@@ -2180,8 +2184,9 @@ class AnalysisDialog(QDialog):
 
 class DatamatrixDialog(QDialog):
     # DatamatrixDialog shows new project dialog.
-    def __init__(self,parent):
+    def __init__(self,parent, logger=None):
         super().__init__()
+        self.logger = logger or PfLogger.get_logger(__name__)
         self.setWindowTitle("PhyloForester - Datamatrix Information")
         self.parent = parent
 
@@ -2488,8 +2493,9 @@ class DatamatrixDialog(QDialog):
 
 class ProjectDialog(QDialog):
     # ProjectDialog shows new project dialog.
-    def __init__(self,parent):
+    def __init__(self,parent, logger=None):
         super().__init__()
+        self.logger = logger or PfLogger.get_logger(__name__)
         self.setWindowTitle("PhyloForester - Project Information")
         self.parent = parent
         #print(self.parent.pos())
@@ -2685,8 +2691,9 @@ class PreferencesDialog(QDialog):
     Attributes:
         well..
     '''
-    def __init__(self,parent):
+    def __init__(self,parent, logger=None):
         super().__init__()
+        self.logger = logger or PfLogger.get_logger(__name__)
         self.parent = parent
         self.m_app = QApplication.instance()
 

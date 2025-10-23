@@ -6,6 +6,7 @@ from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSettings, QSize, QTr
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
 import re,os,sys
+import logging
 from pathlib import Path
 from peewee import *
 from PIL.ExifTags import TAGS
@@ -14,6 +15,7 @@ import copy
 import PfUtils as pu
 from PfModel import *
 from PfDialog import *
+import PfLogger
 import matplotlib.pyplot as plt
 from peewee_migrate import Router
 
@@ -285,6 +287,15 @@ class PfItemModel(QStandardItemModel):
 class PhyloForesterMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+
+        # Initialize logger first
+        self.logger = PfLogger.setup_logger(__name__, logging.INFO)
+        self.logger.info("=" * 60)
+        self.logger.info(f"PhyloForester v{pu.PROGRAM_VERSION} starting")
+        self.logger.info(f"Platform: {platform.system()} {platform.release()}")
+        self.logger.info(f"Python: {sys.version}")
+        self.logger.info("=" * 60)
+
         self.setWindowIcon(QIcon(pu.resource_path('icons/PhyloForester.png')))
         self.setWindowTitle("{} v{}".format(self.tr("PhyloForester"), pu.PROGRAM_VERSION))
         self.data_storage = { 'project': {}, 'datamatrix': {}, 'analysis': {} }
@@ -345,7 +356,7 @@ class PhyloForesterMainWindow(QMainWindow):
     def on_action_new_project_triggered(self):
         # open new project dialog
         #return
-        self.dlg = ProjectDialog(self)
+        self.dlg = ProjectDialog(self, logger=self.logger)
         self.dlg.setModal(True)
 
         ret = self.dlg.exec_()
@@ -355,7 +366,7 @@ class PhyloForesterMainWindow(QMainWindow):
     @pyqtSlot()
     def on_action_edit_preferences_triggered(self):
         #print("edit preferences")
-        self.preferences_dialog = PreferencesDialog(self)
+        self.preferences_dialog = PreferencesDialog(self, logger=self.logger)
         #self.preferences_dialog.setWindowModality(Qt.ApplicationModal)
         self.preferences_dialog.show()
 
@@ -419,6 +430,9 @@ class PhyloForesterMainWindow(QMainWindow):
             gDatabase.create_tables([PfProject, PfDatamatrix,PfAnalysis,PfPackage,PfTree])
 
     def closeEvent(self, event):
+        self.logger.info("=" * 60)
+        self.logger.info("PhyloForester shutting down")
+        self.logger.info("=" * 60)
         self.write_settings()
         #if self.analysis_dialog is not None:
         #    self.analysis_dialog.close()
@@ -505,10 +519,11 @@ class PhyloForesterMainWindow(QMainWindow):
             fileext = '.nex'
             datamatrix_str = datamatrix.as_nexus_format()
 
-        print("command:", command)
+        self.logger.info(f"Analysis command: {command}")
+        self.logger.info(f"Analysis type: {self.analysis.analysis_type}")
 
         result_directory = self.analysis.result_directory#.replace(" ","_")
-        print("result directory:", result_directory)        
+        self.logger.info(f"Result directory: {result_directory}")        
 
         if not os.path.isdir( result_directory ):
             os.makedirs( result_directory )
@@ -522,9 +537,9 @@ class PhyloForesterMainWindow(QMainWindow):
         # Write data file with error handling
         try:
             pu.safe_file_write(data_file_location, datamatrix_str)
-            print(f"Data file written: {data_file_location}")
+            self.logger.info(f"Data file written: {data_file_location}")
         except pu.FileOperationError as e:
-            print(f"Failed to write data file: {e}")
+            self.logger.error(f"Failed to write data file: {e}")
             QMessageBox.critical(self, "File Error",
                                 f"Failed to save analysis data:\n{e}")
             self.analysis.analysis_status = ANALYSIS_STATUS_FAILED
@@ -543,9 +558,9 @@ class PhyloForesterMainWindow(QMainWindow):
             run_file_name = os.path.join( pu.resource_path("data/aquickie.run") )
             try:
                 shutil.copy( run_file_name, result_directory )
-                print(f"Run file copied: {run_file_name}")
+                self.logger.info(f"Run file copied: {run_file_name}")
             except (FileNotFoundError, PermissionError, OSError) as e:
-                print(f"Failed to copy run file: {e}")
+                self.logger.warning(f"Failed to copy run file: {e}")
                 QMessageBox.warning(self, "File Warning",
                                    f"Failed to copy run file:\n{e}\n\nAnalysis may not work correctly.")
                 # Continue anyway as this might not be critical
@@ -572,7 +587,7 @@ class PhyloForesterMainWindow(QMainWindow):
             command_filename = self.create_mrbayes_command_file( data_filename, self.analysis.result_directory, self.analysis )
             run_argument_list = [ command_filename ]
             #run_argument_list = [package.run_path, command_filename]
-            print(command, run_argument_list)
+            self.logger.info(f"MrBayes command: {command}, args: {run_argument_list}")
 
         # Start process with error handling
         try:
@@ -601,12 +616,12 @@ class PhyloForesterMainWindow(QMainWindow):
                     f"Command: {command}\n"
                     f"Error: {error_msg}")
 
-            print(f"Process started successfully: {command}")
+            self.logger.info(f"Process started successfully: {command}")
             self.data_storage['analysis'][self.analysis.id]['widget'].append_output(
                 "Analysis started successfully")
 
         except pu.ProcessExecutionError as e:
-            print(f"Process execution failed: {e}")
+            self.logger.error(f"Process execution failed: {e}")
             QMessageBox.critical(self, "Execution Error", str(e))
 
             # Mark analysis as failed
@@ -680,14 +695,14 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         #self.edtAnalysisOutput.append(output)
 
     def onProcessFinished(self):
-        print("process finished")
+        exitCode = self.process.exitCode()
+        self.logger.info(f"Process finished with exit code: {exitCode}")
         # This method will be called when the external process finishes
         #self.edtAnalysisOutput.append("\nProcess Finished\n")
         #print("Process Finished")
         # Here, you can also handle process exit code and status
-        exitCode = self.process.exitCode()
         self.analysis.analysis_status = ANALYSIS_STATUS_FINISHED
-        print('status:', self.analysis.analysis_status)
+        self.logger.info(f"Analysis status updated: {self.analysis.analysis_status}")
         self.analysis.completion_percentage = 100
         self.analysis.finish_datetime = datetime.datetime.now()
         self.analysis.save()
@@ -836,8 +851,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         error_type = error_messages.get(error, "Unknown error")
         error_detail = self.process.errorString()
 
-        print(f"Process error: {error_type}")
-        print(f"Error details: {error_detail}")
+        self.logger.error(f"Process error: {error_type}")
+        self.logger.error(f"Error details: {error_detail}")
 
         # Update analysis status
         if hasattr(self, 'analysis') and self.analysis:
@@ -941,7 +956,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         item1 =self.project_model.itemFromIndex(index)
         project = item1.data()
         if isinstance(project, PfProject):
-            self.dlg = ProjectDialog(self)
+            self.dlg = ProjectDialog(self, logger=self.logger)
             self.dlg.setModal(True)
             self.dlg.set_project( project )
             ret = self.dlg.exec_()
@@ -957,7 +972,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         item1 =self.project_model.itemFromIndex(index)
         dm = item1.data()
         if isinstance(dm, PfDatamatrix):
-            self.dlg = DatamatrixDialog(self)
+            self.dlg = DatamatrixDialog(self, logger=self.logger)
             self.dlg.setModal(True)
             self.dlg.set_datamatrix( dm )
             ret = self.dlg.exec_()
@@ -987,7 +1002,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         if not isinstance(dm, PfDatamatrix):
             return
 
-        self.analysis_dialog = AnalysisDialog(self)
+        self.analysis_dialog = AnalysisDialog(self, logger=self.logger)
         self.analysis_dialog.set_datamatrix(dm)
         self.analysis_dialog.setModal(True)
         #self.analysis_dialog.show()
@@ -1047,7 +1062,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         item1 =self.project_model.itemFromIndex(index)
         prj = item1.data()
         if isinstance(prj, PfProject):
-            self.dlg = DatamatrixDialog(self)
+            self.dlg = DatamatrixDialog(self, logger=self.logger)
             self.dlg.setModal(True)
             dm = PfDatamatrix()
             dm.project = prj
@@ -1323,7 +1338,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             #analysis_ref = self.data_storage['analysis'][self.selected_analysis.id]
             av = self.data_storage['analysis'][self.selected_analysis.id]['widget']
             if av is None:
-                av = self.data_storage['analysis'][self.selected_analysis.id]['widget'] = AnalysisViewer()
+                av = self.data_storage['analysis'][self.selected_analysis.id]['widget'] = AnalysisViewer(logger=self.logger)
                 av.set_analysis(self.selected_analysis)
                 av.update_info(self.selected_analysis)
             #print("analysis widget created", analysis_ref['widget'], analysis_ref['output'])
@@ -1665,7 +1680,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             pass
 
     def on_treeView_doubleClicked(self, index):
-        self.dlg = ProjectDialog(self)
+        self.dlg = ProjectDialog(self, logger=self.logger)
         self.dlg.setModal(True)
         self.dlg.set_project( self.selected_project )
         ret = self.dlg.exec_()
@@ -1865,7 +1880,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             av = self.data_storage['analysis'][an.id]['widget']
             if av is None:
                 #self.data_storage['analysis'][an.id]['widget'] = self.create_analysis_widget(an)
-                av = self.data_storage['analysis'][an.id]['widget'] = AnalysisViewer()
+                av = self.data_storage['analysis'][an.id]['widget'] = AnalysisViewer(logger=self.logger)
                 av.set_analysis(an)
                 av.update_info(an)
             #print("analysis widget:",self.data_storage['analysis'][an.id]['widget'])                
