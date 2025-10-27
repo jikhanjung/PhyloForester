@@ -5,6 +5,7 @@ from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem, QKeySequence, 
 from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSettings, QSize, QTranslator, QModelIndex, QEvent, QProcess, QAbstractTableModel
 
 from PyQt5.QtCore import pyqtSlot, pyqtSignal
+from PyQt5 import sip
 import re,os,sys
 import logging
 from pathlib import Path
@@ -840,12 +841,16 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         #analysis_view.set_analysis(analysis)
         av.update_info(analysis)
 
-        if self.data_storage['analysis'][analysis.id]['tree_item'] is not None:
+        tree_item = self.data_storage['analysis'][analysis.id]['tree_item']
+        if tree_item is not None and not sip.isdeleted(tree_item):
             #print("item:", self.data_storage['analysis'][analysis.id]['tree_item'])
             analysis_status = { 'status': analysis.analysis_status, 'percentage': analysis.completion_percentage }
             #print("status:", analysis_status)
-            self.data_storage['analysis'][analysis.id]['tree_item'].setData(analysis_status, Qt.UserRole + 10)
-            self.treeView.update()
+            try:
+                tree_item.setData(analysis_status, Qt.UserRole + 10)
+                self.treeView.update()
+            except RuntimeError as e:
+                self.logger.warning(f"Failed to update tree item for analysis {analysis.id}: {e}")
         #else:
             #print("item is none")
         #self.treeView.repaint()
@@ -1969,7 +1974,7 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
     def on_btn_analyze_clicked(self):
         if self.selected_datamatrix is None:
             return
-        self.add_analysis(self.selected_datamatrix)
+        self.on_action_add_analysis_triggered()
 
 if __name__ == "__main__":
     #QApplication : 프로그램을 실행시켜주는 클래스
