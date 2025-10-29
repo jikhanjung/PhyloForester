@@ -4,10 +4,10 @@
 [Setup]
 AppName=PhyloForester
 AppVersion={#AppVersion}
-DefaultDirName={commonpf}\PhyloForester
+DefaultDirName={commonpf}\PaleoBytes\PhyloForester
 OutputDir=Output
 
-OutputBaseFilename=Modan2_v{#AppVersion}_Installer
+OutputBaseFilename=PhyloForester_v{#AppVersion}_Installer
 
 [Files]
 ; Include main executable
@@ -30,4 +30,4 @@ begin
 end;
 
 [Icons]
-Name: "{userprograms}\PaleoBytes\Modan2"; Filename: "{app}\PhyloForester.exe"
+Name: "{userprograms}\PaleoBytes\PhyloForester"; Filename: "{app}\PhyloForester.exe"

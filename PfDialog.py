@@ -1147,8 +1147,13 @@ class TreeViewer(QWidget):
         taxa_list = dm.get_taxa_list()
         self.tbl_timetable.setRowCount(len(taxa_list))
         timetable = dm.get_taxa_timetable()
+        #print("timetable:", timetable)
+        #print("taxa_list:", taxa_list)
 
         for row, taxon in enumerate(taxa_list):
+            if row >= len(timetable):
+                continue
+            #print( row, taxon, str(timetable[row][0]), str(timetable[row][1]))
             # reset table and add taxon to table
             #row = self.tbl_timetable.rowCount()
             #self.tbl_timetable.setRowCount(row+1)

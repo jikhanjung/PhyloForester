@@ -175,3 +175,5 @@ cython_debug/
 
 # Application logs
 PhyloForester.*.log
+
+InnoSetup/Output/

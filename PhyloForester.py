@@ -232,6 +232,8 @@ class PfTableModel(QAbstractTableModel):
 
     def load_data(self, data):
         self.beginResetModel()
+        # check header data and data size
+        
         self._data = data
         self.endResetModel()
 
@@ -245,7 +247,11 @@ class PfTableModel(QAbstractTableModel):
                 if len( self._vheader_data ) == 0:
                     return "{}".format(section)
                 else:
-                    return "{}".format(self._vheader_data[section])
+                    if section < len(self._vheader_data):
+
+                        return "{}".format(self._vheader_data[section])
+                    else:
+                        return "{}".format(section)
         if role == Qt.ToolTipRole and orientation == Qt.Vertical:
             # Customize tooltip text based on section (row index)
             return f"{self._vheader_data[section]}"
@@ -1861,6 +1867,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
         if self.selected_datamatrix is None:
             return
         text, ok = QInputDialog.getText(self, 'Input Dialog', 'Enter new taxon name', text="")
+        if not ok or text.strip() == "":
+            return
         dm = self.selected_datamatrix
         dm.taxa_list = dm.get_taxa_list()
         #print("taxa_list 1", dm.taxa_list)
