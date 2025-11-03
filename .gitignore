@@ -176,4 +176,9 @@ cython_debug/
 # Application logs
 PhyloForester.*.log
 
+# Local settings (user-specific configuration)
+settings.local.json
+*.local.json
+config.local.*
+
 InnoSetup/Output/
