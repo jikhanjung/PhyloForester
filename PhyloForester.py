@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QMainWindow, QHeaderView, QApplication, QAbstractItemView, \
                             QMessageBox, QTreeView, QTableView, QSplitter, QAction, QMenu, \
-                            QStatusBar, QInputDialog, QToolBar, QTabWidget, QTabBar,QStyledItemDelegate, QPlainTextEdit 
+                            QStatusBar, QInputDialog, QToolBar, QTabWidget, QTabBar,QStyledItemDelegate, QPlainTextEdit, \
+                            QUndoStack, QUndoCommand 
 from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem, QKeySequence, QColor
 from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSettings, QSize, QTranslator, QModelIndex, QEvent, QProcess, QAbstractTableModel
 
@@ -153,8 +154,59 @@ class PfTabWidget(QTabWidget):
         #selected_datamatrix = self.main_window.datamatrix_list[index]
 
 
+# Undo/Redo Command classes for datamatrix editing
+class EditCellCommand(QUndoCommand):
+    """Command for editing a single cell"""
+    def __init__(self, model, row, col, old_value, new_value, old_changed, new_changed):
+        super().__init__()
+        self.model = model
+        self.row = row
+        self.col = col
+        self.old_value = old_value
+        self.new_value = new_value
+        self.old_changed = old_changed
+        self.new_changed = new_changed
+        self.setText(f"Edit cell ({row}, {col})")
+
+    def redo(self):
+        """Apply the change"""
+        self.model.setDataDirect(self.row, self.col, self.new_value, self.new_changed)
+
+    def undo(self):
+        """Revert the change"""
+        self.model.setDataDirect(self.row, self.col, self.old_value, self.old_changed)
+
+
+class PasteCellsCommand(QUndoCommand):
+    """Command for pasting multiple cells"""
+    def __init__(self, model, changes):
+        super().__init__()
+        self.model = model
+        self.changes = changes  # List of (row, col, old_value, new_value, old_changed, new_changed)
+        self.setText(f"Paste {len(changes)} cells")
+
+    def redo(self):
+        """Apply all changes"""
+        for row, col, old_value, new_value, old_changed, new_changed in self.changes:
+            self.model.setDataDirect(row, col, new_value, new_changed)
+
+    def undo(self):
+        """Revert all changes"""
+        for row, col, old_value, new_value, old_changed, new_changed in self.changes:
+            self.model.setDataDirect(row, col, old_value, old_changed)
+
 
 class PfTableView(QTableView):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.undo_stack = QUndoStack(self)
+
+    def setModel(self, model):
+        """Override setModel to connect undo_stack to the model"""
+        super().setModel(model)
+        if isinstance(model, PfTableModel):
+            model.undo_stack = self.undo_stack
+
     def keyPressEvent(self, event):
         # Handle Ctrl+C (Copy)
         if event.key() == Qt.Key_C and event.modifiers() == Qt.ControlModifier:
@@ -163,6 +215,14 @@ class PfTableView(QTableView):
         # Handle Ctrl+V (Paste)
         elif event.key() == Qt.Key_V and event.modifiers() == Qt.ControlModifier:
             self.paste()
+            event.accept()
+        # Handle Ctrl+Z (Undo)
+        elif event.key() == Qt.Key_Z and event.modifiers() == Qt.ControlModifier:
+            self.undo()
+            event.accept()
+        # Handle Ctrl+Y (Redo)
+        elif event.key() == Qt.Key_Y and event.modifiers() == Qt.ControlModifier:
+            self.redo()
             event.accept()
         # Handle Enter/Return keys
         elif event.key() in [Qt.Key_Return, Qt.Key_Enter]:
@@ -173,6 +233,16 @@ class PfTableView(QTableView):
 
     def isPersistentEditorOpen(self, index):
         return self.indexWidget(index) is not None
+
+    def undo(self):
+        """Undo the last change"""
+        if self.undo_stack.canUndo():
+            self.undo_stack.undo()
+
+    def redo(self):
+        """Redo the last undone change"""
+        if self.undo_stack.canRedo():
+            self.undo_stack.redo()
 
     def copy(self):
         """Copy selected cells to clipboard in tab/newline separated format"""
@@ -227,6 +297,8 @@ class PfTableView(QTableView):
 
         model = self.model()
 
+        # Collect all changes for undo/redo
+        changes = []
         for i, row_text in enumerate(rows):
             if not row_text.strip():
                 continue
@@ -245,13 +317,38 @@ class PfTableView(QTableView):
                 if target_col >= model.columnCount():
                     break
 
-                # Set data using model's setData method
-                index = model.index(target_row, target_col)
-                model.setData(index, cell_value, Qt.EditRole)
+                # Get old value and changed state
+                old_value = model.getCellValue(target_row, target_col)
+                old_changed = model.getCellChanged(target_row, target_col)
+
+                # Record change (row, col, old_value, new_value, old_changed, new_changed)
+                changes.append((target_row, target_col, old_value, cell_value, old_changed, True))
+
+        # Execute paste as a single undoable command
+        if changes:
+            command = PasteCellsCommand(model, changes)
+            self.undo_stack.push(command)
 
     def contextMenuEvent(self, event):
         """Show context menu on right click"""
         menu = QMenu(self)
+
+        # Undo action
+        undo_action = QAction("Undo", self)
+        undo_action.setShortcut(QKeySequence.Undo)
+        undo_action.triggered.connect(self.undo)
+        undo_action.setEnabled(self.undo_stack.canUndo())
+        menu.addAction(undo_action)
+
+        # Redo action
+        redo_action = QAction("Redo", self)
+        redo_action.setShortcut(QKeySequence.Redo)
+        redo_action.triggered.connect(self.redo)
+        redo_action.setEnabled(self.undo_stack.canRedo())
+        menu.addAction(redo_action)
+
+        # Separator
+        menu.addSeparator()
 
         # Copy action
         copy_action = QAction("Copy", self)
@@ -274,6 +371,7 @@ class PfTableModel(QAbstractTableModel):
         self._data = data or []  # Initialize with provided data or an empty list
         self._vheader_data = []
         self._hheader_data = []
+        self.undo_stack = None  # Will be set by PfTableView
 
     def rowCount(self, parent=QModelIndex()):
         return len(self._data)
@@ -308,14 +406,59 @@ class PfTableModel(QAbstractTableModel):
             return Qt.AlignCenter | Qt.AlignVCenter
         return None
 
+    def getCellValue(self, row, col):
+        """Get the current value of a cell"""
+        if row >= len(self._data) or col >= len(self._data[0]):
+            return ""
+
+        d = self._data[row][col]
+        if isinstance(d, str):
+            return d
+        elif isinstance(d, list):
+            return " ".join(d)
+        elif isinstance(d, dict) and 'value' in d:
+            return d['value']
+        return ""
+
+    def getCellChanged(self, row, col):
+        """Get the changed status of a cell"""
+        if row >= len(self._data) or col >= len(self._data[0]):
+            return False
+
+        d = self._data[row][col]
+        if isinstance(d, dict):
+            return d.get('changed', False)
+        return False
+
+    def setDataDirect(self, row, col, value, changed=True):
+        """Set data directly without going through undo stack (used by undo commands)"""
+        if row >= len(self._data) or col >= len(self._data[0]):
+            return False
+
+        self._data[row][col] = {'value': value, 'changed': changed}
+        index = self.index(row, col)
+        self.dataChanged.emit(index, index, [Qt.EditRole, Qt.BackgroundRole])
+        return True
+
     def setData(self, index, value, role=Qt.EditRole):
         if not index.isValid() or role != Qt.EditRole:
             return False
         if index.row() >= len(self._data) or index.column() >= len(self._data[0]):
             return False
 
-        self._data[index.row()][index.column()] = {'value': value, 'changed': True}
-        self.dataChanged.emit(index, index, [role, Qt.BackgroundRole])
+        # Get old value and changed state for undo
+        old_value = self.getCellValue(index.row(), index.column())
+        old_changed = self.getCellChanged(index.row(), index.column())
+
+        # If undo_stack is available, use EditCellCommand
+        if self.undo_stack is not None and old_value != value:
+            command = EditCellCommand(self, index.row(), index.column(), old_value, value, old_changed, True)
+            self.undo_stack.push(command)
+        else:
+            # Direct edit without undo (fallback)
+            self._data[index.row()][index.column()] = {'value': value, 'changed': True}
+            self.dataChanged.emit(index, index, [role, Qt.BackgroundRole])
+
         return True
 
     def flags(self, index):
