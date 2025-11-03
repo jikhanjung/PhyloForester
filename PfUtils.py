@@ -7,6 +7,9 @@ import numpy as np
 #from stl import mesh
 import tempfile
 
+# Import version from version.py (Single Source of Truth)
+from version import __version__
+
 # Initialize logger
 logger = logging.getLogger(__name__)
 
@@ -118,7 +121,7 @@ def safe_json_loads(json_str, default=None):
 
 COMPANY_NAME = "PaleoBytes"
 PROGRAM_NAME = "PhyloForester"
-PROGRAM_VERSION = "0.0.1"
+PROGRAM_VERSION = __version__  # Imported from version.py
 
 DB_LOCATION = ""
 

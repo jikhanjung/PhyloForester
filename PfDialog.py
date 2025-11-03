@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QTableWidgetItem, QHeaderView, QFileDialog, QCheckBo
                             QDialog, QLineEdit, QLabel, QPushButton, QAbstractItemView, QStatusBar, QMessageBox, \
                             QTableView, QSplitter, QRadioButton, QComboBox, QTextEdit, QSizePolicy, \
                             QTableWidget, QGridLayout, QAbstractButton, QButtonGroup, QGroupBox, \
-                            QTabWidget, QListWidget, QSlider, QScrollBar, QPlainTextEdit, QInputDialog, QItemDelegate
+                            QTabWidget, QListWidget, QListWidgetItem, QSlider, QScrollBar, QPlainTextEdit, QInputDialog, QItemDelegate
 from PyQt5.QtGui import QColor, QPainter, QPen, QPixmap, QResizeEvent, QStandardItemModel, QStandardItem, QImage,\
                         QFont, QPainter, QBrush, QMouseEvent, QWheelEvent, QDoubleValidator, QFontMetrics
 from PyQt5.QtCore import Qt, QRect, QSortFilterProxyModel, QSize, QPoint,\
@@ -2230,12 +2230,24 @@ class DatamatrixDialog(QDialog):
         self.btnRemoveCharacter = QPushButton()
         self.btnRemoveCharacter.setText("Remove")
         self.btnRemoveCharacter.clicked.connect(self.on_btnRemoveCharacter_clicked)
+        self.btnMoveUpCharacter = QPushButton()
+        self.btnMoveUpCharacter.setText("↑")
+        self.btnMoveUpCharacter.clicked.connect(self.on_btnMoveUpCharacter_clicked)
+        self.btnMoveDownCharacter = QPushButton()
+        self.btnMoveDownCharacter.setText("↓")
+        self.btnMoveDownCharacter.clicked.connect(self.on_btnMoveDownCharacter_clicked)
 
-        self.character_input_layout = QHBoxLayout()
+        # Character input: lineedit on top, buttons below
+        self.character_button_layout = QHBoxLayout()
+        self.character_button_layout.addWidget(self.btnAddCharacter)
+        self.character_button_layout.addWidget(self.btnSaveCharacter)
+        self.character_button_layout.addWidget(self.btnRemoveCharacter)
+        self.character_button_layout.addWidget(self.btnMoveUpCharacter)
+        self.character_button_layout.addWidget(self.btnMoveDownCharacter)
+
+        self.character_input_layout = QVBoxLayout()
         self.character_input_layout.addWidget(self.edtCharacter)
-        self.character_input_layout.addWidget(self.btnAddCharacter)
-        self.character_input_layout.addWidget(self.btnSaveCharacter)
-        self.character_input_layout.addWidget(self.btnRemoveCharacter)
+        self.character_input_layout.addLayout(self.character_button_layout)
         self.character_input_widget = QWidget()
         self.character_input_widget.setLayout(self.character_input_layout)
 
@@ -2260,7 +2272,7 @@ class DatamatrixDialog(QDialog):
         self.lstTaxa.itemSelectionChanged.connect(self.on_lstTaxa_itemSelectionChanged)
 
         self.edtTaxon = QLineEdit()
-        self.edtTaxon.setPlaceholderText("Enter character name")
+        self.edtTaxon.setPlaceholderText("Enter taxon name")
         self.btnAddTaxon = QPushButton()
         self.btnAddTaxon.setText("Add")
         self.btnAddTaxon.clicked.connect(self.on_btnAddTaxon_clicked)
@@ -2270,12 +2282,24 @@ class DatamatrixDialog(QDialog):
         self.btnRemoveTaxon = QPushButton()
         self.btnRemoveTaxon.setText("Remove")
         self.btnRemoveTaxon.clicked.connect(self.on_btnRemoveTaxon_clicked)
+        self.btnMoveUpTaxon = QPushButton()
+        self.btnMoveUpTaxon.setText("↑")
+        self.btnMoveUpTaxon.clicked.connect(self.on_btnMoveUpTaxon_clicked)
+        self.btnMoveDownTaxon = QPushButton()
+        self.btnMoveDownTaxon.setText("↓")
+        self.btnMoveDownTaxon.clicked.connect(self.on_btnMoveDownTaxon_clicked)
 
-        self.taxon_input_layout = QHBoxLayout()
+        # Taxon input: lineedit on top, buttons below
+        self.taxon_button_layout = QHBoxLayout()
+        self.taxon_button_layout.addWidget(self.btnAddTaxon)
+        self.taxon_button_layout.addWidget(self.btnSaveTaxon)
+        self.taxon_button_layout.addWidget(self.btnRemoveTaxon)
+        self.taxon_button_layout.addWidget(self.btnMoveUpTaxon)
+        self.taxon_button_layout.addWidget(self.btnMoveDownTaxon)
+
+        self.taxon_input_layout = QVBoxLayout()
         self.taxon_input_layout.addWidget(self.edtTaxon)
-        self.taxon_input_layout.addWidget(self.btnAddTaxon)
-        self.taxon_input_layout.addWidget(self.btnSaveTaxon)
-        self.taxon_input_layout.addWidget(self.btnRemoveTaxon)
+        self.taxon_input_layout.addLayout(self.taxon_button_layout)
         self.taxon_input_widget = QWidget()
         self.taxon_input_widget.setLayout(self.taxon_input_layout)
 
@@ -2351,20 +2375,63 @@ class DatamatrixDialog(QDialog):
         if character_name == "":
             return
         self.edtCharacter.setText("")
-        self.lstCharacters.addItem(character_name)
+
+        # Create new item with metadata marking it as new
+        item = QListWidgetItem(character_name)
+        item.setData(Qt.UserRole, {
+            'original_name': None,  # No original name (new item)
+            'original_index': None,  # No original index
+            'is_new': True
+        })
+        self.lstCharacters.addItem(item)
 
     def on_btnSaveCharacter_clicked(self):
         character_name = self.edtCharacter.text()
         if character_name == "":
             return
         items = self.lstCharacters.selectedItems()
+        if len(items) == 0:
+            return
         item = items[0]
+
+        # Update text only, preserve metadata
         item.setText(character_name)
+        # Metadata (original_name, original_index, is_new) is preserved automatically
 
     def on_btnRemoveCharacter_clicked(self):
         items = self.lstCharacters.selectedItems()
         for item in items:
             self.lstCharacters.takeItem(self.lstCharacters.row(item))
+
+    def on_btnMoveUpCharacter_clicked(self):
+        """Move selected character up in the list"""
+        items = self.lstCharacters.selectedItems()
+        if len(items) == 0:
+            return
+        item = items[0]
+        current_row = self.lstCharacters.row(item)
+        if current_row == 0:
+            return  # Already at the top
+
+        # Take item and re-insert at previous position
+        taken_item = self.lstCharacters.takeItem(current_row)
+        self.lstCharacters.insertItem(current_row - 1, taken_item)
+        self.lstCharacters.setCurrentItem(taken_item)
+
+    def on_btnMoveDownCharacter_clicked(self):
+        """Move selected character down in the list"""
+        items = self.lstCharacters.selectedItems()
+        if len(items) == 0:
+            return
+        item = items[0]
+        current_row = self.lstCharacters.row(item)
+        if current_row == self.lstCharacters.count() - 1:
+            return  # Already at the bottom
+
+        # Take item and re-insert at next position
+        taken_item = self.lstCharacters.takeItem(current_row)
+        self.lstCharacters.insertItem(current_row + 1, taken_item)
+        self.lstCharacters.setCurrentItem(taken_item)
 
     def on_lstTaxa_itemSelectionChanged(self):
         items = self.lstTaxa.selectedItems()
@@ -2378,22 +2445,63 @@ class DatamatrixDialog(QDialog):
         if taxon_name == "":
             return
         self.edtTaxon.setText("")
-        self.lstTaxa.addItem(taxon_name)
+
+        # Create new item with metadata marking it as new
+        item = QListWidgetItem(taxon_name)
+        item.setData(Qt.UserRole, {
+            'original_name': None,  # No original name (new item)
+            'original_index': None,  # No original index
+            'is_new': True
+        })
+        self.lstTaxa.addItem(item)
 
     def on_btnSaveTaxon_clicked(self):
         taxon_name = self.edtTaxon.text()
         if taxon_name == "":
             return
         items = self.lstTaxa.selectedItems()
+        if len(items) == 0:
+            return
         item = items[0]
+
+        # Update text only, preserve metadata
         item.setText(taxon_name)
-        #self.edtTaxon.setText("")
-        #self.lstTaxa.addItem(taxon_name)
+        # Metadata (original_name, original_index, is_new) is preserved automatically
 
     def on_btnRemoveTaxon_clicked(self):
         items = self.lstTaxa.selectedItems()
         for item in items:
             self.lstTaxa.takeItem(self.lstTaxa.row(item))
+
+    def on_btnMoveUpTaxon_clicked(self):
+        """Move selected taxon up in the list"""
+        items = self.lstTaxa.selectedItems()
+        if len(items) == 0:
+            return
+        item = items[0]
+        current_row = self.lstTaxa.row(item)
+        if current_row == 0:
+            return  # Already at the top
+
+        # Take item and re-insert at previous position
+        taken_item = self.lstTaxa.takeItem(current_row)
+        self.lstTaxa.insertItem(current_row - 1, taken_item)
+        self.lstTaxa.setCurrentItem(taken_item)
+
+    def on_btnMoveDownTaxon_clicked(self):
+        """Move selected taxon down in the list"""
+        items = self.lstTaxa.selectedItems()
+        if len(items) == 0:
+            return
+        item = items[0]
+        current_row = self.lstTaxa.row(item)
+        if current_row == self.lstTaxa.count() - 1:
+            return  # Already at the bottom
+
+        # Take item and re-insert at next position
+        taken_item = self.lstTaxa.takeItem(current_row)
+        self.lstTaxa.insertItem(current_row + 1, taken_item)
+        self.lstTaxa.setCurrentItem(taken_item)
 
     def read_settings(self):
         self.remember_geometry = pu.value_to_bool(self.m_app.settings.value("WindowGeometry/RememberGeometry", True))
@@ -2433,17 +2541,32 @@ class DatamatrixDialog(QDialog):
         self.lstCharacters.clear()
         character_list = datamatrix.get_character_list()
         if len( character_list ) != 0:
-            for character in character_list:
-                self.lstCharacters.addItem(character)
+            for idx, character in enumerate(character_list):
+                item = QListWidgetItem(character)
+                # Store metadata: original name, index, and whether it's new
+                item.setData(Qt.UserRole, {
+                    'original_name': character,
+                    'original_index': idx,
+                    'is_new': False
+                })
+                self.lstCharacters.addItem(item)
         taxa_list = datamatrix.get_taxa_list()
         if len( taxa_list ) != 0:
-            for taxon in taxa_list:
-                self.lstTaxa.addItem(taxon)
+            for idx, taxon in enumerate(taxa_list):
+                item = QListWidgetItem(taxon)
+                # Store metadata: original name, index, and whether it's new
+                item.setData(Qt.UserRole, {
+                    'original_name': taxon,
+                    'original_index': idx,
+                    'is_new': False
+                })
+                self.lstTaxa.addItem(item)
     
     def Okay(self):
-        #print("okay")
         if self.datamatrix is None:
             self.datamatrix = PfDatamatrix()
+
+        # Update basic information
         self.datamatrix.datamatrix_name = self.edtDatamatrixName.text()
         self.datamatrix.datamatrix_desc = self.edtDatamatrixDesc.text()
         if self.rbMorphology.isChecked():
@@ -2454,33 +2577,67 @@ class DatamatrixDialog(QDialog):
             self.datamatrix.datatype = DATATYPE_RNA
         elif self.rbCombined.isChecked():
             self.datamatrix.datatype = DATATYPE_COMBINED
-        character_list = []
-        for i in range(self.lstCharacters.count()):
-            character_list.append(self.lstCharacters.item(i).text())
-            #self.datamatrix.characters_str += self.lstCharacters.item(i).text()
-            #if i < self.lstCharacters.count()-1:
-            #    self.datamatrix.characters_str += ","
-        self.datamatrix.character_list_json = json.dumps(character_list)
-        self.datamatrix.n_chars = len(character_list)
-        taxon_list = []
-        for i in range(self.lstTaxa.count()):
-            taxon_list.append(self.lstTaxa.item(i).text())
-            #self.datamatrix.taxa_str += self.lstTaxa.item(i).text()
-            #if i < self.lstTaxa.count()-1:
-            #    self.datamatrix.taxa_str += ","
-        self.datamatrix.taxa_list_json = json.dumps(taxon_list)
-        self.datamatrix.n_taxa = len(taxon_list)
 
-        self.datamatrix.datamatrix = self.datamatrix.datamatrix_as_list()
-        if len( self.datamatrix.datamatrix ) < self.datamatrix.n_taxa:
-            self.datamatrix.datamatrix.append( ["0"] * self.datamatrix.n_chars )
-            #return
-        for i, row in enumerate(self.datamatrix.datamatrix):
-            if len(row) < self.datamatrix.n_chars:
-                self.datamatrix.datamatrix[i].extend( ["0"] * (self.datamatrix.n_chars - len(row)) )
-        self.datamatrix.datamatrix_json = json.dumps(self.datamatrix.datamatrix)
-        #print("saving datamatrix", self.datamatrix.datamatrix )
-        #print("saving datamatrix")
+        # Load old datamatrix
+        old_datamatrix = self.datamatrix.datamatrix_as_list()
+
+        # Collect new taxa with metadata
+        new_taxa_list = []
+        taxa_metadata = []
+        for i in range(self.lstTaxa.count()):
+            item = self.lstTaxa.item(i)
+            new_taxa_list.append(item.text())
+            metadata = item.data(Qt.UserRole)
+            if metadata is None:
+                # No metadata (shouldn't happen, but handle gracefully)
+                metadata = {'original_name': None, 'original_index': None, 'is_new': True}
+            taxa_metadata.append(metadata)
+
+        # Collect new characters with metadata
+        new_char_list = []
+        char_metadata = []
+        for i in range(self.lstCharacters.count()):
+            item = self.lstCharacters.item(i)
+            new_char_list.append(item.text())
+            metadata = item.data(Qt.UserRole)
+            if metadata is None:
+                # No metadata (shouldn't happen, but handle gracefully)
+                metadata = {'original_name': None, 'original_index': None, 'is_new': True}
+            char_metadata.append(metadata)
+
+        # Create new datamatrix with proper dimensions
+        new_datamatrix = []
+        for new_row_idx in range(len(new_taxa_list)):
+            row = []
+            for new_col_idx in range(len(new_char_list)):
+                # Default value for new cells
+                cell_value = "?"
+
+                # Check if this taxon and character are both from old datamatrix
+                taxon_meta = taxa_metadata[new_row_idx]
+                char_meta = char_metadata[new_col_idx]
+
+                if not taxon_meta['is_new'] and not char_meta['is_new']:
+                    # Both are existing items, try to copy old value
+                    old_row_idx = taxon_meta['original_index']
+                    old_col_idx = char_meta['original_index']
+
+                    if old_row_idx is not None and old_col_idx is not None:
+                        if old_row_idx < len(old_datamatrix):
+                            if old_col_idx < len(old_datamatrix[old_row_idx]):
+                                cell_value = old_datamatrix[old_row_idx][old_col_idx]
+
+                row.append(cell_value)
+            new_datamatrix.append(row)
+
+        # Update datamatrix
+        self.datamatrix.taxa_list_json = json.dumps(new_taxa_list)
+        self.datamatrix.character_list_json = json.dumps(new_char_list)
+        self.datamatrix.n_taxa = len(new_taxa_list)
+        self.datamatrix.n_chars = len(new_char_list)
+        self.datamatrix.datamatrix_json = json.dumps(new_datamatrix)
+
+        # Save
         self.datamatrix.save()
         self.accept()
 

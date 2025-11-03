@@ -196,6 +196,45 @@ class PasteCellsCommand(QUndoCommand):
             self.model.setDataDirect(row, col, old_value, old_changed)
 
 
+class ClearCellsCommand(QUndoCommand):
+    """Command for clearing multiple cells"""
+    def __init__(self, model, changes):
+        super().__init__()
+        self.model = model
+        self.changes = changes  # List of (row, col, old_value, old_changed)
+        self.setText(f"Clear {len(changes)} cells")
+
+    def redo(self):
+        """Clear all cells"""
+        for row, col, old_value, old_changed in self.changes:
+            self.model.setDataDirect(row, col, "", True)
+
+    def undo(self):
+        """Restore all cells"""
+        for row, col, old_value, old_changed in self.changes:
+            self.model.setDataDirect(row, col, old_value, old_changed)
+
+
+class FillCellsCommand(QUndoCommand):
+    """Command for filling multiple cells with a value"""
+    def __init__(self, model, changes, fill_value):
+        super().__init__()
+        self.model = model
+        self.changes = changes  # List of (row, col, old_value, old_changed)
+        self.fill_value = fill_value
+        self.setText(f"Fill {len(changes)} cells with '{fill_value}'")
+
+    def redo(self):
+        """Fill all cells with the value"""
+        for row, col, old_value, old_changed in self.changes:
+            self.model.setDataDirect(row, col, self.fill_value, True)
+
+    def undo(self):
+        """Restore all cells"""
+        for row, col, old_value, old_changed in self.changes:
+            self.model.setDataDirect(row, col, old_value, old_changed)
+
+
 class PfTableView(QTableView):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -223,6 +262,10 @@ class PfTableView(QTableView):
         # Handle Ctrl+Y (Redo)
         elif event.key() == Qt.Key_Y and event.modifiers() == Qt.ControlModifier:
             self.redo()
+            event.accept()
+        # Handle Delete (Clear)
+        elif event.key() == Qt.Key_Delete:
+            self.clear()
             event.accept()
         # Handle Enter/Return keys
         elif event.key() in [Qt.Key_Return, Qt.Key_Enter]:
@@ -329,6 +372,63 @@ class PfTableView(QTableView):
             command = PasteCellsCommand(model, changes)
             self.undo_stack.push(command)
 
+    def clear(self):
+        """Clear selected cells"""
+        selection = self.selectedIndexes()
+        if not selection:
+            return
+
+        model = self.model()
+        changes = []
+
+        for index in selection:
+            row = index.row()
+            col = index.column()
+            old_value = model.getCellValue(row, col)
+            old_changed = model.getCellChanged(row, col)
+
+            # Only clear if cell is not already empty
+            if old_value:
+                changes.append((row, col, old_value, old_changed))
+
+        # Execute clear as a single undoable command
+        if changes:
+            command = ClearCellsCommand(model, changes)
+            self.undo_stack.push(command)
+
+    def fill(self):
+        """Fill selected cells with a value"""
+        selection = self.selectedIndexes()
+        if not selection:
+            return
+
+        # Ask user for fill value
+        fill_value, ok = QInputDialog.getText(
+            self,
+            "Fill Cells",
+            "Enter value to fill selected cells:",
+            text="0"
+        )
+
+        if not ok or fill_value is None:
+            return
+
+        model = self.model()
+        changes = []
+
+        for index in selection:
+            row = index.row()
+            col = index.column()
+            old_value = model.getCellValue(row, col)
+            old_changed = model.getCellChanged(row, col)
+
+            changes.append((row, col, old_value, old_changed))
+
+        # Execute fill as a single undoable command
+        if changes:
+            command = FillCellsCommand(model, changes, fill_value)
+            self.undo_stack.push(command)
+
     def contextMenuEvent(self, event):
         """Show context menu on right click"""
         menu = QMenu(self)
@@ -361,6 +461,23 @@ class PfTableView(QTableView):
         paste_action.setShortcut(QKeySequence.Paste)
         paste_action.triggered.connect(self.paste)
         menu.addAction(paste_action)
+
+        # Separator
+        menu.addSeparator()
+
+        # Clear action
+        clear_action = QAction("Clear", self)
+        clear_action.setShortcut(QKeySequence.Delete)
+        clear_action.triggered.connect(self.clear)
+        has_selection = len(self.selectedIndexes()) > 0
+        clear_action.setEnabled(has_selection)
+        menu.addAction(clear_action)
+
+        # Fill action
+        fill_action = QAction("Fill...", self)
+        fill_action.triggered.connect(self.fill)
+        fill_action.setEnabled(has_selection)
+        menu.addAction(fill_action)
 
         # Show menu at cursor position
         menu.exec_(event.globalPos())
@@ -1255,8 +1372,13 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             if ret == 0:
                 return
             elif ret == 1:
+                # Reload datamatrix from database to get updated data
+                self.selected_datamatrix = PfDatamatrix.get_by_id(dm.id)
                 self.load_treeview()
                 self.update_datamatrix_table()
+                # Display the updated widget in the main splitter
+                if self.selected_datamatrix and self.selected_datamatrix.id in self.data_storage['datamatrix']:
+                    self.hsplitter.replaceWidget(1, self.data_storage['datamatrix'][self.selected_datamatrix.id]['widget'])
                 #self.reset_tableView()
 
     def on_action_run_analysis_triggered(self):
