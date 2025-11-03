@@ -1,0 +1,121 @@
+name: Release
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
+  build:
+    needs: test
+    uses: ./.github/workflows/reusable_build.yml
+    with:
+      build_number: ${{ github.run_number }}
+
+  create-release:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG_NAME#v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+          echo "Tag: $TAG_NAME"
+
+      - name: Check if pre-release
+        id: check_prerelease
+        run: |
+          TAG_NAME="${{ steps.get_version.outputs.TAG_NAME }}"
+          if [[ "$TAG_NAME" == *"-alpha"* ]] || [[ "$TAG_NAME" == *"-beta"* ]] || [[ "$TAG_NAME" == *"-rc"* ]]; then
+            echo "PRERELEASE=true" >> $GITHUB_OUTPUT
+            echo "This is a pre-release"
+          else
+            echo "PRERELEASE=false" >> $GITHUB_OUTPUT
+            echo "This is a stable release"
+          fi
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-files/
+
+      - name: List downloaded artifacts
+        run: |
+          echo "Downloaded artifacts:"
+          ls -R release-files/
+
+      - name: Generate SHA256 checksums
+        run: |
+          cd release-files
+          echo "Generating SHA256 checksums..."
+
+          # Find all release files
+          find . -type f \( -name "*.zip" -o -name "*.tar.gz" -o -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" \) -exec sha256sum {} \; > ../SHA256SUMS.txt
+
+          echo "Checksums generated:"
+          cat ../SHA256SUMS.txt
+
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+
+          # Try to extract changelog entry for this version
+          if [ -f "CHANGELOG.md" ]; then
+            # Extract section between [VERSION] and next [VERSION] or EOF
+            CHANGELOG=$(awk "/## \[$VERSION\]/,/## \[.*\]/{if(/## \[.*\]/ && !/## \[$VERSION\]/){exit}; print}" CHANGELOG.md | tail -n +2)
+
+            if [ -z "$CHANGELOG" ]; then
+              CHANGELOG="Release version $VERSION"
+            fi
+          else
+            CHANGELOG="Release version $VERSION"
+          fi
+
+          # Save to file (handle multiline)
+          echo "$CHANGELOG" > changelog_body.txt
+
+          echo "Changelog extracted"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.TAG_NAME }}
+          name: PhyloForester ${{ steps.get_version.outputs.TAG_NAME }}
+          body_path: changelog_body.txt
+          prerelease: ${{ steps.check_prerelease.outputs.PRERELEASE == 'true' }}
+          files: |
+            release-files/phyloforester-windows/*.zip
+            release-files/phyloforester-windows/*.exe
+            release-files/phyloforester-macos/*.zip
+            release-files/phyloforester-macos/*.dmg
+            release-files/phyloforester-linux/*.tar.gz
+            release-files/phyloforester-linux/*.AppImage
+            SHA256SUMS.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release created
+        run: |
+          echo "✓ Release ${{ steps.get_version.outputs.TAG_NAME }} created successfully!"
+          echo "Pre-release: ${{ steps.check_prerelease.outputs.PRERELEASE }}"

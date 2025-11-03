@@ -1,0 +1,224 @@
+name: Reusable Build Workflow
+
+on:
+  workflow_call:
+    inputs:
+      build_number:
+        required: true
+        type: string
+        description: 'Build number to append to artifacts'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Get Version String
+        id: get_version
+        shell: bash
+        run: echo "VERSION=$(python -c 'from version import __version__; print(__version__)')" >> $GITHUB_OUTPUT
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Download and Install Inno Setup
+        shell: pwsh
+        run: |
+          $innoUrl = "https://jrsoftware.org/download.php/is.exe"
+          $innoInstaller = "innosetup-installer.exe"
+
+          Write-Host "Downloading Inno Setup..."
+          Invoke-WebRequest -Uri $innoUrl -OutFile $innoInstaller
+
+          Write-Host "Installing Inno Setup..."
+          Start-Process -FilePath $innoInstaller -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" -Wait
+
+          Write-Host "Inno Setup installed"
+
+          # Add to PATH for this session
+          $env:Path += ";C:\Program Files (x86)\Inno Setup 6"
+          echo "C:\Program Files (x86)\Inno Setup 6" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Build Windows Executable
+        shell: pwsh
+        run: |
+          python build.py
+        env:
+          BUILD_NUMBER: ${{ inputs.build_number }}
+
+      - name: Create Portable ZIP
+        shell: pwsh
+        run: |
+          $version = "${{ steps.get_version.outputs.VERSION }}"
+          $buildNum = "${{ inputs.build_number }}"
+          $zipFileName = "PhyloForester-Windows-v$version-build$buildNum.zip"
+
+          Write-Host "Creating portable ZIP: $zipFileName"
+          Compress-Archive -Path dist/PhyloForester/* -DestinationPath $zipFileName
+
+          Write-Host "ZIP created successfully"
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: phyloforester-windows
+          path: |
+            PhyloForester-Windows-*.zip
+            InnoSetup/Output/*.exe
+          if-no-files-found: warn
+          retention-days: 30
+
+  build-macos:
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Get Version String
+        id: get_version
+        run: echo "VERSION=$(python -c 'from version import __version__; print(__version__)')" >> $GITHUB_OUTPUT
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build macOS Executable
+        run: |
+          python build.py
+        env:
+          BUILD_NUMBER: ${{ inputs.build_number }}
+
+      - name: Create macOS ZIP
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          BUILD_NUM="${{ inputs.build_number }}"
+          ZIP_NAME="PhyloForester-macOS-v${VERSION}-build${BUILD_NUM}.zip"
+
+          echo "Creating macOS ZIP: $ZIP_NAME"
+          cd dist
+          zip -r ../$ZIP_NAME PhyloForester/
+          cd ..
+
+          echo "ZIP created successfully"
+
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: phyloforester-macos
+          path: PhyloForester-macOS-*.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  build-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Get Version String
+        id: get_version
+        run: echo "VERSION=$(python -c 'from version import __version__; print(__version__)')" >> $GITHUB_OUTPUT
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxcb-xinerama0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-xfixes0 \
+            libxcb-shape0 \
+            libxcb-cursor0 \
+            qt5-qmake \
+            qtbase5-dev \
+            libqt5gui5 \
+            libqt5core5a \
+            libqt5widgets5
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build Linux Executable
+        run: |
+          python build.py
+        env:
+          BUILD_NUMBER: ${{ inputs.build_number }}
+
+      - name: Create Linux tarball
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          BUILD_NUM="${{ inputs.build_number }}"
+          TAR_NAME="PhyloForester-Linux-v${VERSION}-build${BUILD_NUM}.tar.gz"
+
+          echo "Creating Linux tarball: $TAR_NAME"
+          cd dist
+          tar -czf ../$TAR_NAME PhyloForester/
+          cd ..
+
+          echo "Tarball created successfully"
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: phyloforester-linux
+          path: PhyloForester-Linux-*.tar.gz
+          if-no-files-found: error
+          retention-days: 30

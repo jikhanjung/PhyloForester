@@ -1,0 +1,150 @@
+name: Manual Release
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 0.1.0, 1.0.0-beta.1)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        type: boolean
+        default: false
+      draft:
+        description: 'Create as draft'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
+  build:
+    needs: test
+    uses: ./.github/workflows/reusable_build.yml
+    with:
+      build_number: ${{ github.run_number }}
+
+  create-release:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validate version format
+        id: validate
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+          # Basic semantic version check
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
+            echo "Error: Invalid version format: $VERSION"
+            echo "Expected format: X.Y.Z or X.Y.Z-prerelease"
+            exit 1
+          fi
+
+          TAG_NAME="v$VERSION"
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "Valid version: $VERSION"
+          echo "Tag will be: $TAG_NAME"
+
+      - name: Check if tag already exists
+        run: |
+          TAG_NAME="${{ steps.validate.outputs.TAG_NAME }}"
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Error: Tag $TAG_NAME already exists!"
+            echo "Please use a different version number or delete the existing tag."
+            exit 1
+          fi
+          echo "Tag $TAG_NAME does not exist - OK to proceed"
+
+      - name: Create and push tag
+        run: |
+          TAG_NAME="${{ steps.validate.outputs.TAG_NAME }}"
+          VERSION="${{ steps.validate.outputs.VERSION }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "$TAG_NAME" -m "Release version $VERSION"
+          git push origin "$TAG_NAME"
+
+          echo "Tag $TAG_NAME created and pushed"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-files/
+
+      - name: List downloaded artifacts
+        run: |
+          echo "Downloaded artifacts:"
+          ls -R release-files/
+
+      - name: Generate SHA256 checksums
+        run: |
+          cd release-files
+          echo "Generating SHA256 checksums..."
+
+          find . -type f \( -name "*.zip" -o -name "*.tar.gz" -o -name "*.exe" -o -name "*.dmg" -o -name "*.AppImage" \) -exec sha256sum {} \; > ../SHA256SUMS.txt
+
+          echo "Checksums generated:"
+          cat ../SHA256SUMS.txt
+
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION="${{ steps.validate.outputs.VERSION }}"
+
+          if [ -f "CHANGELOG.md" ]; then
+            CHANGELOG=$(awk "/## \[$VERSION\]/,/## \[.*\]/{if(/## \[.*\]/ && !/## \[$VERSION\]/){exit}; print}" CHANGELOG.md | tail -n +2)
+
+            if [ -z "$CHANGELOG" ]; then
+              CHANGELOG="Manual release of version $VERSION"
+            fi
+          else
+            CHANGELOG="Manual release of version $VERSION"
+          fi
+
+          echo "$CHANGELOG" > changelog_body.txt
+          echo "Changelog extracted"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.validate.outputs.TAG_NAME }}
+          name: PhyloForester ${{ steps.validate.outputs.TAG_NAME }}
+          body_path: changelog_body.txt
+          draft: ${{ github.event.inputs.draft == 'true' }}
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+          files: |
+            release-files/phyloforester-windows/*.zip
+            release-files/phyloforester-windows/*.exe
+            release-files/phyloforester-macos/*.zip
+            release-files/phyloforester-macos/*.dmg
+            release-files/phyloforester-linux/*.tar.gz
+            release-files/phyloforester-linux/*.AppImage
+            SHA256SUMS.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release created
+        run: |
+          echo "✓ Release ${{ steps.validate.outputs.TAG_NAME }} created successfully!"
+          echo "Draft: ${{ github.event.inputs.draft }}"
+          echo "Pre-release: ${{ github.event.inputs.prerelease }}"
