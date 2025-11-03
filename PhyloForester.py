@@ -156,7 +156,16 @@ class PfTabWidget(QTabWidget):
 
 class PfTableView(QTableView):
     def keyPressEvent(self, event):
-        if event.key() in [Qt.Key_Return, Qt.Key_Enter]:
+        # Handle Ctrl+C (Copy)
+        if event.key() == Qt.Key_C and event.modifiers() == Qt.ControlModifier:
+            self.copy()
+            event.accept()
+        # Handle Ctrl+V (Paste)
+        elif event.key() == Qt.Key_V and event.modifiers() == Qt.ControlModifier:
+            self.paste()
+            event.accept()
+        # Handle Enter/Return keys
+        elif event.key() in [Qt.Key_Return, Qt.Key_Enter]:
             if not self.isPersistentEditorOpen(self.currentIndex()):
                 self.edit(self.currentIndex())
         else:
@@ -164,6 +173,100 @@ class PfTableView(QTableView):
 
     def isPersistentEditorOpen(self, index):
         return self.indexWidget(index) is not None
+
+    def copy(self):
+        """Copy selected cells to clipboard in tab/newline separated format"""
+        selection = self.selectedIndexes()
+        if not selection:
+            return
+
+        # Sort selection by row, then column
+        selection = sorted(selection, key=lambda idx: (idx.row(), idx.column()))
+
+        # Group by rows
+        rows = {}
+        for index in selection:
+            if index.row() not in rows:
+                rows[index.row()] = []
+            rows[index.row()].append(index)
+
+        # Build clipboard text
+        clipboard_text = []
+        for row_num in sorted(rows.keys()):
+            row_data = []
+            for index in sorted(rows[row_num], key=lambda idx: idx.column()):
+                data = self.model().data(index, Qt.DisplayRole)
+                row_data.append(str(data) if data is not None else "")
+            clipboard_text.append("\t".join(row_data))
+
+        # Copy to clipboard
+        QApplication.clipboard().setText("\n".join(clipboard_text))
+
+    def paste(self):
+        """Paste from clipboard to cells starting from current selection"""
+        clipboard_text = QApplication.clipboard().text()
+        if not clipboard_text:
+            return
+
+        # Get current cell or top-left of selection
+        selection = self.selectedIndexes()
+        if selection:
+            # Use top-left cell of selection
+            selection = sorted(selection, key=lambda idx: (idx.row(), idx.column()))
+            start_index = selection[0]
+        else:
+            start_index = self.currentIndex()
+
+        if not start_index.isValid():
+            return
+
+        # Parse clipboard data
+        rows = clipboard_text.split("\n")
+        start_row = start_index.row()
+        start_col = start_index.column()
+
+        model = self.model()
+
+        for i, row_text in enumerate(rows):
+            if not row_text.strip():
+                continue
+
+            cells = row_text.split("\t")
+            target_row = start_row + i
+
+            # Check if target row is within bounds
+            if target_row >= model.rowCount():
+                break
+
+            for j, cell_value in enumerate(cells):
+                target_col = start_col + j
+
+                # Check if target column is within bounds
+                if target_col >= model.columnCount():
+                    break
+
+                # Set data using model's setData method
+                index = model.index(target_row, target_col)
+                model.setData(index, cell_value, Qt.EditRole)
+
+    def contextMenuEvent(self, event):
+        """Show context menu on right click"""
+        menu = QMenu(self)
+
+        # Copy action
+        copy_action = QAction("Copy", self)
+        copy_action.setShortcut(QKeySequence.Copy)
+        copy_action.triggered.connect(self.copy)
+        menu.addAction(copy_action)
+
+        # Paste action
+        paste_action = QAction("Paste", self)
+        paste_action.setShortcut(QKeySequence.Paste)
+        paste_action.triggered.connect(self.paste)
+        menu.addAction(paste_action)
+
+        # Show menu at cursor position
+        menu.exec_(event.globalPos())
 
 class PfTableModel(QAbstractTableModel):
     def __init__(self, data=None):
