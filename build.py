@@ -54,7 +54,7 @@ def print_header(message):
 
 def print_step(message):
     """Print a step message"""
-    print(f"→ {message}")
+    print(f">> {message}")
 
 
 def run_command(cmd, shell=False, check=True):
@@ -128,13 +128,13 @@ def run_pyinstaller():
     try:
         result = run_command(args)
         if result.returncode == 0:
-            print("  ✓ PyInstaller completed successfully")
+            print("  [OK] PyInstaller completed successfully")
             return True
         else:
-            print("  ✗ PyInstaller failed")
+            print("  [FAIL] PyInstaller failed")
             return False
     except subprocess.CalledProcessError as e:
-        print(f"  ✗ PyInstaller failed with error: {e}")
+        print(f"  [FAIL] PyInstaller failed with error: {e}")
         return False
 
 
@@ -151,10 +151,10 @@ def verify_build():
         exe_path = Path(DIST_DIR) / APP_NAME / APP_NAME
 
     if exe_path.exists():
-        print(f"  ✓ Build successful: {exe_path}")
+        print(f"  [OK] Build successful: {exe_path}")
         return True
     else:
-        print(f"  ✗ Build failed: {exe_path} not found")
+        print(f"  [FAIL] Build failed: {exe_path} not found")
         return False
 
 
@@ -165,7 +165,7 @@ def create_windows_installer():
     # Check if Inno Setup script exists
     iss_script = Path("InnoSetup") / "phyloforester.iss"
     if not iss_script.exists():
-        print(f"  ⚠ Inno Setup script not found: {iss_script}")
+        print(f"  [WARN] Inno Setup script not found: {iss_script}")
         print("  Skipping installer creation")
         return False
 
@@ -182,7 +182,7 @@ def create_windows_installer():
             break
 
     if not iscc_exe:
-        print("  ⚠ Inno Setup not found")
+        print("  [WARN] Inno Setup not found")
         print("  Skipping installer creation")
         return False
 
@@ -198,17 +198,17 @@ def create_windows_installer():
             text=True,
             check=True
         )
-        print("  ✓ Windows installer created successfully")
+        print("  [OK] Windows installer created successfully")
         return True
     except subprocess.CalledProcessError as e:
-        print(f"  ✗ Installer creation failed: {e}")
+        print(f"  [FAIL] Installer creation failed: {e}")
         return False
 
 
 def create_macos_dmg():
     """Create macOS DMG image"""
     print_step("Creating macOS DMG...")
-    print("  ⚠ DMG creation not yet implemented")
+    print("  [WARN] DMG creation not yet implemented")
     print("  Use create-dmg or hdiutil manually")
     return False
 
@@ -216,7 +216,7 @@ def create_macos_dmg():
 def create_linux_appimage():
     """Create Linux AppImage"""
     print_step("Creating Linux AppImage...")
-    print("  ⚠ AppImage creation not yet implemented")
+    print("  [WARN] AppImage creation not yet implemented")
     print("  Use linuxdeploy manually")
     return False
 
@@ -310,10 +310,10 @@ def main():
         success = False
 
     if success:
-        print("\n✓ Build completed successfully!\n")
+        print("\n[SUCCESS] Build completed successfully!\n")
         return 0
     else:
-        print("\n✗ Build failed!\n")
+        print("\n[ERROR] Build failed!\n")
         return 1
 
 
