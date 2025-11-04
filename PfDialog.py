@@ -1,9 +1,13 @@
+from __future__ import annotations
+
+import logging
 import os
 import subprocess
 import sys
 
 # from PyQt6.QtSvg import QSvgGenerator  # For PyQt6, adjust import as needed
 from pathlib import Path
+from typing import Any, Optional
 
 import matplotlib.pyplot as plt
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, QPoint, QRect, QSize, Qt, pyqtSignal
@@ -57,7 +61,7 @@ from PfModel import *
 
 
 class PfInputDialog(QDialog):
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super(PfInputDialog, self).__init__(parent)
         self.setWindowTitle("Input")
         self.layout = QVBoxLayout()
@@ -73,15 +77,15 @@ class PfInputDialog(QDialog):
         self.layout.addWidget(self.btnOK)
         self.layout.addWidget(self.btnCancel)
 
-    def on_btn_ok_clicked(self):
+    def on_btn_ok_clicked(self) -> None:
         self.accept()
 
-    def on_btn_cancel_clicked(self):
+    def on_btn_cancel_clicked(self) -> None:
         self.reject()
 
 
 class AnalysisViewer(QWidget):
-    def __init__(self, logger=None):
+    def __init__(self, logger: Optional[logging.Logger] = None) -> None:
         super(AnalysisViewer, self).__init__()
         self.logger = logger or PfLogger.get_logger(__name__)
         self.setMinimumSize(400, 300)
@@ -251,7 +255,7 @@ class AnalysisViewer(QWidget):
         # self.layout1.addRow("Finish Datetime", self.edtAnalysisFinishDatetime)
         # self.layout1.addRow("Completion %", self.edtAnalysisCompletionPercentage)
 
-    def set_analysis(self, analysis):
+    def set_analysis(self, analysis: PfAnalysis) -> None:
         self.analysis = analysis
         self.tree_widget.set_analysis(self.analysis)
 
@@ -285,7 +289,7 @@ class AnalysisViewer(QWidget):
 
         # self.update_info()
 
-    def update_info(self, analysis):
+    def update_info(self, analysis: PfAnalysis) -> None:
         # analysis = self.analysis
         # print("update analysis info", analysis.analysis_name, analysis.analysis_status)
         self.analysis = analysis
@@ -349,7 +353,7 @@ class AnalysisViewer(QWidget):
             except Exception as e:
                 print(f"Error opening {result_dir}: {e}")
 
-    def append_output(self, text):
+    def append_output(self, text: str) -> None:
         self.edtAnalysisOutput.appendPlainText(text)
 
 
@@ -357,17 +361,17 @@ MODE = {"NONE": 0, "PAN": 1, "ZOOM": 2, "EDIT": 3}
 
 
 class CheckboxTableModel(QAbstractTableModel):
-    def __init__(self, data):
+    def __init__(self, data: list[bool]) -> None:
         super().__init__()
         self._data = data  # Data is a list of tuples (bool, str)
 
-    def rowCount(self, parent=QModelIndex()):
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return len(self._data)
 
-    def columnCount(self, parent=QModelIndex()):
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         return 1  # Assuming 2 columns: checkbox and some text
 
-    def data(self, index, role=Qt.DisplayRole):
+    def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:
         if not index.isValid():
             return None
         if index.column() == 0 and role == Qt.CheckStateRole:
@@ -376,20 +380,20 @@ class CheckboxTableModel(QAbstractTableModel):
             return self._data[index.row()][1]
         return None
 
-    def flags(self, index):
+    def flags(self, index: QModelIndex) -> Qt.ItemFlags:
         flags = super().flags(index)
         if index.column() == 0:
             flags |= Qt.ItemIsUserCheckable
         return flags
 
-    def setData(self, index, value, role=Qt.EditRole):
+    def setData(self, index: QModelIndex, value: Any, role: int = Qt.EditRole) -> bool:
         if not index.isValid() or role != Qt.CheckStateRole:
             return False
         self._data[index.row()] = value == Qt.Checked
         self.dataChanged.emit(index, index, [role])
         return True
 
-    def get_selected_indices(self):
+    def get_selected_indices(self) -> list[int]:
         selected_indices = []
         for i, value in enumerate(self._data):
             if value:  # Assuming checkbox state is at index 0 in the tuple
@@ -398,7 +402,7 @@ class CheckboxTableModel(QAbstractTableModel):
 
 
 class TreeViewer(QWidget):
-    def __init__(self, logger=None):
+    def __init__(self, logger: Optional[logging.Logger] = None) -> None:
         super(TreeViewer, self).__init__()
         self.logger = logger or PfLogger.get_logger(__name__)
         self.setMinimumSize(400, 300)
@@ -1052,7 +1056,7 @@ class TreeViewer(QWidget):
             self.tree_label.timetree = False
         self.tree_label.repaint()
 
-    def update_info(self, analysis):
+    def update_info(self, analysis: PfAnalysis) -> None:
         self.analysis = analysis
         # print("treeview update_info", analysis.analysis_name, analysis.analysis_status, analysis.completion_percentage)
         if analysis.completion_percentage == 100:
@@ -1165,7 +1169,7 @@ class TreeViewer(QWidget):
         self.set_tree_image_buf(buf)
         plt.close(fig)
 
-    def set_tree_image_buf(self, buf):
+    def set_tree_image_buf(self, buf: Any) -> None:
         # print("set_tree_image in treelabel", tree_image)
         self.tree_label.orig_pixmap = QPixmap()
         self.tree_label.orig_pixmap.loadFromData(buf.read())
@@ -1183,7 +1187,7 @@ class TreeViewer(QWidget):
         )
         self.tree_label.repaint()
 
-    def set_analysis(self, analysis):
+    def set_analysis(self, analysis: PfAnalysis) -> None:
         self.analysis = analysis
         self.load_trees()
         # if self.analysis.datamatrix.is_timetable_valid():
@@ -1994,7 +1998,7 @@ class TreeLabel(QLabel):
 
 
 class AnalysisDialog(QDialog):
-    def __init__(self, parent, logger=None):
+    def __init__(self, parent: Any, logger: Optional[logging.Logger] = None) -> None:
         super().__init__()
         self.logger = logger or PfLogger.get_logger(__name__)
         self.setWindowTitle("PhyloForester - Run Analysis")
@@ -2399,7 +2403,7 @@ class AnalysisDialog(QDialog):
 
 class DatamatrixDialog(QDialog):
     # DatamatrixDialog shows new project dialog.
-    def __init__(self, parent, logger=None):
+    def __init__(self, parent: Any, logger: Optional[logging.Logger] = None) -> None:
         super().__init__()
         self.logger = logger or PfLogger.get_logger(__name__)
         self.setWindowTitle("PhyloForester - Datamatrix Information")
@@ -2880,7 +2884,7 @@ class DatamatrixDialog(QDialog):
 
 class ProjectDialog(QDialog):
     # ProjectDialog shows new project dialog.
-    def __init__(self, parent, logger=None):
+    def __init__(self, parent: Any, logger: Optional[logging.Logger] = None) -> None:
         super().__init__()
         self.logger = logger or PfLogger.get_logger(__name__)
         self.setWindowTitle("PhyloForester - Project Information")
@@ -3086,7 +3090,7 @@ class PreferencesDialog(QDialog):
         well..
     """
 
-    def __init__(self, parent, logger=None):
+    def __init__(self, parent: Any, logger: Optional[logging.Logger] = None) -> None:
         super().__init__()
         self.logger = logger or PfLogger.get_logger(__name__)
         self.parent = parent
@@ -3392,7 +3396,7 @@ class PreferencesDialog(QDialog):
 
 
 class ProgressDialog(QDialog):
-    def __init__(self, parent):
+    def __init__(self, parent: Any) -> None:
         super().__init__()
         # self.setupUi(self)
         # self.setGeometry(200, 250, 400, 250)

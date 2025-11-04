@@ -142,6 +142,25 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
     "C405",   # set literal (gradual cleanup)
 ]
 
+# PfDialog.py has legacy code and PyQt patterns
+"PfDialog.py" = [
+    "F403",   # star imports (from PfModel import *)
+    "F405",   # undefined names from star imports
+    "F841",   # unused variables (legacy code)
+    "UP007",  # Optional[X] → X | None (gradual cleanup)
+    "UP008",  # super() modernization (gradual cleanup)
+    "B007",   # loop variable not used (gradual cleanup)
+    "C416",   # unnecessary list comprehension (gradual cleanup)
+    "PTH110", # Path.exists (gradual migration to pathlib)
+    "PTH112", # Path.is_dir (gradual migration to pathlib)
+    "PTH113", # Path.is_file (gradual migration to pathlib)
+    "PTH118", # Path / operator (gradual migration to pathlib)
+    "PTH123", # Path.open (gradual migration to pathlib)
+    "SIM115", # context manager for opening files (gradual cleanup)
+    "SIM118", # dict.keys() usage (gradual cleanup)
+    "SIM210", # ternary simplification (gradual cleanup)
+]
+
 # Build scripts can have print statements
 "build.py" = [
     "T201",   # print statements
@@ -274,4 +293,6 @@ exclude_dirs = ["tests", "migrations", "build", "dist"]
 skips = [
     "B404",  # import subprocess (used for running external tools)
     "B603",  # subprocess without shell=True (we use shell=False safely)
+    "B606",  # start process without shell (desktop app needs to open files/folders)
+    "B607",  # start process with partial path (using system commands like 'open', 'xdg-open')
 ]
