@@ -29,6 +29,12 @@ def qapp():
     # Set up settings object that dialogs expect
     app.settings = QSettings("PaleoBytes", "PhyloForester")
 
+    # Set up software paths that dialogs expect
+    app.tnt_path = ""
+    app.iqtree_path = ""
+    app.mrbayes_path = ""
+    app.result_path = pu.DEFAULT_RESULT_DIRECTORY
+
     yield app
     # Don't quit the app as it may be needed by other tests
 
