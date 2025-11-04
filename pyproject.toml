@@ -108,6 +108,21 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
     "F401",   # unused imports
 ]
 
+# PfModel.py uses Peewee ORM which requires star imports
+"PfModel.py" = [
+    "F403",   # star imports (required by Peewee ORM)
+    "F405",   # undefined names from star imports
+    "F841",   # unused variables (legacy code, gradual cleanup)
+    "N816",   # mixed case variables (gDatabase is a convention)
+    "B006",   # mutable defaults (legacy code, gradual cleanup)
+    "B007",   # unused loop variables (legacy code)
+    "PTH110", # os.path usage (gradual migration)
+    "PTH118", # os.path usage (gradual migration)
+    "PTH122", # os.path usage (gradual migration)
+    "RET503", # missing return (legacy code, gradual cleanup)
+    "SIM118", # dict.keys() usage (gradual cleanup)
+]
+
 # Build scripts can have print statements
 "build.py" = [
     "T201",   # print statements

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import json
 import logging
@@ -12,42 +14,50 @@ from peewee import *
 import PfUtils as pu
 
 # Initialize logger
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
-ANALYSIS_TYPE_ML = "Maximum Likelihood"
-ANALYSIS_TYPE_PARSIMONY = "Parsimony"
-ANALYSIS_TYPE_BAYESIAN = "Bayesian"
+ANALYSIS_TYPE_ML: str = "Maximum Likelihood"
+ANALYSIS_TYPE_PARSIMONY: str = "Parsimony"
+ANALYSIS_TYPE_BAYESIAN: str = "Bayesian"
 
-ANALYSIS_STATUS_READY = "Ready"
-ANALYSIS_STATUS_RUNNING = "Running"
-ANALYSIS_STATUS_FINISHED = "Completed"
-ANALYSIS_STATUS_STOPPED = "Stopped"
-ANALYSIS_STATUS_FAILED = "Failed"
+ANALYSIS_STATUS_READY: str = "Ready"
+ANALYSIS_STATUS_RUNNING: str = "Running"
+ANALYSIS_STATUS_FINISHED: str = "Completed"
+ANALYSIS_STATUS_STOPPED: str = "Stopped"
+ANALYSIS_STATUS_FAILED: str = "Failed"
 
-DATATYPE_DNA = "DNA"
-DATATYPE_RNA = "RNA"
-DATATYPE_PROTEIN = "Protein"
-DATATYPE_STANDARD = "Standard"
-DATATYPE_MORPHOLOGY = "Morphology"
-DATATYPE_COMBINED = "Combined"
+DATATYPE_DNA: str = "DNA"
+DATATYPE_RNA: str = "RNA"
+DATATYPE_PROTEIN: str = "Protein"
+DATATYPE_STANDARD: str = "Standard"
+DATATYPE_MORPHOLOGY: str = "Morphology"
+DATATYPE_COMBINED: str = "Combined"
 
-BOOTSTRAP_TYPE_NORMAL = "Normal"
-BOOTSTRAP_TYPE_ULTRAFAST = "Ultrafast"
+BOOTSTRAP_TYPE_NORMAL: str = "Normal"
+BOOTSTRAP_TYPE_ULTRAFAST: str = "Ultrafast"
 
-TREE_TYPE_CONSENSUS = "Consensus"
-TREE_TYPE_BOOTSTRAP = "Bootstrap"
-TREE_TYPE_POSTERIOR = "Posterior"
-TREE_TYPE_MPT = "MPT"
+TREE_TYPE_CONSENSUS: str = "Consensus"
+TREE_TYPE_BOOTSTRAP: str = "Bootstrap"
+TREE_TYPE_POSTERIOR: str = "Posterior"
+TREE_TYPE_MPT: str = "MPT"
 
-LINE_SEPARATOR = "\n"
+LINE_SEPARATOR: str = "\n"
 
-database_path = os.path.join(pu.DEFAULT_DB_DIRECTORY, "PhyloForester.db")
+database_path: str = os.path.join(pu.DEFAULT_DB_DIRECTORY, "PhyloForester.db")
 
-gDatabase = SqliteDatabase(database_path, pragmas={"foreign_keys": 1})
+gDatabase: SqliteDatabase = SqliteDatabase(database_path, pragmas={"foreign_keys": 1})
 
 
-def setup_database_location(database_dir):
-    database_handle = SqliteDatabase(database_path, pragmas={"foreign_keys": 1})
+def setup_database_location(database_dir: str) -> SqliteDatabase:
+    """Set up database location.
+
+    Args:
+        database_dir: Directory path for database
+
+    Returns:
+        Database handle
+    """
+    database_handle: SqliteDatabase = SqliteDatabase(database_path, pragmas={"foreign_keys": 1})
     return database_handle
 
 
@@ -62,9 +72,14 @@ class PfProject(Model):
     class Meta:
         database = gDatabase
 
-    def get_taxa_list(self):
-        if self.taxa_str:
-            return self.taxa_str.split(",")
+    def get_taxa_list(self) -> list[str]:
+        """Get list of taxa names.
+
+        Returns:
+            List of taxon names
+        """
+        if self.taxa_str:  # type: ignore[attr-defined]
+            return self.taxa_str.split(",")  # type: ignore[attr-defined]
         return []
 
 
@@ -142,7 +157,12 @@ class PfDatamatrix(Model):
         )
         return new_datamatrix
 
-    def get_character_list(self):
+    def get_character_list(self) -> list[str]:
+        """Get list of character names.
+
+        Returns:
+            List of character names
+        """
         self.character_list = []
         if self.character_list_json:
             try:
@@ -157,10 +177,15 @@ class PfDatamatrix(Model):
 
         return self.character_list
 
-    def datamatrix_as_list(self):
+    def datamatrix_as_list(self) -> list[list[str]]:
+        """Get datamatrix as list of lists.
+
+        Returns:
+            Datamatrix as nested list
+        """
         if self.datamatrix_json:
             try:
-                formatted_data_list = json.loads(self.datamatrix_json)
+                formatted_data_list: list[list[str]] = json.loads(self.datamatrix_json)
                 return formatted_data_list
             except json.JSONDecodeError as e:
                 logger.error(f"Error parsing datamatrix JSON for {self.datamatrix_name}: {e}")
@@ -168,7 +193,12 @@ class PfDatamatrix(Model):
         else:
             return []
 
-    def get_taxa_list(self):
+    def get_taxa_list(self) -> list[str]:
+        """Get list of taxa names.
+
+        Returns:
+            List of taxon names
+        """
         if self.taxa_list_json:
             try:
                 return json.loads(self.taxa_list_json)
