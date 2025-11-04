@@ -2923,29 +2923,59 @@ class PreferencesDialog(QDialog):
         self.edtTNTPath.setText(str(self.m_app.tnt_path))
 
         self.btnTNTPath = QPushButton("Select Path")
-        self.gbTNTPath = QGroupBox("TNT")
-        self.gbTNTPath.setLayout(QHBoxLayout())
-        self.gbTNTPath.layout().addWidget(self.edtTNTPath)
-        self.gbTNTPath.layout().addWidget(self.btnTNTPath)
         self.btnTNTPath.clicked.connect(self.select_tnt_path)
+
+        # TNT download link
+        self.lblTNTDownload = QLabel('<a href="http://www.lillo.org.ar/phylogeny/tnt/">Download TNT</a>')
+        self.lblTNTDownload.setOpenExternalLinks(True)
+        self.lblTNTDownload.setStyleSheet("QLabel { color: #0066cc; }")
+
+        tnt_path_layout = QHBoxLayout()
+        tnt_path_layout.addWidget(self.edtTNTPath)
+        tnt_path_layout.addWidget(self.btnTNTPath)
+
+        self.gbTNTPath = QGroupBox("TNT")
+        self.gbTNTPath.setLayout(QVBoxLayout())
+        self.gbTNTPath.layout().addLayout(tnt_path_layout)
+        self.gbTNTPath.layout().addWidget(self.lblTNTDownload)
 
         self.edtIQTreePath = QLineEdit()
         self.edtIQTreePath.setText(str(self.m_app.iqtree_path))
         self.btnIQTreePath = QPushButton("Select Path")
-        self.gbIQTreePath = QGroupBox("IQTree")
-        self.gbIQTreePath.setLayout(QHBoxLayout())
-        self.gbIQTreePath.layout().addWidget(self.edtIQTreePath)
-        self.gbIQTreePath.layout().addWidget(self.btnIQTreePath)
         self.btnIQTreePath.clicked.connect(self.select_iqtree_path)
+
+        # IQTree download link
+        self.lblIQTreeDownload = QLabel('<a href="http://www.iqtree.org/">Download IQ-TREE</a>')
+        self.lblIQTreeDownload.setOpenExternalLinks(True)
+        self.lblIQTreeDownload.setStyleSheet("QLabel { color: #0066cc; }")
+
+        iqtree_path_layout = QHBoxLayout()
+        iqtree_path_layout.addWidget(self.edtIQTreePath)
+        iqtree_path_layout.addWidget(self.btnIQTreePath)
+
+        self.gbIQTreePath = QGroupBox("IQTree")
+        self.gbIQTreePath.setLayout(QVBoxLayout())
+        self.gbIQTreePath.layout().addLayout(iqtree_path_layout)
+        self.gbIQTreePath.layout().addWidget(self.lblIQTreeDownload)
 
         self.edtMrBayesPath = QLineEdit()
         self.edtMrBayesPath.setText(str(self.m_app.mrbayes_path))
         self.btnMrBayesPath = QPushButton("Select Path")
-        self.gbMrBayesPath = QGroupBox("Mr.Bayes")
-        self.gbMrBayesPath.setLayout(QHBoxLayout())
-        self.gbMrBayesPath.layout().addWidget(self.edtMrBayesPath)
-        self.gbMrBayesPath.layout().addWidget(self.btnMrBayesPath)
         self.btnMrBayesPath.clicked.connect(self.select_mrbayes_path)
+
+        # MrBayes download link
+        self.lblMrBayesDownload = QLabel('<a href="https://nbisweden.github.io/MrBayes/">Download MrBayes</a>')
+        self.lblMrBayesDownload.setOpenExternalLinks(True)
+        self.lblMrBayesDownload.setStyleSheet("QLabel { color: #0066cc; }")
+
+        mrbayes_path_layout = QHBoxLayout()
+        mrbayes_path_layout.addWidget(self.edtMrBayesPath)
+        mrbayes_path_layout.addWidget(self.btnMrBayesPath)
+
+        self.gbMrBayesPath = QGroupBox("Mr.Bayes")
+        self.gbMrBayesPath.setLayout(QVBoxLayout())
+        self.gbMrBayesPath.layout().addLayout(mrbayes_path_layout)
+        self.gbMrBayesPath.layout().addWidget(self.lblMrBayesDownload)
 
         self.gbSoftwarePaths = QGroupBox()
         self.gbSoftwarePaths.setLayout(QVBoxLayout())
