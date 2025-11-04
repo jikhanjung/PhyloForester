@@ -146,19 +146,19 @@ def get_available_windows_drives():
             available_drives.append(letter)
     return available_drives
 
-def get_default_result_directory():
+def get_default_result_directory_path():
     """
-    Get the best default result directory with fallback logic.
+    Get the best default result directory path (without creating it).
 
     For Windows:
     - Try C:\\PFResults, D:\\PFResults, E:\\PFResults, etc. (in order of available drives)
-    - Fall back to ~/PFResults if all drives fail
+    - Fall back to ~/PFResults if all drives restricted
 
     For macOS/Linux:
     - Use ~/PFResults
 
     Returns:
-        str: Path to the default result directory (created if possible)
+        str: Path to the default result directory (NOT created)
     """
     if platform.system() == "Windows":
         # Try each available drive in order
@@ -166,35 +166,51 @@ def get_default_result_directory():
 
         for drive_letter in available_drives:
             try_path = f"{drive_letter}:\\PFResults"
-            try:
-                if not os.path.exists(try_path):
-                    os.makedirs(try_path)
-                # Test write permission by creating a temporary file
-                test_file = os.path.join(try_path, ".write_test")
-                try:
-                    with open(test_file, 'w') as f:
-                        f.write("test")
-                    os.remove(test_file)
-                    # Success! Use this drive
-                    return try_path
-                except (PermissionError, OSError):
-                    # Can't write here, try next drive
-                    continue
-            except (PermissionError, OSError):
-                # Can't create directory, try next drive
-                continue
+            # Just check if we can potentially write here
+            drive_root = f"{drive_letter}:\\"
+            if os.path.exists(drive_root) and os.access(drive_root, os.W_OK):
+                return try_path
 
-        # All drives failed, fall back to user home
-        fallback_path = os.path.join(USER_PROFILE_DIRECTORY, "PFResults")
-        if not os.path.exists(fallback_path):
-            os.makedirs(fallback_path)
-        return fallback_path
+        # All drives restricted, fall back to user home
+        return os.path.join(USER_PROFILE_DIRECTORY, "PFResults")
     else:
         # macOS/Linux: Use short path in user home
-        result_path = os.path.join(USER_PROFILE_DIRECTORY, "PFResults")
-        if not os.path.exists(result_path):
-            os.makedirs(result_path)
-        return result_path
+        return os.path.join(USER_PROFILE_DIRECTORY, "PFResults")
+
+def create_result_directory(path):
+    """
+    Create result directory at the specified path.
+
+    Args:
+        path: Directory path to create
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+        # Test write permission
+        test_file = os.path.join(path, ".write_test")
+        with open(test_file, 'w') as f:
+            f.write("test")
+        os.remove(test_file)
+        return True
+    except (PermissionError, OSError) as e:
+        logger.warning(f"Failed to create result directory {path}: {e}")
+        return False
+
+def get_default_result_directory():
+    """
+    Get the default result directory path.
+    Note: This function no longer auto-creates the directory.
+    Use create_result_directory() to create it after user confirmation.
+
+    Returns:
+        str: Path to the default result directory
+    """
+    return get_default_result_directory_path()
 
 # Default result directory for analyses
 # Use short paths to avoid command line length issues with TNT and other external software

@@ -710,6 +710,9 @@ class PhyloForesterMainWindow(QMainWindow):
         self.initUI()
         self.check_db()
 
+        # Check and prompt for result directory creation
+        self.check_result_directory()
+
         self.reset_views()
         self.load_treeview()
 
@@ -796,7 +799,7 @@ class PhyloForesterMainWindow(QMainWindow):
         router = Router(gDatabase, migrate_dir=migrations_path)
 
         # Auto-discover and run migrations
-        router.run()        
+        router.run()
         return
 
         tables = gDatabase.get_tables()
@@ -805,6 +808,89 @@ class PhyloForesterMainWindow(QMainWindow):
             #print(tables)
         else:
             gDatabase.create_tables([PfProject, PfDatamatrix,PfAnalysis,PfPackage,PfTree])
+
+    def check_result_directory(self):
+        """Check if default result directory exists and prompt user to create it."""
+        default_path = pu.DEFAULT_RESULT_DIRECTORY
+
+        # Check if directory already exists
+        if os.path.exists(default_path):
+            return
+
+        # Check if user has already been asked (stored in settings)
+        if self.m_app.settings.value("ResultDirectoryPrompted", False, type=bool):
+            return
+
+        # Show informative dialog
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Result Directory Setup")
+        msg.setIcon(QMessageBox.Information)
+
+        # Create detailed message
+        if platform.system() == "Windows":
+            path_example = default_path
+            reason_text = (
+                f"PhyloForester would like to create a result directory at:\n\n"
+                f"    {path_example}\n\n"
+                f"Why use a short path?\n\n"
+                f"• TNT (Parsimony analysis) has command line length limitations\n"
+                f"• Short paths prevent \"command too long\" errors\n"
+                f"• Faster to type and navigate\n"
+                f"• Cleaner organization of analysis results\n\n"
+                f"This directory will store all analysis results.\n"
+                f"You can change this location later in Preferences.\n\n"
+                f"Create this directory now?"
+            )
+        else:
+            path_example = default_path
+            reason_text = (
+                f"PhyloForester would like to create a result directory at:\n\n"
+                f"    {path_example}\n\n"
+                f"Why use a dedicated directory?\n\n"
+                f"• Keeps all analysis results organized in one place\n"
+                f"• Prevents cluttering your home directory\n"
+                f"• Easier to backup or share results\n"
+                f"• Short path prevents potential issues with long filenames\n\n"
+                f"This directory will store all analysis results.\n"
+                f"You can change this location later in Preferences.\n\n"
+                f"Create this directory now?"
+            )
+
+        msg.setText(reason_text)
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg.setDefaultButton(QMessageBox.Yes)
+
+        result = msg.exec_()
+
+        # Mark as prompted regardless of answer
+        self.m_app.settings.setValue("ResultDirectoryPrompted", True)
+
+        if result == QMessageBox.Yes:
+            # Try to create the directory
+            if pu.create_result_directory(default_path):
+                QMessageBox.information(
+                    self,
+                    "Success",
+                    f"Result directory created successfully:\n\n{default_path}"
+                )
+                self.logger.info(f"Result directory created: {default_path}")
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Failed",
+                    f"Could not create directory at:\n{default_path}\n\n"
+                    f"Please set a custom location in Preferences."
+                )
+                self.logger.warning(f"Failed to create result directory: {default_path}")
+        else:
+            # User declined, show reminder
+            QMessageBox.information(
+                self,
+                "Reminder",
+                "You can set a result directory later in:\n\n"
+                "Edit → Preferences → Result Path"
+            )
+            self.logger.info("User declined result directory creation")
 
     def closeEvent(self, event):
         self.logger.info("=" * 60)
