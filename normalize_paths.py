@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 One-time migration script to normalize all paths in the database
 Run this script once to fix any existing paths with mixed separators
@@ -7,7 +6,9 @@ Run this script once to fix any existing paths with mixed separators
 
 import os
 import sys
-from PfModel import gDatabase, PfAnalysis
+
+from PfModel import PfAnalysis, gDatabase
+
 
 def normalize_analysis_paths():
     """Normalize result_directory paths in all analyses"""
@@ -45,7 +46,7 @@ def normalize_analysis_paths():
                     print()
 
         print("-" * 60)
-        print(f"Migration complete!")
+        print("Migration complete!")
         print(f"  Total analyses: {total_count}")
         print(f"  Updated: {updated_count}")
         print(f"  Unchanged: {total_count - updated_count}")
@@ -53,6 +54,7 @@ def normalize_analysis_paths():
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 
@@ -61,6 +63,7 @@ def normalize_analysis_paths():
             gDatabase.close()
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(normalize_analysis_paths())

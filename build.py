@@ -5,17 +5,18 @@ Unified cross-platform build script for Windows, macOS, and Linux
 """
 
 import os
-import sys
 import platform
-import subprocess
-import shutil
 import re
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 # Import version from centralized version file
 try:
     from version import __version__ as VERSION
 except ImportError:
+
     def get_version_from_file():
         """Extract version from version.py if import fails"""
         version_file = Path(__file__).parent / "version.py"
@@ -25,9 +26,9 @@ except ImportError:
             if match:
                 return match.group(1)
         raise RuntimeError("Unable to find version string in version.py")
+
     VERSION = get_version_from_file()
 
-import PfUtils as pu
 
 # Build configuration
 APP_NAME = "PhyloForester"
@@ -38,10 +39,10 @@ DIST_DIR = "dist"
 
 # Data files to include
 DATA_FILES = [
-    ('icons/*.png', 'icons'),
-    ('data/*.*', 'data'),
-    ('translations/*.qm', 'translations'),
-    ('migrations/*', 'migrations'),
+    ("icons/*.png", "icons"),
+    ("data/*.*", "data"),
+    ("translations/*.qm", "translations"),
+    ("migrations/*", "migrations"),
 ]
 
 
@@ -60,9 +61,9 @@ def print_step(message):
 def run_command(cmd, shell=False, check=True):
     """Run a shell command and return the result"""
     print(f"  Running: {' '.join(cmd) if isinstance(cmd, list) else cmd}")
-    result = subprocess.run(cmd, shell=shell, check=check,
-                          stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                          text=True)
+    result = subprocess.run(
+        cmd, shell=shell, check=check, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
     if result.returncode != 0:
         print(f"  Error: {result.stderr}")
     return result
@@ -81,8 +82,9 @@ def check_pyinstaller():
     """Check if PyInstaller is installed"""
     print_step("Checking PyInstaller...")
     try:
-        result = subprocess.run(['pyinstaller', '--version'],
-                              capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            ["pyinstaller", "--version"], capture_output=True, text=True, check=True
+        )
         version = result.stdout.strip()
         print(f"  Found PyInstaller {version}")
         return True
@@ -95,24 +97,24 @@ def check_pyinstaller():
 def get_pyinstaller_args():
     """Get PyInstaller arguments for the current platform"""
     args = [
-        'pyinstaller',
-        '--clean',
-        '--onedir',
-        '--noconsole',
-        f'--name={APP_NAME}',
+        "pyinstaller",
+        "--clean",
+        "--onedir",
+        "--noconsole",
+        f"--name={APP_NAME}",
     ]
 
     # Add data files
     for src_pattern, dest_folder in DATA_FILES:
-        separator = ';' if platform.system() == 'Windows' else ':'
-        args.append(f'--add-data={src_pattern}{separator}{dest_folder}')
+        separator = ";" if platform.system() == "Windows" else ":"
+        args.append(f"--add-data={src_pattern}{separator}{dest_folder}")
 
     # Add icon (platform-specific path separator)
-    if platform.system() == 'Windows':
-        icon_path = ICON_PATH.replace('/', '\\')
+    if platform.system() == "Windows":
+        icon_path = ICON_PATH.replace("/", "\\")
     else:
         icon_path = ICON_PATH
-    args.append(f'--icon={icon_path}')
+    args.append(f"--icon={icon_path}")
 
     # Add main script
     args.append(MAIN_SCRIPT)
@@ -130,9 +132,8 @@ def run_pyinstaller():
         if result.returncode == 0:
             print("  [OK] PyInstaller completed successfully")
             return True
-        else:
-            print("  [FAIL] PyInstaller failed")
-            return False
+        print("  [FAIL] PyInstaller failed")
+        return False
     except subprocess.CalledProcessError as e:
         print(f"  [FAIL] PyInstaller failed with error: {e}")
         return False
@@ -143,9 +144,9 @@ def verify_build():
     print_step("Verifying build...")
 
     system = platform.system()
-    if system == 'Windows':
+    if system == "Windows":
         exe_path = Path(DIST_DIR) / APP_NAME / f"{APP_NAME}.exe"
-    elif system == 'Darwin':  # macOS
+    elif system == "Darwin":  # macOS
         exe_path = Path(DIST_DIR) / APP_NAME / APP_NAME
     else:  # Linux
         exe_path = Path(DIST_DIR) / APP_NAME / APP_NAME
@@ -153,9 +154,8 @@ def verify_build():
     if exe_path.exists():
         print(f"  [OK] Build successful: {exe_path}")
         return True
-    else:
-        print(f"  [FAIL] Build failed: {exe_path} not found")
-        return False
+    print(f"  [FAIL] Build failed: {exe_path} not found")
+    return False
 
 
 def create_windows_installer():
@@ -189,14 +189,10 @@ def create_windows_installer():
     try:
         # Set version in environment for Inno Setup
         env = os.environ.copy()
-        env['PHYLOFORESTER_VERSION'] = VERSION
+        env["PHYLOFORESTER_VERSION"] = VERSION
 
         result = subprocess.run(
-            [iscc_exe, str(iss_script)],
-            env=env,
-            capture_output=True,
-            text=True,
-            check=True
+            [iscc_exe, str(iss_script)], env=env, capture_output=True, text=True, check=True
         )
         print("  [OK] Windows installer created successfully")
         return True
@@ -299,11 +295,11 @@ def main():
 
     system = platform.system()
 
-    if system == 'Windows':
+    if system == "Windows":
         success = build_windows()
-    elif system == 'Darwin':
+    elif system == "Darwin":
         success = build_macos()
-    elif system == 'Linux':
+    elif system == "Linux":
         success = build_linux()
     else:
         print(f"Error: Unsupported platform: {system}")
@@ -312,10 +308,9 @@ def main():
     if success:
         print("\n[SUCCESS] Build completed successfully!\n")
         return 0
-    else:
-        print("\n[ERROR] Build failed!\n")
-        return 1
+    print("\n[ERROR] Build failed!\n")
+    return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

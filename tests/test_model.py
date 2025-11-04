@@ -1,11 +1,9 @@
 """
 Tests for PfModel module - Database models and operations
 """
-import pytest
+
 import json
 from datetime import datetime
-import os
-import tempfile
 
 import PfModel as pm
 import PfUtils as pu
@@ -16,10 +14,7 @@ class TestPfProject:
 
     def test_create_project(self, test_db):
         """Test creating a new project"""
-        project = pm.PfProject.create(
-            project_name="New Project",
-            project_desc="Test description"
-        )
+        project = pm.PfProject.create(project_name="New Project", project_desc="Test description")
         assert project.project_name == "New Project"
         assert project.project_desc == "Test description"
         assert project.created_at is not None
@@ -29,10 +24,7 @@ class TestPfProject:
         """Test that deleting project cascades to datamatrices"""
         project = pm.PfProject.create(project_name="Test")
         dm = pm.PfDatamatrix.create(
-            project=project,
-            datamatrix_name="Test Matrix",
-            n_taxa=3,
-            n_chars=3
+            project=project, datamatrix_name="Test Matrix", n_taxa=3, n_chars=3
         )
         dm_id = dm.id
 
@@ -53,7 +45,7 @@ class TestPfDatamatrix:
             datamatrix_desc="Test description",
             datatype=pm.DATATYPE_MORPHOLOGY,
             n_taxa=3,
-            n_chars=5
+            n_chars=5,
         )
         assert dm.datamatrix_name == "Test Matrix"
         assert dm.n_taxa == 3
@@ -180,7 +172,7 @@ class TestPfPackage:
             package_version="2.0",
             package_desc="Maximum likelihood analysis",
             package_type=pm.ANALYSIS_TYPE_ML,
-            run_path="/usr/local/bin/iqtree"
+            run_path="/usr/local/bin/iqtree",
         )
         assert package.package_name == "IQ-TREE"
         assert package.package_type == pm.ANALYSIS_TYPE_ML
@@ -197,7 +189,7 @@ class TestPfAnalysis:
             package=test_package,
             analysis_type=pm.ANALYSIS_TYPE_PARSIMONY,
             analysis_name="Test Analysis",
-            analysis_status=pm.ANALYSIS_STATUS_READY
+            analysis_status=pm.ANALYSIS_STATUS_READY,
         )
         assert analysis.analysis_name == "Test Analysis"
         assert analysis.analysis_type == pm.ANALYSIS_TYPE_PARSIMONY
@@ -228,7 +220,7 @@ class TestPfAnalysis:
             analysis_name="ML Test",
             ml_bootstrap=1000,
             ml_bootstrap_type=pm.BOOTSTRAP_TYPE_ULTRAFAST,
-            ml_substitution_model="GTR+G"
+            ml_substitution_model="GTR+G",
         )
         assert analysis.ml_bootstrap == 1000
         assert analysis.ml_bootstrap_type == pm.BOOTSTRAP_TYPE_ULTRAFAST
@@ -244,7 +236,7 @@ class TestPfAnalysis:
             mcmc_ngen=2000000,
             mcmc_burnin=2000,
             mcmc_nruns=2,
-            mcmc_nchains=4
+            mcmc_nchains=4,
         )
         assert analysis.mcmc_ngen == 2000000
         assert analysis.mcmc_burnin == 2000
@@ -272,7 +264,7 @@ class TestPfTree:
             analysis=test_analysis,
             tree_name="Consensus Tree",
             tree_type=pm.TREE_TYPE_CONSENSUS,
-            newick_text=newick
+            newick_text=newick,
         )
         assert tree.tree_name == "Consensus Tree"
         assert tree.tree_type == pm.TREE_TYPE_CONSENSUS
@@ -281,27 +273,27 @@ class TestPfTree:
     def test_tree_options_default(self, test_tree):
         """Test getting default tree options"""
         options = test_tree.get_tree_options()
-        assert 'tree_style' in options
-        assert 'font_size' in options
-        assert options['font_size'] == 10
-        assert options['italic_taxa_name'] is False
+        assert "tree_style" in options
+        assert "font_size" in options
+        assert options["font_size"] == 10
+        assert options["italic_taxa_name"] is False
 
     def test_tree_options_custom(self, test_tree):
         """Test setting custom tree options"""
         custom_options = {
-            'tree_style': pu.TREE_STYLE_BRANCH_LENGTH,
-            'font_size': 14,
-            'italic_taxa_name': True,
-            'timetree': True
+            "tree_style": pu.TREE_STYLE_BRANCH_LENGTH,
+            "font_size": 14,
+            "italic_taxa_name": True,
+            "timetree": True,
         }
         test_tree.pack_tree_options(custom_options)
         test_tree.save()
 
         retrieved = test_tree.get_tree_options()
-        assert retrieved['tree_style'] == pu.TREE_STYLE_BRANCH_LENGTH
-        assert retrieved['font_size'] == 14
-        assert retrieved['italic_taxa_name'] is True
-        assert retrieved['timetree'] is True
+        assert retrieved["tree_style"] == pu.TREE_STYLE_BRANCH_LENGTH
+        assert retrieved["font_size"] == 14
+        assert retrieved["italic_taxa_name"] is True
+        assert retrieved["timetree"] is True
 
     def test_tree_cascade_delete(self, test_tree):
         """Test cascade delete from analysis to tree"""
@@ -321,8 +313,7 @@ class TestModelIntegration:
         """Test a complete workflow from project to tree"""
         # Create project
         project = pm.PfProject.create(
-            project_name="Integration Test",
-            project_desc="Full workflow test"
+            project_name="Integration Test", project_desc="Full workflow test"
         )
 
         # Create datamatrix
@@ -335,14 +326,12 @@ class TestModelIntegration:
             n_chars=2,
             taxa_list_json=json.dumps(taxa),
             datamatrix_json=json.dumps(matrix),
-            datatype=pm.DATATYPE_MORPHOLOGY
+            datatype=pm.DATATYPE_MORPHOLOGY,
         )
 
         # Create package
         package = pm.PfPackage.create(
-            package_name="TNT",
-            package_version="1.5",
-            package_type=pm.ANALYSIS_TYPE_PARSIMONY
+            package_name="TNT", package_version="1.5", package_type=pm.ANALYSIS_TYPE_PARSIMONY
         )
 
         # Create analysis
@@ -351,7 +340,7 @@ class TestModelIntegration:
             package=package,
             analysis_type=pm.ANALYSIS_TYPE_PARSIMONY,
             analysis_name="Integration Analysis",
-            analysis_status=pm.ANALYSIS_STATUS_READY
+            analysis_status=pm.ANALYSIS_STATUS_READY,
         )
 
         # Create tree
@@ -359,7 +348,7 @@ class TestModelIntegration:
             analysis=analysis,
             tree_name="Result Tree",
             tree_type=pm.TREE_TYPE_CONSENSUS,
-            newick_text="((Species_A,Species_B),Species_C);"
+            newick_text="((Species_A,Species_B),Species_C);",
         )
 
         # Verify relationships
@@ -379,14 +368,14 @@ class TestModelIntegration:
             datamatrix=test_datamatrix,
             package=test_package,
             analysis_type=pm.ANALYSIS_TYPE_PARSIMONY,
-            analysis_name="Analysis 1"
+            analysis_name="Analysis 1",
         )
 
         analysis2 = pm.PfAnalysis.create(
             datamatrix=test_datamatrix,
             package=test_package,
             analysis_type=pm.ANALYSIS_TYPE_PARSIMONY,
-            analysis_name="Analysis 2"
+            analysis_name="Analysis 2",
         )
 
         # Both should reference same datamatrix

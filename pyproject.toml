@@ -1,0 +1,229 @@
+[project]
+name = "PhyloForester"
+version = "0.1.0"
+description = "Phylogenetic analysis desktop application"
+authors = [
+    {name = "PhyloForester Development Team"}
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "peewee",
+    "peewee_migrate",
+    "pillow",
+    "PyQt5",
+    "PyQt5-Qt5",
+    "PyQt5-sip",
+    "pyinstaller",
+    "biopython",
+    "matplotlib",
+    "semver",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-qt>=4.2.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "pre-commit>=3.0.0",
+]
+
+# ==============================================================================
+# Ruff Configuration
+# ==============================================================================
+
+[tool.ruff]
+# Target Python 3.8+ for compatibility
+target-version = "py38"
+
+# Line length (reasonable for readability)
+line-length = 100
+
+# Exclude build artifacts, virtual environments, etc.
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+    "*.egg-info",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+    "migrations",  # Database migrations (auto-generated)
+]
+
+[tool.ruff.lint]
+# Enable rule sets
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort (import sorting)
+    "N",    # pep8-naming
+    "UP",   # pyupgrade (upgrade syntax for newer Python)
+    "B",    # flake8-bugbear (common bugs)
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    "RET",  # flake8-return
+    "PTH",  # flake8-use-pathlib
+]
+
+# Ignore specific rules
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # function calls in argument defaults (common in PyQt5)
+    "N802",   # function name should be lowercase (PyQt5 uses camelCase)
+    "N803",   # argument name should be lowercase (PyQt5 uses camelCase)
+    "N806",   # variable in function should be lowercase (PyQt5 uses camelCase)
+    "N812",   # lowercase imported as non-lowercase (Qt imports)
+    "N813",   # camelcase imported as lowercase (common pattern)
+    "SIM102", # collapsible-if (sometimes more readable when separated)
+    "SIM108", # ternary-instead-of-if-else (not always more readable)
+    "PTH123", # pathlib open (gradual migration)
+    "RET504", # unnecessary-assign (sometimes clearer with assignment)
+]
+
+# Allow autofix for all enabled rules
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.per-file-ignores]
+# Test files can use assert, magic values, etc.
+"tests/**/*.py" = [
+    "S101",   # use of assert
+    "PLR2004", # magic value comparison
+    "N802",   # function names (test names can be descriptive)
+]
+
+# __init__.py files can have unused imports
+"__init__.py" = [
+    "F401",   # unused imports
+]
+
+# Build scripts can have print statements
+"build.py" = [
+    "T201",   # print statements
+]
+"manage_version.py" = [
+    "T201",   # print statements
+]
+
+# Migration scripts (auto-generated, don't lint)
+"migrations/*.py" = [
+    "ALL",
+]
+
+# Test/example scripts
+"fitch_test*.py" = [
+    "T201",   # print statements
+    "INP001", # implicit namespace package
+]
+
+[tool.ruff.lint.isort]
+# Import sorting configuration
+known-first-party = ["PfModel", "PfDialog", "PfUtils", "PfLogger", "PhyloForester"]
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+
+[tool.ruff.format]
+# Formatting configuration
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+# ==============================================================================
+# MyPy Configuration (Type Checking)
+# ==============================================================================
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Start lenient, increase strictness gradually
+ignore_missing_imports = true  # Many dependencies lack type stubs
+
+# Show error codes
+show_error_codes = true
+show_column_numbers = true
+
+# Strict optional
+strict_optional = true
+
+# Follow imports
+follow_imports = "normal"
+
+# Cache
+cache_dir = ".mypy_cache"
+
+# Modules to check with strict settings (gradually expand this list)
+[[tool.mypy.overrides]]
+module = "PfLogger"
+disallow_untyped_defs = true
+disallow_any_unimported = true
+
+[[tool.mypy.overrides]]
+module = "version"
+disallow_untyped_defs = true
+
+# Ignore errors in test files for now
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
+
+# ==============================================================================
+# Pytest Configuration
+# ==============================================================================
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--verbose",
+    "--strict-markers",
+    "--tb=short",
+    "--cov-report=term-missing",
+]
+
+# Markers for test categorization
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+# Coverage options
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "*/tests/*",
+    "*/migrations/*",
+    "build.py",
+    "manage_version.py",
+    "fitch_test*.py",
+    "migration.py",
+    "normalize_paths.py",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]

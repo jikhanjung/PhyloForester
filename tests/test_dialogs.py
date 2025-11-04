@@ -1,14 +1,8 @@
 """
 Tests for PfDialog module - Dialog and UI components
 """
-import pytest
-from PyQt5.QtWidgets import QDialog
-from PyQt5.QtCore import Qt
-from PyQt5.QtTest import QTest
-import json
 
 import PfDialog as pd
-import PfModel as pm
 import PfLogger
 
 
@@ -26,7 +20,7 @@ class TestAnalysisViewer:
         logger = PfLogger.setup_logger("test")
         viewer = pd.AnalysisViewer(logger=logger)
 
-        assert hasattr(viewer, 'tabview')
+        assert hasattr(viewer, "tabview")
         assert viewer.tabview is not None
 
     def test_viewer_has_log_output(self, qapp, test_db):
@@ -34,7 +28,7 @@ class TestAnalysisViewer:
         logger = PfLogger.setup_logger("test")
         viewer = pd.AnalysisViewer(logger=logger)
 
-        assert hasattr(viewer, 'edtAnalysisOutput')
+        assert hasattr(viewer, "edtAnalysisOutput")
         assert viewer.edtAnalysisOutput is not None
 
 
@@ -53,7 +47,7 @@ class TestTreeViewer:
         viewer = pd.TreeViewer(logger=logger)
 
         # TreeViewer should have tree_label for drawing trees
-        assert hasattr(viewer, 'tree_label')
+        assert hasattr(viewer, "tree_label")
         assert viewer.tree_label is not None
 
 
@@ -73,7 +67,7 @@ class TestProjectDialog:
         dialog = pd.ProjectDialog(parent=None, logger=logger)
 
         # Dialog should have parent attribute
-        assert hasattr(dialog, 'parent')
+        assert hasattr(dialog, "parent")
 
 
 class TestDatamatrixDialog:
@@ -91,7 +85,7 @@ class TestDatamatrixDialog:
         logger = PfLogger.setup_logger("test")
         dialog = pd.DatamatrixDialog(parent=None, logger=logger)
 
-        assert hasattr(dialog, 'parent')
+        assert hasattr(dialog, "parent")
 
 
 class TestAnalysisDialog:
@@ -109,7 +103,7 @@ class TestAnalysisDialog:
         logger = PfLogger.setup_logger("test")
         dialog = pd.AnalysisDialog(parent=None, logger=logger)
 
-        assert hasattr(dialog, 'parent')
+        assert hasattr(dialog, "parent")
 
 
 class TestPreferencesDialog:
@@ -127,7 +121,7 @@ class TestPreferencesDialog:
         logger = PfLogger.setup_logger("test")
         dialog = pd.PreferencesDialog(parent=None, logger=logger)
 
-        assert hasattr(dialog, 'parent')
+        assert hasattr(dialog, "parent")
 
 
 class TestDialogIntegration:
@@ -143,12 +137,14 @@ class TestDialogIntegration:
         analysis_dialog = pd.AnalysisDialog(parent=None, logger=logger)
         pref_dialog = pd.PreferencesDialog(parent=None, logger=logger)
 
-        assert all([
-            hasattr(project_dialog, 'logger'),
-            hasattr(dm_dialog, 'logger'),
-            hasattr(analysis_dialog, 'logger'),
-            hasattr(pref_dialog, 'logger')
-        ])
+        assert all(
+            [
+                hasattr(project_dialog, "logger"),
+                hasattr(dm_dialog, "logger"),
+                hasattr(analysis_dialog, "logger"),
+                hasattr(pref_dialog, "logger"),
+            ]
+        )
 
     def test_viewers_accept_logger(self, qapp, test_db):
         """Test that viewer classes accept logger parameter"""
@@ -158,5 +154,5 @@ class TestDialogIntegration:
         analysis_viewer = pd.AnalysisViewer(logger=logger)
         tree_viewer = pd.TreeViewer(logger=logger)
 
-        assert hasattr(analysis_viewer, 'logger')
-        assert hasattr(tree_viewer, 'logger')
+        assert hasattr(analysis_viewer, "logger")
+        assert hasattr(tree_viewer, "logger")

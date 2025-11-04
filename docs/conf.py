@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.abspath(".."))
 # Import version from the project
 try:
     from version import __version__
+
     release = __version__
 except ImportError:
     release = "0.1.0"

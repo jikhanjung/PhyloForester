@@ -3,14 +3,17 @@ PhyloForester Logging Module
 
 Provides centralized logging functionality for the application.
 """
-import PfUtils as pu
+
 import logging
-import os
 from datetime import datetime
+from pathlib import Path
+
+import PfUtils as pu
 
 # Ensure log directory exists
-if not os.path.exists(pu.DEFAULT_LOG_DIRECTORY):
-    os.makedirs(pu.DEFAULT_LOG_DIRECTORY)
+log_dir = Path(pu.DEFAULT_LOG_DIRECTORY)
+if not log_dir.exists():
+    log_dir.mkdir(parents=True, exist_ok=True)
 
 
 def setup_logger(name, level=logging.INFO):
@@ -26,17 +29,15 @@ def setup_logger(name, level=logging.INFO):
     now = datetime.now()
     date_str = now.strftime("%Y%m%d")
 
-    logfile_path = os.path.join(pu.DEFAULT_LOG_DIRECTORY,
-                                f'{pu.PROGRAM_NAME}.{date_str}.log')
+    logfile_path = Path(pu.DEFAULT_LOG_DIRECTORY) / f"{pu.PROGRAM_NAME}.{date_str}.log"
 
     # Create formatter
     formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
 
     # File handler - logs everything at specified level and above
-    file_handler = logging.FileHandler(logfile_path, encoding='utf-8')
+    file_handler = logging.FileHandler(logfile_path, encoding="utf-8")
     file_handler.setFormatter(formatter)
     file_handler.setLevel(level)
 

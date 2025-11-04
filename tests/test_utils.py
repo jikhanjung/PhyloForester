@@ -1,23 +1,24 @@
 """
 Tests for PfUtils module
 """
-import pytest
+
 import os
 import sys
-import json
 from pathlib import Path
+
+import pytest
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from PfUtils import (
-    PhyloForesterException,
-    FileOperationError,
-    ProcessExecutionError,
     DataParsingError,
+    FileOperationError,
+    PhyloForesterException,
+    ProcessExecutionError,
     safe_file_read,
     safe_file_write,
-    safe_json_loads
+    safe_json_loads,
 )
 
 
@@ -54,7 +55,7 @@ class TestSafeFileRead:
         """Test successful file read"""
         test_file = tmp_path / "test.txt"
         test_content = "Hello World\nLine 2"
-        test_file.write_text(test_content, encoding='utf-8')
+        test_file.write_text(test_content, encoding="utf-8")
 
         content = safe_file_read(str(test_file))
         assert content == test_content
@@ -81,10 +82,10 @@ class TestSafeFileRead:
     def test_read_binary_mode(self, tmp_path):
         """Test reading in binary mode"""
         test_file = tmp_path / "binary.dat"
-        test_data = b'\x00\x01\x02\x03'
+        test_data = b"\x00\x01\x02\x03"
         test_file.write_bytes(test_data)
 
-        content = safe_file_read(str(test_file), mode='rb', encoding=None)
+        content = safe_file_read(str(test_file), mode="rb", encoding=None)
         assert content == test_data
 
 
@@ -98,7 +99,7 @@ class TestSafeFileWrite:
 
         safe_file_write(str(test_file), test_content)
 
-        assert test_file.read_text(encoding='utf-8') == test_content
+        assert test_file.read_text(encoding="utf-8") == test_content
 
     def test_write_creates_directory(self, tmp_path):
         """Test that parent directories are created"""
@@ -108,7 +109,7 @@ class TestSafeFileWrite:
         safe_file_write(str(test_file), test_content)
 
         assert test_file.exists()
-        assert test_file.read_text(encoding='utf-8') == test_content
+        assert test_file.read_text(encoding="utf-8") == test_content
 
     def test_write_permission_denied(self, tmp_path):
         """Test permission denied error"""
@@ -128,7 +129,7 @@ class TestSafeFileWrite:
         test_file = tmp_path / "append.txt"
         test_file.write_text("Line 1\n")
 
-        safe_file_write(str(test_file), "Line 2\n", mode='a')
+        safe_file_write(str(test_file), "Line 2\n", mode="a")
 
         assert test_file.read_text() == "Line 1\nLine 2\n"
 
@@ -152,21 +153,21 @@ class TestSafeJsonLoads:
 
     def test_invalid_json_with_default(self):
         """Test invalid JSON with default value"""
-        json_str = 'invalid json {not valid}'
+        json_str = "invalid json {not valid}"
         data = safe_json_loads(json_str, default={})
 
         assert data == {}
 
     def test_invalid_json_with_default_list(self):
         """Test invalid JSON with default list"""
-        json_str = 'bad json'
+        json_str = "bad json"
         data = safe_json_loads(json_str, default=[])
 
         assert data == []
 
     def test_invalid_json_no_default(self):
         """Test invalid JSON without default raises exception"""
-        json_str = 'invalid json'
+        json_str = "invalid json"
 
         with pytest.raises(DataParsingError) as exc_info:
             safe_json_loads(json_str)
@@ -174,13 +175,13 @@ class TestSafeJsonLoads:
 
     def test_empty_string_with_default(self):
         """Test empty string with default"""
-        data = safe_json_loads('', default={})
+        data = safe_json_loads("", default={})
         assert data == {}
 
     def test_empty_string_no_default(self):
         """Test empty string without default"""
         with pytest.raises(DataParsingError) as exc_info:
-            safe_json_loads('')
+            safe_json_loads("")
         assert "Empty JSON" in str(exc_info.value)
 
     def test_none_with_default(self):
@@ -200,35 +201,38 @@ class TestPhyloDatafile:
     def test_create_datafile(self):
         """Test creating PhyloDatafile instance"""
         from PfUtils import PhyloDatafile
+
         datafile = PhyloDatafile()
         assert datafile is not None
-        assert datafile.dataset_name == ''
+        assert datafile.dataset_name == ""
         assert datafile.n_taxa == 0
         assert datafile.n_chars == 0
 
     def test_loadfile_nexus(self, sample_nexus_file):
         """Test loading a NEXUS file"""
         from PfUtils import PhyloDatafile
+
         datafile = PhyloDatafile()
         result = datafile.loadfile(sample_nexus_file)
 
         assert result is True
-        assert datafile.file_type == 'Nexus'
+        assert datafile.file_type == "Nexus"
         assert datafile.n_taxa == 3
         assert datafile.n_chars == 3
         assert len(datafile.taxa_list) == 3
-        assert 'Taxon_A' in datafile.taxa_list
-        assert 'Taxon_B' in datafile.taxa_list
-        assert 'Taxon_C' in datafile.taxa_list
+        assert "Taxon_A" in datafile.taxa_list
+        assert "Taxon_B" in datafile.taxa_list
+        assert "Taxon_C" in datafile.taxa_list
 
     def test_loadfile_phylip(self, sample_phylip_file):
         """Test loading a PHYLIP file"""
         from PfUtils import PhyloDatafile
+
         datafile = PhyloDatafile()
         result = datafile.loadfile(sample_phylip_file)
 
         assert result is True
-        assert datafile.file_type == 'Phylip'
+        assert datafile.file_type == "Phylip"
         # n_taxa and n_chars are stored as strings in PHYLIP parsing
         assert int(datafile.n_taxa) == 3
         assert int(datafile.n_chars) == 3
@@ -237,11 +241,12 @@ class TestPhyloDatafile:
     def test_loadfile_tnt(self, sample_tnt_file):
         """Test loading a TNT file"""
         from PfUtils import PhyloDatafile
+
         datafile = PhyloDatafile()
         result = datafile.loadfile(sample_tnt_file)
 
         assert result is True
-        assert datafile.file_type == 'TNT'
+        assert datafile.file_type == "TNT"
         # TNT format: first number is nchar, second is ntax
         assert int(datafile.n_chars) == 3
         assert int(datafile.n_taxa) == 3
@@ -250,76 +255,78 @@ class TestPhyloDatafile:
     def test_loadfile_nonexistent(self):
         """Test loading non-existent file"""
         from PfUtils import PhyloDatafile
+
         datafile = PhyloDatafile()
-        result = datafile.loadfile('/nonexistent/file.nex')
+        result = datafile.loadfile("/nonexistent/file.nex")
 
         assert result is False
 
     def test_loadfile_by_extension_nex(self, temp_dir):
         """Test file type detection by .nex extension"""
         from PfUtils import PhyloDatafile
-        import os
 
         nex_path = os.path.join(temp_dir, "test.nex")
-        with open(nex_path, 'w') as f:
-            f.write("#NEXUS\n\nbegin data;\ndimensions ntax=2 nchar=2;\nformat datatype=standard;\nmatrix\nA 01\nB 10\n;\nend;")
+        with open(nex_path, "w") as f:
+            f.write(
+                "#NEXUS\n\nbegin data;\ndimensions ntax=2 nchar=2;\nformat datatype=standard;\nmatrix\nA 01\nB 10\n;\nend;"
+            )
 
         datafile = PhyloDatafile()
         result = datafile.loadfile(nex_path)
 
         assert result is True
-        assert datafile.file_type == 'Nexus'
+        assert datafile.file_type == "Nexus"
 
     def test_loadfile_by_extension_phylip(self, temp_dir):
         """Test file type detection by .phy extension"""
         from PfUtils import PhyloDatafile
-        import os
 
         phy_path = os.path.join(temp_dir, "test.phy")
-        with open(phy_path, 'w') as f:
+        with open(phy_path, "w") as f:
             f.write("2 2\nA 01\nB 10\n")
 
         datafile = PhyloDatafile()
         result = datafile.loadfile(phy_path)
 
         assert result is True
-        assert datafile.file_type == 'Phylip'
+        assert datafile.file_type == "Phylip"
 
     def test_loadfile_by_content_nexus(self, temp_dir):
         """Test file type detection by content (#NEXUS)"""
         from PfUtils import PhyloDatafile
-        import os
 
         # File without standard extension but with NEXUS content
         txt_path = os.path.join(temp_dir, "test.txt")
-        with open(txt_path, 'w') as f:
-            f.write("#NEXUS\n\nbegin data;\ndimensions ntax=2 nchar=2;\nformat datatype=standard;\nmatrix\nA 01\nB 10\n;\nend;")
+        with open(txt_path, "w") as f:
+            f.write(
+                "#NEXUS\n\nbegin data;\ndimensions ntax=2 nchar=2;\nformat datatype=standard;\nmatrix\nA 01\nB 10\n;\nend;"
+            )
 
         datafile = PhyloDatafile()
         result = datafile.loadfile(txt_path)
 
         assert result is True
-        assert datafile.file_type == 'Nexus'
+        assert datafile.file_type == "Nexus"
 
     def test_loadfile_by_content_tnt(self, temp_dir):
         """Test file type detection by content (xread)"""
         from PfUtils import PhyloDatafile
-        import os
 
         # File without standard extension but with TNT content
         txt_path = os.path.join(temp_dir, "test.txt")
-        with open(txt_path, 'w') as f:
+        with open(txt_path, "w") as f:
             f.write("xread 'test' 2 2\nA 01\nB 10\n;")
 
         datafile = PhyloDatafile()
         result = datafile.loadfile(txt_path)
 
         assert result is True
-        assert datafile.file_type == 'TNT'
+        assert datafile.file_type == "TNT"
 
     def test_datafile_taxa_list(self, sample_nexus_file):
         """Test that taxa list is properly populated"""
         from PfUtils import PhyloDatafile
+
         datafile = PhyloDatafile()
         datafile.loadfile(sample_nexus_file)
 
@@ -329,6 +336,7 @@ class TestPhyloDatafile:
     def test_datafile_datamatrix(self, sample_nexus_file):
         """Test that data matrix is properly populated"""
         from PfUtils import PhyloDatafile
+
         datafile = PhyloDatafile()
         datafile.loadfile(sample_nexus_file)
 
@@ -343,6 +351,7 @@ class TestPhyloTreefile:
     def test_create_treefile(self):
         """Test creating PhyloTreefile instance"""
         from PfUtils import PhyloTreefile
+
         treefile = PhyloTreefile()
         assert treefile is not None
         assert len(treefile.tree_list) == 0
@@ -351,53 +360,51 @@ class TestPhyloTreefile:
     def test_readtree_newick(self, temp_dir):
         """Test reading Newick tree file"""
         from PfUtils import PhyloTreefile
-        import os
 
         tre_path = os.path.join(temp_dir, "test.tre")
         newick = "((A:1.0,B:1.0):1.0,C:2.0);"
-        with open(tre_path, 'w') as f:
+        with open(tre_path, "w") as f:
             f.write(newick)
 
         treefile = PhyloTreefile()
-        result = treefile.readtree(tre_path, 'tre')
+        result = treefile.readtree(tre_path, "tre")
 
         assert result is not False
-        assert treefile.file_type == 'tre'
+        assert treefile.file_type == "tre"
         assert treefile.file_text is not None
         assert newick in treefile.file_text
 
     def test_readtree_nexus(self, temp_dir):
         """Test reading NEXUS tree file"""
         from PfUtils import PhyloTreefile
-        import os
 
         nex_path = os.path.join(temp_dir, "test.nex")
         content = "#NEXUS\n\nbegin trees;\ntree tree1 = ((A,B),C);\nend;"
-        with open(nex_path, 'w') as f:
+        with open(nex_path, "w") as f:
             f.write(content)
 
         treefile = PhyloTreefile()
-        result = treefile.readtree(nex_path, 'Nexus')
+        result = treefile.readtree(nex_path, "Nexus")
 
         assert result is not False
-        assert treefile.file_type == 'Nexus'
+        assert treefile.file_type == "Nexus"
 
     def test_readtree_nonexistent(self):
         """Test reading non-existent tree file"""
         from PfUtils import PhyloTreefile
+
         treefile = PhyloTreefile()
-        result = treefile.readtree('/nonexistent/file.tre', 'tre')
+        result = treefile.readtree("/nonexistent/file.tre", "tre")
 
         assert result is False
 
     def test_readtree_auto_detect_nexus(self, temp_dir):
         """Test automatic detection of NEXUS file type"""
         from PfUtils import PhyloTreefile
-        import os
 
         nex_path = os.path.join(temp_dir, "test.nexus")
         content = "#NEXUS\n\nbegin trees;\ntree tree1 = ((A,B),C);\nend;"
-        with open(nex_path, 'w') as f:
+        with open(nex_path, "w") as f:
             f.write(content)
 
         treefile = PhyloTreefile()
@@ -405,16 +412,15 @@ class TestPhyloTreefile:
         result = treefile.readtree(nex_path, None)
 
         assert result is not False
-        assert treefile.file_type == 'Nexus'
+        assert treefile.file_type == "Nexus"
 
     def test_readtree_auto_detect_tre(self, temp_dir):
         """Test automatic detection of .tre file type"""
         from PfUtils import PhyloTreefile
-        import os
 
         tre_path = os.path.join(temp_dir, "test.tre")
         newick = "((A,B),C);"
-        with open(tre_path, 'w') as f:
+        with open(tre_path, "w") as f:
             f.write(newick)
 
         treefile = PhyloTreefile()
@@ -422,7 +428,7 @@ class TestPhyloTreefile:
         result = treefile.readtree(tre_path, None)
 
         assert result is not False
-        assert treefile.file_type == 'tre'
+        assert treefile.file_type == "tre"
 
 
 class TestPhyloMatrix:
@@ -431,9 +437,10 @@ class TestPhyloMatrix:
     def test_create_matrix(self):
         """Test creating PhyloMatrix instance"""
         from PfUtils import PhyloMatrix
+
         matrix = PhyloMatrix()
         assert matrix is not None
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, '-v'])
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])

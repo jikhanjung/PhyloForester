@@ -69,7 +69,9 @@ def update_version_file(new_version: str) -> None:
         raise e
 
 
-def get_new_version(command: str, current_ver_info: semver.VersionInfo, token: str | None = None) -> str:
+def get_new_version(
+    command: str, current_ver_info: semver.VersionInfo, token: str | None = None
+) -> str:
     """Get the new version based on the command."""
     if command in ["major", "minor", "patch"]:
         if current_ver_info.prerelease:
@@ -92,7 +94,9 @@ def get_new_version(command: str, current_ver_info: semver.VersionInfo, token: s
 
     if command == "stage":
         if not current_ver_info.prerelease:
-            raise ValueError("Cannot transition stage on a stable version. Start a pre-release cycle first.")
+            raise ValueError(
+                "Cannot transition stage on a stable version. Start a pre-release cycle first."
+            )
         if not token or token not in ["alpha", "beta", "rc"]:
             raise ValueError("A valid stage token (alpha, beta, rc) is required.")
         if token == current_ver_info.prerelease.split(".")[0]:
@@ -187,7 +191,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 def check_git_status() -> bool:
     """Check if git working directory is clean"""
     try:
-        result = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
+        )
         if result.stdout.strip():
             print("⚠️  Warning: You have uncommitted changes")
             response = input("Continue anyway? (y/N): ")
@@ -208,7 +214,17 @@ def main():
     command = args[0]
     token = args[1] if len(args) > 1 else None
 
-    valid_commands = ["major", "minor", "patch", "premajor", "preminor", "prepatch", "prerelease", "release", "stage"]
+    valid_commands = [
+        "major",
+        "minor",
+        "patch",
+        "premajor",
+        "preminor",
+        "prepatch",
+        "prerelease",
+        "release",
+        "stage",
+    ]
     if command not in valid_commands:
         print(f"Error: Invalid command '{command}'")
         print("See 'python manage_version.py --help' for usage.")

@@ -1,23 +1,25 @@
 """
 PyTest configuration and fixtures for PhyloForester tests
 """
-import pytest
+
 import os
-import tempfile
 import shutil
-from datetime import datetime
-from PyQt5.QtWidgets import QApplication
-from peewee import SqliteDatabase
 import sys
+import tempfile
+from datetime import datetime
+
+import pytest
+from peewee import SqliteDatabase
+from PyQt5.QtWidgets import QApplication
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import PfModel as pm
 import PfUtils as pu
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def qapp():
     """Create QApplication instance for all Qt tests"""
     from PyQt5.QtCore import QSettings
@@ -43,8 +45,8 @@ def qapp():
 def test_db():
     """Create a temporary test database"""
     # Create temporary database
-    test_db_path = tempfile.mktemp(suffix='.db')
-    test_database = SqliteDatabase(test_db_path, pragmas={'foreign_keys': 1})
+    test_db_path = tempfile.mktemp(suffix=".db")
+    test_database = SqliteDatabase(test_db_path, pragmas={"foreign_keys": 1})
 
     # Bind models to test database
     models = [pm.PfProject, pm.PfDatamatrix, pm.PfPackage, pm.PfAnalysis, pm.PfTree]
@@ -68,7 +70,7 @@ def test_project(test_db):
         project_name="Test Project",
         project_desc="Test project for unit tests",
         created_at=datetime.now(),
-        modified_at=datetime.now()
+        modified_at=datetime.now(),
     )
     yield project
     # Cleanup happens automatically with cascade delete
@@ -80,11 +82,7 @@ def test_datamatrix(test_project):
     import json
 
     taxa_list = ["Taxon_A", "Taxon_B", "Taxon_C"]
-    datamatrix = [
-        ["0", "1", "0"],
-        ["1", "0", "1"],
-        ["0", "0", "1"]
-    ]
+    datamatrix = [["0", "1", "0"], ["1", "0", "1"], ["0", "0", "1"]]
 
     dm = pm.PfDatamatrix.create(
         project=test_project,
@@ -97,7 +95,7 @@ def test_datamatrix(test_project):
         taxa_list_json=json.dumps(taxa_list),
         datamatrix_json=json.dumps(datamatrix),
         created_at=datetime.now(),
-        modified_at=datetime.now()
+        modified_at=datetime.now(),
     )
     yield dm
 
@@ -112,7 +110,7 @@ def test_package(test_db):
         package_type=pm.ANALYSIS_TYPE_PARSIMONY,
         run_path="/usr/local/bin/tnt",
         created_at=datetime.now(),
-        modified_at=datetime.now()
+        modified_at=datetime.now(),
     )
     yield package
 
@@ -129,7 +127,7 @@ def test_analysis(test_datamatrix, test_package):
         result_directory="/tmp/test_analysis",
         datafile="/tmp/test_data.tnt",
         completion_percentage=0,
-        start_datetime=datetime.now()
+        start_datetime=datetime.now(),
     )
     yield analysis
 
@@ -146,7 +144,7 @@ def test_tree(test_analysis):
         tree_desc="Test consensus tree",
         newick_text=newick,
         created_at=datetime.now(),
-        modified_at=datetime.now()
+        modified_at=datetime.now(),
     )
     yield tree
 
@@ -177,7 +175,7 @@ Taxon_C 001
 end;
 """
     nexus_path = os.path.join(temp_dir, "test_data.nex")
-    with open(nexus_path, 'w', encoding='utf-8') as f:
+    with open(nexus_path, "w", encoding="utf-8") as f:
         f.write(nexus_content)
 
     yield nexus_path
@@ -192,7 +190,7 @@ Taxon_B 101
 Taxon_C 001
 """
     phylip_path = os.path.join(temp_dir, "test_data.phy")
-    with open(phylip_path, 'w', encoding='utf-8') as f:
+    with open(phylip_path, "w", encoding="utf-8") as f:
         f.write(phylip_content)
 
     yield phylip_path
@@ -211,7 +209,7 @@ Taxon_C 001
 ;
 """
     tnt_path = os.path.join(temp_dir, "test_data.tnt")
-    with open(tnt_path, 'w', encoding='utf-8') as f:
+    with open(tnt_path, "w", encoding="utf-8") as f:
         f.write(tnt_content)
 
     yield tnt_path
