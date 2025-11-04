@@ -1887,16 +1887,28 @@ class AnalysisDialog(QDialog):
         self.cbxParsimony.setText(ANALYSIS_TYPE_PARSIMONY)
         self.cbxParsimony.setChecked(False)
         self.cbxParsimony.clicked.connect(self.on_cbxParsimony_clicked)
+        # Disable if TNT path not configured
+        if not self.m_app.tnt_path:
+            self.cbxParsimony.setEnabled(False)
+            self.cbxParsimony.setToolTip("TNT software path not configured.\nPlease set TNT path in Preferences.")
 
         self.cbxML = QCheckBox()
         self.cbxML.setText(ANALYSIS_TYPE_ML)
         self.cbxML.setChecked(False)
         self.cbxML.clicked.connect(self.on_cbxML_clicked)
+        # Disable if IQTree path not configured
+        if not self.m_app.iqtree_path:
+            self.cbxML.setEnabled(False)
+            self.cbxML.setToolTip("IQTree software path not configured.\nPlease set IQTree path in Preferences.")
 
         self.cbxBayesian = QCheckBox()
         self.cbxBayesian.setText(ANALYSIS_TYPE_BAYESIAN)
         self.cbxBayesian.setChecked(False)
         self.cbxBayesian.clicked.connect(self.on_cbxBayesian_clicked)
+        # Disable if MrBayes path not configured
+        if not self.m_app.mrbayes_path:
+            self.cbxBayesian.setEnabled(False)
+            self.cbxBayesian.setToolTip("MrBayes software path not configured.\nPlease set MrBayes path in Preferences.")
 
         self.cbx_layout = QHBoxLayout()
         self.cbx_layout.addWidget(self.cbxParsimony)
