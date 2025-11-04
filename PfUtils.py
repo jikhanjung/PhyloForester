@@ -133,15 +133,72 @@ DEFAULT_DB_DIRECTORY = os.path.join( USER_PROFILE_DIRECTORY, COMPANY_NAME, PROGR
 DEFAULT_LOG_DIRECTORY = os.path.join( USER_PROFILE_DIRECTORY, COMPANY_NAME, PROGRAM_NAME )
 #DEFAULT_STORAGE_DIRECTORY = os.path.join(DEFAULT_DB_DIRECTORY, "data/")
 
+def get_available_windows_drives():
+    """Get list of available drive letters on Windows (e.g., ['C', 'D', 'E'])"""
+    if platform.system() != "Windows":
+        return []
+
+    import string
+    available_drives = []
+    for letter in string.ascii_uppercase:
+        drive_path = f"{letter}:\\"
+        if os.path.exists(drive_path):
+            available_drives.append(letter)
+    return available_drives
+
+def get_default_result_directory():
+    """
+    Get the best default result directory with fallback logic.
+
+    For Windows:
+    - Try C:\\PFResults, D:\\PFResults, E:\\PFResults, etc. (in order of available drives)
+    - Fall back to ~/PFResults if all drives fail
+
+    For macOS/Linux:
+    - Use ~/PFResults
+
+    Returns:
+        str: Path to the default result directory (created if possible)
+    """
+    if platform.system() == "Windows":
+        # Try each available drive in order
+        available_drives = get_available_windows_drives()
+
+        for drive_letter in available_drives:
+            try_path = f"{drive_letter}:\\PFResults"
+            try:
+                if not os.path.exists(try_path):
+                    os.makedirs(try_path)
+                # Test write permission by creating a temporary file
+                test_file = os.path.join(try_path, ".write_test")
+                try:
+                    with open(test_file, 'w') as f:
+                        f.write("test")
+                    os.remove(test_file)
+                    # Success! Use this drive
+                    return try_path
+                except (PermissionError, OSError):
+                    # Can't write here, try next drive
+                    continue
+            except (PermissionError, OSError):
+                # Can't create directory, try next drive
+                continue
+
+        # All drives failed, fall back to user home
+        fallback_path = os.path.join(USER_PROFILE_DIRECTORY, "PFResults")
+        if not os.path.exists(fallback_path):
+            os.makedirs(fallback_path)
+        return fallback_path
+    else:
+        # macOS/Linux: Use short path in user home
+        result_path = os.path.join(USER_PROFILE_DIRECTORY, "PFResults")
+        if not os.path.exists(result_path):
+            os.makedirs(result_path)
+        return result_path
+
 # Default result directory for analyses
 # Use short paths to avoid command line length issues with TNT and other external software
-if platform.system() == "Windows":
-    # Windows: Use short path at drive root to minimize command line length
-    # TNT has command line length limitations
-    DEFAULT_RESULT_DIRECTORY = "C:\\PFResults"
-else:
-    # macOS/Linux: Use short path in user home
-    DEFAULT_RESULT_DIRECTORY = os.path.join(USER_PROFILE_DIRECTORY, "PFResults")
+DEFAULT_RESULT_DIRECTORY = get_default_result_directory()
 
 TREE_STYLE_TOPOLOGY = 0
 TREE_STYLE_BRANCH_LENGTH = 1
@@ -151,17 +208,6 @@ if not os.path.exists(DEFAULT_DB_DIRECTORY):
     os.makedirs(DEFAULT_DB_DIRECTORY)
 #if not os.path.exists(DEFAULT_STORAGE_DIRECTORY):
 #    os.makedirs(DEFAULT_STORAGE_DIRECTORY)
-
-# Create default result directory if it doesn't exist
-if not os.path.exists(DEFAULT_RESULT_DIRECTORY):
-    try:
-        os.makedirs(DEFAULT_RESULT_DIRECTORY)
-    except (PermissionError, OSError) as e:
-        # If we can't create at system level (C:\PFResults on Windows),
-        # fall back to user home directory
-        DEFAULT_RESULT_DIRECTORY = os.path.join(USER_PROFILE_DIRECTORY, "PFResults")
-        if not os.path.exists(DEFAULT_RESULT_DIRECTORY):
-            os.makedirs(DEFAULT_RESULT_DIRECTORY)
 
 def get_timestamp():
     import datetime
