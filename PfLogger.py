@@ -4,6 +4,8 @@ PhyloForester Logging Module
 Provides centralized logging functionality for the application.
 """
 
+from __future__ import annotations
+
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -16,7 +18,7 @@ if not log_dir.exists():
     log_dir.mkdir(parents=True, exist_ok=True)
 
 
-def setup_logger(name, level=logging.INFO):
+def setup_logger(name: str, level: int = logging.INFO) -> logging.Logger:
     """Setup application logger with file and console handlers
 
     Args:
@@ -24,7 +26,7 @@ def setup_logger(name, level=logging.INFO):
         level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 
     Returns:
-        logging.Logger: Configured logger instance
+        Configured logger instance
     """
     now = datetime.now()
     date_str = now.strftime("%Y%m%d")
@@ -61,13 +63,13 @@ def setup_logger(name, level=logging.INFO):
     return logger
 
 
-def get_logger(name):
+def get_logger(name: str) -> logging.Logger:
     """Get existing logger or create new one
 
     Args:
         name: Logger name
 
     Returns:
-        logging.Logger: Logger instance
+        Logger instance
     """
     return logging.getLogger(name)
