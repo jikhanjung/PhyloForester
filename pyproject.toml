@@ -227,3 +227,17 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "@abstractmethod",
 ]
+
+# ==============================================================================
+# Bandit Configuration (Security Linting)
+# ==============================================================================
+
+[tool.bandit]
+# Exclude test files and migrations
+exclude_dirs = ["tests", "migrations", "build", "dist"]
+
+# Skip certain tests
+skips = [
+    "B404",  # import subprocess (used for running external tools)
+    "B603",  # subprocess without shell=True (we use shell=False safely)
+]

@@ -1,0 +1,88 @@
+# Pre-commit hooks configuration for PhyloForester
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+repos:
+  # Ruff - Fast Python linter and formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      # Run the linter
+      - id: ruff
+        args: [--fix]
+        types_or: [python, pyi]
+
+      # Run the formatter
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Remove trailing whitespace
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+
+      # Ensure files end with newline
+      - id: end-of-file-fixer
+
+      # Check YAML syntax
+      - id: check-yaml
+        args: [--unsafe]  # Allow custom YAML tags
+
+      # Check JSON syntax
+      - id: check-json
+
+      # Check for large files (> 1MB)
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+
+      # Check for merge conflicts
+      - id: check-merge-conflict
+
+      # Check for case conflicts (important for cross-platform)
+      - id: check-case-conflict
+
+      # Check for files that would conflict on case-insensitive filesystems
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  # Check for common security issues
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.0
+    hooks:
+      - id: bandit
+        args: [-c, pyproject.toml]
+        additional_dependencies: ["bandit[toml]"]
+        # Skip test files
+        exclude: ^tests/
+
+  # Optional: Run tests before commit (commented out by default - can be slow)
+  # - repo: local
+  #   hooks:
+  #     - id: pytest-check
+  #       name: pytest-check
+  #       entry: pytest
+  #       language: system
+  #       pass_filenames: false
+  #       always_run: true
+  #       args: ['-x', '--tb=short', '-q']
+  #       stages: [commit]
+
+# Configuration
+default_language_version:
+  python: python3.12
+
+# Stages to run hooks
+default_stages: [pre-commit]
+
+# Files to exclude
+exclude: |
+  (?x)^(
+      migrations/.*|
+      build/.*|
+      dist/.*|
+      \.eggs/.*|
+      .*\.egg-info/.*
+  )$
