@@ -3012,15 +3012,16 @@ class PreferencesDialog(QDialog):
         self.m_app.remember_geometry = pu.value_to_bool(self.m_app.settings.value("WindowGeometry/RememberGeometry", True))
         self.m_app.toolbar_icon_size = self.m_app.settings.value("ToolbarIconSize", "Medium")
         # Normalize paths when reading from settings for OS-appropriate separators
+        # Software paths (TNT, IQTree, MrBayes) default to empty string (user must configure)
         tnt_value = self.m_app.settings.value("SoftwarePath/TNT", "")
-        self.m_app.tnt_path = Path(os.path.normpath(tnt_value)) if tnt_value else Path("")
+        self.m_app.tnt_path = os.path.normpath(tnt_value) if tnt_value else ""
         iqtree_value = self.m_app.settings.value("SoftwarePath/IQTree", "")
-        self.m_app.iqtree_path = Path(os.path.normpath(iqtree_value)) if iqtree_value else Path("")
+        self.m_app.iqtree_path = os.path.normpath(iqtree_value) if iqtree_value else ""
         mrbayes_value = self.m_app.settings.value("SoftwarePath/MrBayes", "")
-        self.m_app.mrbayes_path = Path(os.path.normpath(mrbayes_value)) if mrbayes_value else Path("")
+        self.m_app.mrbayes_path = os.path.normpath(mrbayes_value) if mrbayes_value else ""
         result_value = self.m_app.settings.value("ResultPath", "")
         # Use DEFAULT_RESULT_DIRECTORY if ResultPath is not set in settings
-        self.m_app.result_path = Path(os.path.normpath(result_value)) if result_value else Path(pu.DEFAULT_RESULT_DIRECTORY)
+        self.m_app.result_path = os.path.normpath(result_value) if result_value else pu.DEFAULT_RESULT_DIRECTORY
         self.m_app.language = self.m_app.settings.value("Language", "en")
 
         #print("toolbar_icon_size:", self.m_app.toolbar_icon_size)
@@ -3047,10 +3048,11 @@ class PreferencesDialog(QDialog):
         self.m_app.settings.setValue("ToolbarIconSize", self.m_app.toolbar_icon_size)
         self.m_app.settings.setValue("WindowGeometry/RememberGeometry", self.m_app.remember_geometry)
         # Normalize paths for OS-appropriate separators before saving
-        self.m_app.settings.setValue("SoftwarePath/TNT", os.path.normpath(str(self.m_app.tnt_path)))
-        self.m_app.settings.setValue("SoftwarePath/IQTree", os.path.normpath(str(self.m_app.iqtree_path)))
-        self.m_app.settings.setValue("SoftwarePath/MrBayes", os.path.normpath(str(self.m_app.mrbayes_path)))
-        self.m_app.settings.setValue("ResultPath", os.path.normpath(str(self.m_app.result_path)))
+        # Software paths save as-is if empty (no normalization of empty string)
+        self.m_app.settings.setValue("SoftwarePath/TNT", os.path.normpath(self.m_app.tnt_path) if self.m_app.tnt_path else "")
+        self.m_app.settings.setValue("SoftwarePath/IQTree", os.path.normpath(self.m_app.iqtree_path) if self.m_app.iqtree_path else "")
+        self.m_app.settings.setValue("SoftwarePath/MrBayes", os.path.normpath(self.m_app.mrbayes_path) if self.m_app.mrbayes_path else "")
+        self.m_app.settings.setValue("ResultPath", os.path.normpath(self.m_app.result_path) if self.m_app.result_path else "")
         self.m_app.settings.setValue("Language", self.m_app.language)
 
         if self.m_app.remember_geometry is True:
