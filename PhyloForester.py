@@ -857,17 +857,24 @@ class PhyloForesterMainWindow(QMainWindow):
             )
 
         msg.setText(reason_text)
-        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
-        msg.setDefaultButton(QMessageBox.Yes)
+
+        # Add custom buttons
+        btnYes = msg.addButton("Use Recommended", QMessageBox.YesRole)
+        btnChoose = msg.addButton("Choose Location...", QMessageBox.ActionRole)
+        btnNo = msg.addButton("Skip", QMessageBox.NoRole)
+        msg.setDefaultButton(btnYes)
 
         result = msg.exec_()
+        clicked_button = msg.clickedButton()
 
         # Mark as prompted regardless of answer
         self.m_app.settings.setValue("ResultDirectoryPrompted", True)
 
-        if result == QMessageBox.Yes:
-            # Try to create the directory
+        if clicked_button == btnYes:
+            # Use recommended default path
             if pu.create_result_directory(default_path):
+                # Save to settings as well
+                self.m_app.settings.setValue("ResultPath", default_path)
                 QMessageBox.information(
                     self,
                     "Success",
@@ -879,18 +886,61 @@ class PhyloForesterMainWindow(QMainWindow):
                     self,
                     "Failed",
                     f"Could not create directory at:\n{default_path}\n\n"
-                    f"Please set a custom location in Preferences."
+                    f"Please choose a different location or set it in Preferences."
                 )
                 self.logger.warning(f"Failed to create result directory: {default_path}")
+
+        elif clicked_button == btnChoose:
+            # User wants to choose custom location
+            custom_path = QFileDialog.getExistingDirectory(
+                self,
+                "Choose Result Directory",
+                os.path.expanduser("~"),
+                QFileDialog.ShowDirsOnly | QFileDialog.DontResolveSymlinks
+            )
+
+            if custom_path:
+                # Normalize the path
+                custom_path = os.path.normpath(custom_path)
+
+                # Try to create/verify the directory
+                if pu.create_result_directory(custom_path):
+                    # Save custom path to settings
+                    self.m_app.settings.setValue("ResultPath", custom_path)
+                    QMessageBox.information(
+                        self,
+                        "Success",
+                        f"Result directory set to:\n\n{custom_path}"
+                    )
+                    self.logger.info(f"User selected custom result directory: {custom_path}")
+                else:
+                    QMessageBox.warning(
+                        self,
+                        "Failed",
+                        f"Could not use directory:\n{custom_path}\n\n"
+                        f"Please check permissions and try again in Preferences."
+                    )
+                    self.logger.warning(f"Failed to use custom result directory: {custom_path}")
+            else:
+                # User cancelled directory selection
+                QMessageBox.information(
+                    self,
+                    "Reminder",
+                    "No directory selected.\n\n"
+                    "You can set a result directory later in:\n"
+                    "Edit → Preferences → Result Path"
+                )
+                self.logger.info("User cancelled custom directory selection")
+
         else:
-            # User declined, show reminder
+            # User clicked Skip (No)
             QMessageBox.information(
                 self,
                 "Reminder",
                 "You can set a result directory later in:\n\n"
                 "Edit → Preferences → Result Path"
             )
-            self.logger.info("User declined result directory creation")
+            self.logger.info("User skipped result directory creation")
 
     def closeEvent(self, event):
         self.logger.info("=" * 60)
