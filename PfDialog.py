@@ -3019,7 +3019,8 @@ class PreferencesDialog(QDialog):
         mrbayes_value = self.m_app.settings.value("SoftwarePath/MrBayes", "")
         self.m_app.mrbayes_path = Path(os.path.normpath(mrbayes_value)) if mrbayes_value else Path("")
         result_value = self.m_app.settings.value("ResultPath", "")
-        self.m_app.result_path = Path(os.path.normpath(result_value)) if result_value else Path("")
+        # Use DEFAULT_RESULT_DIRECTORY if ResultPath is not set in settings
+        self.m_app.result_path = Path(os.path.normpath(result_value)) if result_value else Path(pu.DEFAULT_RESULT_DIRECTORY)
         self.m_app.language = self.m_app.settings.value("Language", "en")
 
         #print("toolbar_icon_size:", self.m_app.toolbar_icon_size)
