@@ -66,6 +66,11 @@ jobs:
       run: |
         ruff format --check .
 
+    - name: Type check with mypy
+      run: |
+        mypy PfLogger.py version.py --strict
+      continue-on-error: true  # Initially warn only
+
     - name: Run unit tests
       env:
         QT_QPA_PLATFORM: offscreen
