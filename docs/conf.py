@@ -3,10 +3,10 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import os
 import sys
+from pathlib import Path
 
-sys.path.insert(0, os.path.abspath(".."))
+sys.path.insert(0, str(Path("..").resolve()))
 
 # Import version from the project
 try:
@@ -43,9 +43,9 @@ locale_dirs = ["locale/"]
 gettext_compact = False
 language = "en"  # Default language
 
-# Napoleon settings (Google/NumPy style docstrings)
+# Napoleon settings (Google-style docstrings)
 napoleon_google_docstring = True
-napoleon_numpy_docstring = True
+napoleon_numpy_docstring = False  # Standardize on Google-style only
 napoleon_include_init_with_doc = True
 napoleon_include_private_with_doc = False
 napoleon_include_special_with_doc = True
