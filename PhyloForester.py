@@ -767,9 +767,13 @@ class PhyloForesterMainWindow(QMainWindow):
     def read_settings(self):
         #self.m_app.settings = QSettings(QSettings.IniFormat, QSettings.UserScope,pu.COMPANY_NAME, pu.PROGRAM_NAME)
         #self.m_app.storage_directory = os.path.abspath(pu.DEFAULT_STORAGE_DIRECTORY)
-        self.m_app.tnt_path = self.m_app.settings.value("SoftwarePath/TNT", "")
-        self.m_app.iqtree_path = self.m_app.settings.value("SoftwarePath/IQTree", "")
-        self.m_app.mrbayes_path = self.m_app.settings.value("SoftwarePath/MrBayes", "")
+        # Normalize paths when reading from settings for OS-appropriate separators
+        tnt_value = self.m_app.settings.value("SoftwarePath/TNT", "")
+        self.m_app.tnt_path = os.path.normpath(tnt_value) if tnt_value else ""
+        iqtree_value = self.m_app.settings.value("SoftwarePath/IQTree", "")
+        self.m_app.iqtree_path = os.path.normpath(iqtree_value) if iqtree_value else ""
+        mrbayes_value = self.m_app.settings.value("SoftwarePath/MrBayes", "")
+        self.m_app.mrbayes_path = os.path.normpath(mrbayes_value) if mrbayes_value else ""
         #print("tnt path:", self.m_app.tnt_path)
         #print("iqtree path:", self.m_app.iqtree_path)
         #print("mrbayes path:", self.m_app.mrbayes_path)
@@ -1999,7 +2003,8 @@ end;""".format( dfname=data_filename, nst=analysis.mcmc_nst, nrates=analysis.mcm
             an_layout.addRow("MCMC NChains", edtMCMCNChains)                    
 
         edtAnalysisResultDirectory = QLineEdit()
-        edtAnalysisResultDirectory.setText(an.result_directory)
+        # Normalize path for OS-appropriate display
+        edtAnalysisResultDirectory.setText(os.path.normpath(an.result_directory))
         edtAnalysisResultDirectory.setReadOnly(True)
         dir_widget = QWidget()
         dir_layout = QHBoxLayout()

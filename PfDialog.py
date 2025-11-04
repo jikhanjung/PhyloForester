@@ -293,7 +293,8 @@ class AnalysisViewer(QWidget):
             self.edtMCMCSampleFreq.setText(str(analysis.mcmc_samplefreq))
             self.edtMCMCNRuns.setText(str(analysis.mcmc_nruns))
             self.edtMCMCNChains.setText(str(analysis.mcmc_nchains))
-        self.edtAnalysisResultDirectory.setText(analysis.result_directory)
+        # Normalize path for OS-appropriate display
+        self.edtAnalysisResultDirectory.setText(os.path.normpath(analysis.result_directory))
         self.tree_widget.update_info(self.analysis)
 
     def on_btn_open_result_dir_clicked(self):
@@ -2034,7 +2035,8 @@ class AnalysisDialog(QDialog):
         result_directory = str(QFileDialog.getExistingDirectory(self, "Select a folder", str(self.edtResultDirectory.text())))
         if result_directory:
             self.result_directory = Path(result_directory).resolve()
-            self.edtResultDirectory.setText(result_directory)
+            # Normalize path for OS-appropriate separators
+            self.edtResultDirectory.setText(os.path.normpath(str(self.result_directory)))
 
     def on_cbxParsimony_clicked(self):
         if self.datamatrix is None:
@@ -2120,16 +2122,18 @@ class AnalysisDialog(QDialog):
                 return
             
             if analysis_type == ANALYSIS_TYPE_PARSIMONY:
-                analysis.analysis_name = self.edtAnalysisNameParsimony.text() #.replace(" ", "_") 
+                analysis.analysis_name = self.edtAnalysisNameParsimony.text() #.replace(" ", "_")
                 # add current time to the name
                 directory_name = analysis.datamatrix.datamatrix_name + " " + analysis.analysis_name + " " + datetime.datetime.now().strftime("%H%M%S")
-                analysis.result_directory = os.path.join( result_directory_base, directory_name.replace(" ","_") ) # TNT does not like space in file name
+                # Normalize path for OS-appropriate separators
+                analysis.result_directory = os.path.normpath(os.path.join( result_directory_base, directory_name.replace(" ","_") )) # TNT does not like space in file name
             elif analysis_type == ANALYSIS_TYPE_ML:
                 analysis.analysis_name = self.edtAnalysisNameML.text()
                 analysis.ml_bootstrap_type = self.cbBootstrapType.currentText()
                 analysis.ml_bootstrap = int(self.edtBootstrapCount.text())
                 directory_name = analysis.datamatrix.datamatrix_name + " " + analysis.analysis_name + " " + datetime.datetime.now().strftime("%H%M%S")
-                analysis.result_directory = os.path.join( result_directory_base, directory_name )
+                # Normalize path for OS-appropriate separators
+                analysis.result_directory = os.path.normpath(os.path.join( result_directory_base, directory_name ))
 
             elif analysis_type == ANALYSIS_TYPE_BAYESIAN:
                 analysis.analysis_name = self.edtAnalysisNameBayesian.text()
@@ -2144,7 +2148,8 @@ class AnalysisDialog(QDialog):
                 analysis.mcmc_nruns = int(self.edtNRuns.text())
                 analysis.mcmc_nchains = int(self.edtNChains.text())
                 directory_name = analysis.datamatrix.datamatrix_name + " " + analysis.analysis_name + " " + datetime.datetime.now().strftime("%H%M%S")
-                analysis.result_directory = os.path.join( result_directory_base, directory_name.replace(" ","_") )
+                # Normalize path for OS-appropriate separators
+                analysis.result_directory = os.path.normpath(os.path.join( result_directory_base, directory_name.replace(" ","_") ))
                 #analysis.result_directory = os.path.join( result_directory_base, directory_name )
 
             analysis.analysis_status = ANALYSIS_STATUS_READY
@@ -2167,7 +2172,8 @@ class AnalysisDialog(QDialog):
         else:
             self.setGeometry(QRect(100, 100, 600, 400))
             self.move(self.parent.pos()+QPoint(100,100))
-        self.result_directory_base = self.m_app.settings.value("ResultPath", pu.USER_PROFILE_DIRECTORY)
+        # Normalize path for OS-appropriate separators
+        self.result_directory_base = os.path.normpath(self.m_app.settings.value("ResultPath", pu.USER_PROFILE_DIRECTORY))
 
 
     def write_settings(self):
@@ -3004,10 +3010,15 @@ class PreferencesDialog(QDialog):
     def read_settings(self):
         self.m_app.remember_geometry = pu.value_to_bool(self.m_app.settings.value("WindowGeometry/RememberGeometry", True))
         self.m_app.toolbar_icon_size = self.m_app.settings.value("ToolbarIconSize", "Medium")
-        self.m_app.tnt_path = Path(self.m_app.settings.value("SoftwarePath/TNT", ""))
-        self.m_app.iqtree_path = Path(self.m_app.settings.value("SoftwarePath/IQTree", ""))
-        self.m_app.mrbayes_path = Path(self.m_app.settings.value("SoftwarePath/MrBayes", ""))
-        self.m_app.result_path = Path(self.m_app.settings.value("ResultPath", ""))
+        # Normalize paths when reading from settings for OS-appropriate separators
+        tnt_value = self.m_app.settings.value("SoftwarePath/TNT", "")
+        self.m_app.tnt_path = Path(os.path.normpath(tnt_value)) if tnt_value else Path("")
+        iqtree_value = self.m_app.settings.value("SoftwarePath/IQTree", "")
+        self.m_app.iqtree_path = Path(os.path.normpath(iqtree_value)) if iqtree_value else Path("")
+        mrbayes_value = self.m_app.settings.value("SoftwarePath/MrBayes", "")
+        self.m_app.mrbayes_path = Path(os.path.normpath(mrbayes_value)) if mrbayes_value else Path("")
+        result_value = self.m_app.settings.value("ResultPath", "")
+        self.m_app.result_path = Path(os.path.normpath(result_value)) if result_value else Path("")
         self.m_app.language = self.m_app.settings.value("Language", "en")
 
         #print("toolbar_icon_size:", self.m_app.toolbar_icon_size)
@@ -3033,10 +3044,11 @@ class PreferencesDialog(QDialog):
     def write_settings(self):
         self.m_app.settings.setValue("ToolbarIconSize", self.m_app.toolbar_icon_size)
         self.m_app.settings.setValue("WindowGeometry/RememberGeometry", self.m_app.remember_geometry)
-        self.m_app.settings.setValue("SoftwarePath/TNT", str(self.m_app.tnt_path))
-        self.m_app.settings.setValue("SoftwarePath/IQTree", str(self.m_app.iqtree_path))
-        self.m_app.settings.setValue("SoftwarePath/MrBayes", str(self.m_app.mrbayes_path))
-        self.m_app.settings.setValue("ResultPath", str(self.m_app.result_path))
+        # Normalize paths for OS-appropriate separators before saving
+        self.m_app.settings.setValue("SoftwarePath/TNT", os.path.normpath(str(self.m_app.tnt_path)))
+        self.m_app.settings.setValue("SoftwarePath/IQTree", os.path.normpath(str(self.m_app.iqtree_path)))
+        self.m_app.settings.setValue("SoftwarePath/MrBayes", os.path.normpath(str(self.m_app.mrbayes_path)))
+        self.m_app.settings.setValue("ResultPath", os.path.normpath(str(self.m_app.result_path)))
         self.m_app.settings.setValue("Language", self.m_app.language)
 
         if self.m_app.remember_geometry is True:
