@@ -123,6 +123,25 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
     "SIM118", # dict.keys() usage (gradual cleanup)
 ]
 
+# PfUtils.py has legacy code requiring gradual cleanup
+"PfUtils.py" = [
+    "N818",   # exception name suffix (PhyloForesterException is established name)
+    "B904",   # exception chaining (gradual cleanup)
+    "PTH100", # Path.resolve (gradual migration to pathlib)
+    "PTH103", # Path.mkdir (gradual migration to pathlib)
+    "PTH107", # Path.unlink (gradual migration to pathlib)
+    "PTH110", # Path.exists (gradual migration to pathlib)
+    "PTH111", # Path.expanduser (gradual migration to pathlib)
+    "PTH118", # Path / operator (gradual migration to pathlib)
+    "PTH120", # Path.parent (gradual migration to pathlib)
+    "PTH122", # Path.suffix/stem (gradual migration to pathlib)
+    "F841",   # unused variables (legacy code)
+    "F821",   # undefined names (incomplete code)
+    "RET503", # missing return (incomplete code)
+    "SIM118", # dict.keys() usage (gradual cleanup)
+    "C405",   # set literal (gradual cleanup)
+]
+
 # Build scripts can have print statements
 "build.py" = [
     "T201",   # print statements

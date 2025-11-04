@@ -1,3 +1,36 @@
+"""PhyloForester Utility Functions.
+
+This module provides utility functions and classes for the PhyloForester
+application, including:
+
+- File I/O operations with error handling
+- Phylogenetic data file parsing (Nexus, Phylip, TNT formats)
+- Phylogenetic tree file parsing (Newick, Nexus tree formats)
+- Ancestral state reconstruction (Fitch algorithm)
+- Path handling for cross-platform compatibility
+- Resource path resolution for PyInstaller bundles
+
+Main Classes:
+    PhyloMatrix: Stores and manipulates character matrix data
+    PhyloDatafile: Parses and loads phylogenetic data files
+    PhyloTreefile: Parses and loads phylogenetic tree files
+
+Exception Hierarchy:
+    PhyloForesterException: Base exception class
+        FileOperationError: File I/O related errors
+        ProcessExecutionError: External process execution errors
+        DataParsingError: Data parsing errors
+
+Example:
+    Loading a phylogenetic data file::
+
+        datafile = PhyloDatafile()
+        success = datafile.loadfile("data.nex")
+        if success:
+            print(f"Loaded {datafile.n_taxa} taxa")
+            print(f"Matrix dimensions: {datafile.n_taxa} x {datafile.n_chars}")
+"""
+
 import json
 import logging
 import os
@@ -243,6 +276,11 @@ if not os.path.exists(DEFAULT_DB_DIRECTORY):
 
 
 def get_timestamp():
+    """Generate timestamp string for file naming.
+
+    Returns:
+        Timestamp string in format YYYYMMDD_HHMMSS.
+    """
     import datetime
 
     now = datetime.datetime.now()
@@ -250,10 +288,35 @@ def get_timestamp():
 
 
 def value_to_bool(value):
+    """Convert various value types to boolean.
+
+    Args:
+        value: Value to convert. Strings are checked case-insensitively.
+
+    Returns:
+        Boolean conversion result.
+    """
     return value.lower() == "true" if isinstance(value, str) else bool(value)
 
 
 def get_unique_name(name, name_list):
+    """Generate unique name by appending number if needed.
+
+    If the name already exists in name_list, appends " (n)" where n
+    is the next available number. Handles names that already have
+    numbers by incrementing them.
+
+    Args:
+        name: Base name to make unique.
+        name_list: List of existing names to avoid collisions.
+
+    Returns:
+        Unique name not present in name_list.
+
+    Example:
+        >>> get_unique_name("project", ["project", "project (1)"])
+        'project (2)'
+    """
     if name not in name_list:
         return name
     i = 1
@@ -271,6 +334,21 @@ def get_unique_name(name, name_list):
 
 
 def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and PyInstaller bundles.
+
+    When running as a PyInstaller bundle, resources are extracted to a
+    temporary folder (_MEIPASS). This function finds the correct path
+    in both development and bundled contexts.
+
+    Args:
+        relative_path: Relative path to the resource file.
+
+    Returns:
+        Absolute path to the resource.
+
+    Example:
+        >>> icon_path = resource_path("icons/app.png")
+    """
     try:
         base_path = sys._MEIPASS
     except Exception:
@@ -280,6 +358,22 @@ def resource_path(relative_path):
 
 
 def process_dropped_file_name(file_name):
+    """Process file name from drag-and-drop events.
+
+    Converts file URLs from drag-and-drop events to usable file paths.
+    Handles URL encoding and platform-specific path differences (Windows
+    paths start with drive letter, Unix paths start with /).
+
+    Args:
+        file_name: URL or file path string from drag-and-drop event.
+
+    Returns:
+        Platform-appropriate file path string.
+
+    Example:
+        >>> process_dropped_file_name("file:///C:/data/file.nex")
+        'C:/data/file.nex'
+    """
     import os
     from urllib.parse import unquote, urlparse
 
@@ -296,6 +390,24 @@ def process_dropped_file_name(file_name):
 
 
 class PhyloMatrix:
+    """Container for phylogenetic character matrix data.
+
+    Stores taxa names, character names, and the character matrix data.
+    Provides methods for accessing and formatting the data for export.
+
+    Attributes:
+        taxa_list: List of taxon names.
+        char_list: List of character names.
+        data_list: Nested list of character states [taxa][chars].
+        data_hash: Dictionary mapping taxon names to character data.
+        n_taxa: Number of taxa (rows).
+        n_chars: Number of characters (columns).
+        command_hash: Dictionary of Nexus format commands.
+        dataset_name: Name of the dataset.
+        formatted_data_hash: Dictionary of formatted character data.
+        formatted_data_list: List of formatted character data.
+    """
+
     def __init__(self):
         self.taxa_list = []
         self.char_list = []
@@ -316,6 +428,48 @@ class PhyloMatrix:
 
 
 class PhyloDatafile:
+    """Phylogenetic data file parser.
+
+    Parses and loads phylogenetic data from multiple file formats including
+    Nexus, Phylip, and TNT formats. Automatically detects format based on
+    file extension and content. Extracts taxa names, character data, and
+    format-specific metadata.
+
+    Supports:
+        - Nexus format with multiple blocks (DATA, TAXA, CHARACTERS, MRBAYES)
+        - Phylip sequential and interleaved formats
+        - TNT xread format
+
+    Attributes:
+        dataset_name: Name extracted from filename or file content.
+        file_text: Complete text content of the file.
+        file_type: Detected file format ('Nexus', 'Phylip', or 'TNT').
+        line_list: List of lines from the file.
+        block_list: List of parsed Nexus blocks.
+        block_hash: Dictionary mapping block names to block content.
+        nexus_command_hash: Dictionary of Nexus commands (dimensions, format, etc.).
+        phylo_matrix: PhyloMatrix object containing parsed data.
+        character_definition_hash: Dictionary of character definitions.
+        taxa_list: List of taxon names.
+        datamatrix: Nested list of character states.
+        n_taxa: Number of taxa.
+        n_chars: Number of characters.
+
+    Example:
+        Loading and parsing a data file::
+
+            datafile = PhyloDatafile()
+            if datafile.loadfile("data.nex"):
+                print(f"Loaded {datafile.n_taxa} taxa, {datafile.n_chars} characters")
+                print(f"Format: {datafile.file_type}")
+                taxa = datafile.taxa_list
+                matrix = datafile.formatted_data_list
+
+    Raises:
+        FileOperationError: If file cannot be read.
+        DataParsingError: If file format is invalid or unsupported.
+    """
+
     def __init__(self):
         self.dataset_name = ""
         self.file_text = None
@@ -580,6 +734,37 @@ class PhyloDatafile:
 
 
 class PhyloTreefile:
+    """Phylogenetic tree file parser.
+
+    Parses tree files in Nexus and Newick formats. Extracts tree topologies
+    from TREES blocks in Nexus files, handling translate statements and
+    multiple trees. Supports both file-based and text-based tree input.
+
+    Attributes:
+        line_list: List of lines from the file.
+        block_list: List of parsed Nexus blocks.
+        block_hash: Dictionary mapping block names to block content.
+        taxa_list: List of taxon names from translate table.
+        taxa_hash: Dictionary mapping taxon indices to names.
+        tree_text_list: List of tree strings (Newick format).
+        tree_text_hash: Dictionary mapping tree names to Newick strings.
+        tree_object_hash: Dictionary of parsed tree objects.
+        file_type: Detected file type ('Nexus' or 'tre').
+        tree_list: List of all tree strings found.
+
+    Example:
+        Loading trees from a file::
+
+            treefile = PhyloTreefile()
+            if treefile.readtree("consensus.tre", "Nexus"):
+                print(f"Found {len(treefile.tree_list)} trees")
+                for tree_name, tree_text in treefile.tree_text_hash.items():
+                    print(f"{tree_name}: {tree_text[:50]}...")
+
+    Raises:
+        FileOperationError: If file cannot be read.
+    """
+
     def __init__(self):
         self.line_list = []
         self.block_list = []
@@ -886,10 +1071,25 @@ class PhyloTreefile:
 
 # Function to reconstruct ancestral states for all characters in the data matrix
 def reconstruct_ancestral_states(tree, datamatrix, taxa_list):
+    """Reconstruct ancestral character states using Fitch parsimony algorithm.
+
+    Implements the two-pass Fitch algorithm to infer ancestral character
+    states for all internal nodes in a phylogenetic tree. Handles polymorphic
+    characters (states represented as sets).
+
+    Args:
+        tree: Bio.Phylo tree object with terminal nodes.
+        datamatrix: Nested list of character states [taxa][characters].
+        taxa_list: List of taxon names matching tree terminal nodes.
+
+    Note:
+        Modifies tree nodes in-place by adding:
+            - character_states: List of inferred states per character
+            - changed_characters: List of character indices that changed
+    """
     # Initialize ancestral states for each character
     # print("taxa list:", taxa_list)
     # print("morphological_data:", datamatrix, len(datamatrix[0]))
-    """initialize confidence for each node in the tree"""
     for node in tree.find_clades():
         node.character_states = [None] * len(datamatrix[0])
         node.changed_characters = []
@@ -914,6 +1114,20 @@ def reconstruct_ancestral_states(tree, datamatrix, taxa_list):
 
 # Function to perform the first pass of the Fitch algorithm (bottom-up traversal)
 def bottom_up_pass(node, datamatrix):
+    """Perform bottom-up pass of Fitch algorithm.
+
+    First pass of Fitch parsimony: traverse tree from tips to root,
+    computing possible ancestral states at each internal node based on
+    child states. Uses set intersections and unions to minimize changes.
+
+    Args:
+        node: Current tree node being processed.
+        datamatrix: Character matrix [taxa][characters].
+
+    Note:
+        Recursively processes children first (post-order traversal).
+        Modifies node.character_states in-place.
+    """
     if node.is_terminal():
         return
     for child in node:
@@ -938,6 +1152,21 @@ def bottom_up_pass(node, datamatrix):
 
 # Function to perform the second pass of the Fitch algorithm (top-down traversal)
 def top_down_pass(node, morphological_data, parent_states=None):
+    """Perform top-down pass of Fitch algorithm.
+
+    Second pass of Fitch parsimony: traverse tree from root to tips,
+    resolving ambiguous states and identifying character state changes
+    along branches.
+
+    Args:
+        node: Current tree node being processed.
+        morphological_data: Character matrix [taxa][characters].
+        parent_states: Character states of parent node (None for root).
+
+    Note:
+        Modifies node.character_states and node.changed_characters in-place.
+        Uses minimum state value to resolve ambiguities.
+    """
     if not node.is_terminal():
         # print("topdown node.confidence:", node.name, node.confidence, "parent confidence:", parent_state)
         for character_index in range(len(morphological_data[0])):
@@ -978,6 +1207,16 @@ def top_down_pass(node, morphological_data, parent_states=None):
 
 
 def print_character_states(node, depth=0):
+    """Print character states for all nodes in tree (debug utility).
+
+    Recursively prints character state information for each node in the
+    tree, including reconstructed ancestral states and character changes.
+    Used for debugging and verification of Fitch algorithm results.
+
+    Args:
+        node: Tree node to print (prints subtree recursively).
+        depth: Current depth in tree for indentation. Defaults to 0.
+    """
     logger.info(
         "%sNode %s: character_states=%s, changed_chars=%s (count=%d)",
         " " * 4 * depth,
