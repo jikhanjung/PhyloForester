@@ -1862,7 +1862,7 @@ class AnalysisDialog(QDialog):
         self.btnResultDirectory = QPushButton()
         self.btnResultDirectory.setText("Select")
         self.btnResultDirectory.clicked.connect(self.select_result_directory)
-        self.result_directory = Path(pu.USER_PROFILE_DIRECTORY).resolve()
+        self.result_directory = Path(pu.DEFAULT_RESULT_DIRECTORY).resolve()
         self.result_directory_layout.addWidget(self.edtResultDirectory)
         self.result_directory_layout.addWidget(self.btnResultDirectory)
         self.result_directory_widget.setLayout(self.result_directory_layout)
@@ -2173,7 +2173,8 @@ class AnalysisDialog(QDialog):
             self.setGeometry(QRect(100, 100, 600, 400))
             self.move(self.parent.pos()+QPoint(100,100))
         # Normalize path for OS-appropriate separators
-        self.result_directory_base = os.path.normpath(self.m_app.settings.value("ResultPath", pu.USER_PROFILE_DIRECTORY))
+        # Use DEFAULT_RESULT_DIRECTORY for short paths to avoid TNT command line length issues
+        self.result_directory_base = os.path.normpath(self.m_app.settings.value("ResultPath", pu.DEFAULT_RESULT_DIRECTORY))
 
 
     def write_settings(self):

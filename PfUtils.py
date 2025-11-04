@@ -2,6 +2,7 @@ import sys, os, re
 import copy
 import json
 import logging
+import platform
 
 import numpy as np
 #from stl import mesh
@@ -132,6 +133,16 @@ DEFAULT_DB_DIRECTORY = os.path.join( USER_PROFILE_DIRECTORY, COMPANY_NAME, PROGR
 DEFAULT_LOG_DIRECTORY = os.path.join( USER_PROFILE_DIRECTORY, COMPANY_NAME, PROGRAM_NAME )
 #DEFAULT_STORAGE_DIRECTORY = os.path.join(DEFAULT_DB_DIRECTORY, "data/")
 
+# Default result directory for analyses
+# Use short paths to avoid command line length issues with TNT and other external software
+if platform.system() == "Windows":
+    # Windows: Use short path at drive root to minimize command line length
+    # TNT has command line length limitations
+    DEFAULT_RESULT_DIRECTORY = "C:\\PFResults"
+else:
+    # macOS/Linux: Use short path in user home
+    DEFAULT_RESULT_DIRECTORY = os.path.join(USER_PROFILE_DIRECTORY, "PFResults")
+
 TREE_STYLE_TOPOLOGY = 0
 TREE_STYLE_BRANCH_LENGTH = 1
 TREE_STYLE_TIMETREE = 2
@@ -140,6 +151,17 @@ if not os.path.exists(DEFAULT_DB_DIRECTORY):
     os.makedirs(DEFAULT_DB_DIRECTORY)
 #if not os.path.exists(DEFAULT_STORAGE_DIRECTORY):
 #    os.makedirs(DEFAULT_STORAGE_DIRECTORY)
+
+# Create default result directory if it doesn't exist
+if not os.path.exists(DEFAULT_RESULT_DIRECTORY):
+    try:
+        os.makedirs(DEFAULT_RESULT_DIRECTORY)
+    except (PermissionError, OSError) as e:
+        # If we can't create at system level (C:\PFResults on Windows),
+        # fall back to user home directory
+        DEFAULT_RESULT_DIRECTORY = os.path.join(USER_PROFILE_DIRECTORY, "PFResults")
+        if not os.path.exists(DEFAULT_RESULT_DIRECTORY):
+            os.makedirs(DEFAULT_RESULT_DIRECTORY)
 
 def get_timestamp():
     import datetime
