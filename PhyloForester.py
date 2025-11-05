@@ -850,25 +850,26 @@ class PhyloForesterMainWindow(QMainWindow):
         # Common exception types with user-friendly messages
         if exc_name == "FileNotFoundError":
             return f"Could not find the required file:\n{exc_str}"
-        elif exc_name == "PermissionError":
+        if exc_name == "PermissionError":
             return f"Permission denied when accessing:\n{exc_str}"
-        elif exc_name == "OSError" or exc_name == "IOError":
+        if exc_name == "OSError" or exc_name == "IOError":
             return f"System error occurred:\n{exc_str}"
-        elif exc_name == "MemoryError":
-            return "The application ran out of memory.\nPlease close other applications and try again."
-        elif exc_name == "DatabaseError" or "peewee" in exc_str.lower():
+        if exc_name == "MemoryError":
+            return (
+                "The application ran out of memory.\nPlease close other applications and try again."
+            )
+        if exc_name == "DatabaseError" or "peewee" in exc_str.lower():
             return "Database error occurred.\nPlease check the database file and try again."
-        elif exc_name == "ValueError":
+        if exc_name == "ValueError":
             return f"Invalid data format:\n{exc_str}"
-        elif exc_name == "KeyError":
+        if exc_name == "KeyError":
             return f"Missing required data:\n{exc_str}"
-        elif exc_name == "AttributeError":
+        if exc_name == "AttributeError":
             return f"Internal error (attribute not found):\n{exc_str}"
-        elif exc_name == "TypeError":
+        if exc_name == "TypeError":
             return f"Internal error (type mismatch):\n{exc_str}"
-        else:
-            # Generic message for unknown exceptions
-            return f"An unexpected error occurred ({exc_name}):\n{exc_str}"
+        # Generic message for unknown exceptions
+        return f"An unexpected error occurred ({exc_name}):\n{exc_str}"
 
     @pyqtSlot()
     def on_action_new_project_triggered(self):
@@ -977,7 +978,9 @@ class PhyloForesterMainWindow(QMainWindow):
             self.logger.error(f"Automatic database backup failed: {e}")
             # Don't show error dialog during startup - just log it
         except Exception as e:
-            self.logger.error(f"Unexpected error during database backup: {e}\n{traceback.format_exc()}")
+            self.logger.error(
+                f"Unexpected error during database backup: {e}\n{traceback.format_exc()}"
+            )
 
     def check_interrupted_analyses(self):
         """Check for analyses that were running when application closed.
@@ -1026,7 +1029,9 @@ class PhyloForesterMainWindow(QMainWindow):
                 for analysis in interrupted_analyses:
                     analysis.analysis_status = ANALYSIS_STATUS_FAILED
                     analysis.save()
-                    self.logger.info(f"Marked interrupted analysis as failed: {analysis.analysis_name}")
+                    self.logger.info(
+                        f"Marked interrupted analysis as failed: {analysis.analysis_name}"
+                    )
 
                 self.statusBar.showMessage(
                     f"Marked {interrupted_count} interrupted analysis(es) as failed", 5000
@@ -1039,7 +1044,9 @@ class PhyloForesterMainWindow(QMainWindow):
                 )
 
         except Exception as e:
-            self.logger.error(f"Error checking for interrupted analyses: {e}\n{traceback.format_exc()}")
+            self.logger.error(
+                f"Error checking for interrupted analyses: {e}\n{traceback.format_exc()}"
+            )
             # Don't show error dialog during startup - just log it
 
     def check_result_directory(self):
@@ -1493,7 +1500,9 @@ end;"""
                 self.analysis.finish_datetime = datetime.datetime.now()
                 self.analysis.save()
             except Exception as e:
-                self.logger.error(f"Failed to update analysis status: {e}\n{traceback.format_exc()}")
+                self.logger.error(
+                    f"Failed to update analysis status: {e}\n{traceback.format_exc()}"
+                )
                 QMessageBox.warning(
                     self, "Database Warning", f"Failed to update analysis status:\n{str(e)}"
                 )
@@ -1507,12 +1516,14 @@ end;"""
                 QMessageBox.warning(
                     self,
                     "Tree Generation Warning",
-                    f"Could not find output tree file.\n\n"
-                    f"The analysis may have completed but didn't produce expected output files.\n"
-                    f"Check the analysis log for details.",
+                    "Could not find output tree file.\n\n"
+                    "The analysis may have completed but didn't produce expected output files.\n"
+                    "Check the analysis log for details.",
                 )
             except Exception as e:
-                self.logger.error(f"Failed to generate consensus tree: {e}\n{traceback.format_exc()}")
+                self.logger.error(
+                    f"Failed to generate consensus tree: {e}\n{traceback.format_exc()}"
+                )
                 QMessageBox.warning(
                     self, "Tree Generation Warning", f"Failed to generate consensus tree:\n{str(e)}"
                 )
@@ -2011,8 +2022,13 @@ end;"""
                 self.project_model.removeRow(item1.row())
 
                 self.selected_project = self.selected_datamatrix.project
-                if len(self.data_storage["datamatrix"][self.selected_datamatrix.id]["analyses"]) > 0:
-                    an_id = self.data_storage["datamatrix"][self.selected_datamatrix.id]["analyses"][0]
+                if (
+                    len(self.data_storage["datamatrix"][self.selected_datamatrix.id]["analyses"])
+                    > 0
+                ):
+                    an_id = self.data_storage["datamatrix"][self.selected_datamatrix.id][
+                        "analyses"
+                    ][0]
                     self.selected_analysis = self.data_storage["analysis"][an_id]["object"]
                     self.hsplitter.replaceWidget(1, self.data_storage["analysis"][an_id]["widget"])
         except Exception as e:
@@ -2107,7 +2123,9 @@ end;"""
                 try:
                     new_datamatrix = source_datamatrix.copy()
                     new_datamatrix.project = target_project
-                    datamatrix_name_list = [dm.datamatrix_name for dm in target_project.datamatrices]
+                    datamatrix_name_list = [
+                        dm.datamatrix_name for dm in target_project.datamatrices
+                    ]
                     new_datamatrix.datamatrix_name = pu.get_unique_name(
                         source_datamatrix.datamatrix_name, datamatrix_name_list
                     )
