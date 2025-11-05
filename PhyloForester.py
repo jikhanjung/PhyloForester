@@ -1,10 +1,14 @@
+# ruff: noqa: F403, F405, N815, N816
 import logging
 import os
+import platform
 import re
+import shutil
 import sys
 import traceback
 
-from peewee import *
+from peewee import *  # noqa: F403
+from peewee_migrate import Router
 from PyQt5 import sip
 from PyQt5.QtCore import (
     QAbstractTableModel,
@@ -41,17 +45,13 @@ from PyQt5.QtWidgets import (
     QUndoStack,
 )
 
-# Initialize logger
-logger = logging.getLogger(__name__)
-import platform
-import shutil
-
-from peewee_migrate import Router
-
 import PfLogger
 import PfUtils as pu
-from PfDialog import *
-from PfModel import *
+from PfDialog import *  # noqa: F403
+from PfModel import *  # noqa: F403
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 ICON = {}
 ICON["new_project"] = pu.resource_path("icons/NewProject.png")
@@ -226,7 +226,7 @@ class PasteCellsCommand(QUndoCommand):
 
     def redo(self):
         """Apply all changes"""
-        for row, col, old_value, new_value, old_changed, new_changed in self.changes:
+        for row, col, _old_value, new_value, _old_changed, new_changed in self.changes:
             self.model.setDataDirect(row, col, new_value, new_changed)
 
     def undo(self):
@@ -1544,7 +1544,7 @@ end;"""
             # Try to start next analysis anyway
             try:
                 self.startAnalysis()
-            except Exception:
+            except Exception:  # noqa: SIM105
                 pass  # Avoid cascading errors
 
     def progress_check(self, output):
@@ -1619,7 +1619,7 @@ end;"""
                     # clade.name = tf.taxa_hash[clade.name]
 
         elif analysis.analysis_type == ANALYSIS_TYPE_BAYESIAN:
-            tree_name = "Bayesian Consensus tree"
+            # tree_name = "Bayesian Consensus tree"  # Unused for now
             tree_filename = os.path.join(
                 analysis.result_directory,
                 analysis.datamatrix.datamatrix_name.replace(" ", "_") + ".nex.con.tre",
@@ -1785,7 +1785,6 @@ end;"""
                 menu.addAction(action_delete_datamatrix)
                 menu.addAction(action_add_analysis)
             elif isinstance(obj, PfAnalysis):
-                level = 3
                 obj = PfAnalysis.get(PfAnalysis.id == obj.id)
                 if obj.analysis_status == ANALYSIS_STATUS_READY:
                     menu.addAction(action_run_analysis)
@@ -2018,7 +2017,7 @@ end;"""
                 return
 
                 # remove from treeview
-                parent_item = item1.parent()
+                # parent_item = item1.parent()  # Unused
                 self.project_model.removeRow(item1.row())
 
                 self.selected_project = self.selected_datamatrix.project
@@ -2180,9 +2179,6 @@ end;"""
                 return
             # QMessageBox.warning(self, "Warning", "Select a project first.")
             # return
-
-        total_count = len(file_name_list)
-        current_count = 0
 
         for file_name in file_name_list:
             try:
@@ -2388,7 +2384,7 @@ end;"""
         # print("n char, n taxa:", dm.n_chars, dm.n_taxa)
 
         if len(data_list) < len(vheader):
-            for i in range(len(vheader) - len(data_list)):
+            for _ in range(len(vheader) - len(data_list)):
                 data_list.append(["0"] * len(hheader))
         # datamatrix_model.setHorizontalHeader(header_labels)
         # datamatrix_model.setColumnCount(len(header_labels))

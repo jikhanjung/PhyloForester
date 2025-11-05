@@ -29,7 +29,7 @@ def build_language(lang: str) -> bool:
     Returns:
         True if build succeeded, False otherwise
     """
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Building documentation for: {lang}")
     print("=" * 60)
 
@@ -70,7 +70,7 @@ def main() -> int:
             success = False
 
     if success:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print("All language builds completed successfully!")
         print("=" * 60)
         print("\nOutput directories:")

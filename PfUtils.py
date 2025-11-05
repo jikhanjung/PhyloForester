@@ -1673,7 +1673,7 @@ def validate_complete_datamatrix(taxa_list, character_matrix, matrix_name="datam
             warnings.append(f"Taxon '{taxon}' has all missing data")
         elif missing_count / n_characters > 0.8:
             warnings.append(
-                f"Taxon '{taxon}' has {missing_count}/{n_characters} ({missing_count*100//n_characters}%) missing data"
+                f"Taxon '{taxon}' has {missing_count}/{n_characters} ({missing_count * 100 // n_characters}%) missing data"
             )
 
     return {
