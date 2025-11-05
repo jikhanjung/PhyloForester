@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import sys
+import traceback
 
 from peewee import *
 from PyQt5 import sip
@@ -713,6 +714,9 @@ class PhyloForesterMainWindow(QMainWindow):
         self.logger.info(f"Python: {sys.version}")
         self.logger.info("=" * 60)
 
+        # Set up global exception handler
+        sys.excepthook = self.global_exception_handler
+
         self.setWindowIcon(QIcon(pu.resource_path("icons/PhyloForester.png")))
         self.setWindowTitle("{} v{}".format(self.tr("PhyloForester"), pu.PROGRAM_VERSION))
         self.data_storage = {"project": {}, "datamatrix": {}, "analysis": {}}
@@ -757,6 +761,12 @@ class PhyloForesterMainWindow(QMainWindow):
         self.initUI()
         self.check_db()
 
+        # Create automatic database backup
+        self.backup_database_on_startup()
+
+        # Check for interrupted analyses and offer recovery
+        self.check_interrupted_analyses()
+
         # Check and prompt for result directory creation
         self.check_result_directory()
 
@@ -773,6 +783,92 @@ class PhyloForesterMainWindow(QMainWindow):
         self.process.finished.connect(self.onProcessFinished)
         self.process.errorOccurred.connect(self.handleError)
         # self.edtAnalysisOutput = QTextEdit()
+
+    def global_exception_handler(self, exc_type, exc_value, exc_traceback):
+        """Global exception handler for uncaught exceptions.
+
+        Logs the exception with full traceback and shows user-friendly error dialog.
+
+        Args:
+            exc_type: Exception type
+            exc_value: Exception value
+            exc_traceback: Exception traceback object
+        """
+        # Don't catch KeyboardInterrupt
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            return
+
+        # Log the full exception with traceback
+        error_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+        self.logger.critical("Uncaught exception:\n%s", error_msg)
+
+        # Show user-friendly error dialog
+        self.show_error_dialog(exc_type, exc_value, exc_traceback)
+
+    def show_error_dialog(self, exc_type, exc_value, exc_traceback):
+        """Display user-friendly error dialog with technical details.
+
+        Args:
+            exc_type: Exception type
+            exc_value: Exception value
+            exc_traceback: Exception traceback object
+        """
+        # Get user-friendly message
+        user_message = self.translate_exception_to_user_message(exc_type, exc_value)
+
+        # Format technical details
+        technical_details = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+
+        # Create error dialog
+        msg_box = QMessageBox(self)
+        msg_box.setIcon(QMessageBox.Critical)
+        msg_box.setWindowTitle("Error")
+        msg_box.setText(user_message)
+        msg_box.setInformativeText("The application encountered an unexpected error.")
+
+        # Add detailed text (expandable section)
+        msg_box.setDetailedText(technical_details)
+
+        # Add helpful footer
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.exec_()
+
+    def translate_exception_to_user_message(self, exc_type, exc_value):
+        """Translate technical exceptions to user-friendly messages.
+
+        Args:
+            exc_type: Exception type
+            exc_value: Exception value
+
+        Returns:
+            User-friendly error message
+        """
+        exc_name = exc_type.__name__
+        exc_str = str(exc_value)
+
+        # Common exception types with user-friendly messages
+        if exc_name == "FileNotFoundError":
+            return f"Could not find the required file:\n{exc_str}"
+        elif exc_name == "PermissionError":
+            return f"Permission denied when accessing:\n{exc_str}"
+        elif exc_name == "OSError" or exc_name == "IOError":
+            return f"System error occurred:\n{exc_str}"
+        elif exc_name == "MemoryError":
+            return "The application ran out of memory.\nPlease close other applications and try again."
+        elif exc_name == "DatabaseError" or "peewee" in exc_str.lower():
+            return "Database error occurred.\nPlease check the database file and try again."
+        elif exc_name == "ValueError":
+            return f"Invalid data format:\n{exc_str}"
+        elif exc_name == "KeyError":
+            return f"Missing required data:\n{exc_str}"
+        elif exc_name == "AttributeError":
+            return f"Internal error (attribute not found):\n{exc_str}"
+        elif exc_name == "TypeError":
+            return f"Internal error (type mismatch):\n{exc_str}"
+        else:
+            # Generic message for unknown exceptions
+            return f"An unexpected error occurred ({exc_name}):\n{exc_str}"
 
     @pyqtSlot()
     def on_action_new_project_triggered(self):
@@ -859,6 +955,92 @@ class PhyloForesterMainWindow(QMainWindow):
             return
             # print(tables)
         gDatabase.create_tables([PfProject, PfDatamatrix, PfAnalysis, PfPackage, PfTree])
+
+    def backup_database_on_startup(self):
+        """Create automatic backup of database on application startup.
+
+        Creates timestamped backup and maintains last 10 backups.
+        Runs silently - only logs errors without showing dialogs.
+        """
+        try:
+            db_path = os.path.join(pu.DEFAULT_STORAGE_DIRECTORY, "PhyloForester.db")
+
+            # Only backup if database exists
+            if not os.path.exists(db_path):
+                return
+
+            # Create backup
+            backup_path = pu.backup_database(db_path, keep_n_backups=10)
+            self.logger.info(f"Automatic database backup created: {backup_path}")
+
+        except pu.FileOperationError as e:
+            self.logger.error(f"Automatic database backup failed: {e}")
+            # Don't show error dialog during startup - just log it
+        except Exception as e:
+            self.logger.error(f"Unexpected error during database backup: {e}\n{traceback.format_exc()}")
+
+    def check_interrupted_analyses(self):
+        """Check for analyses that were running when application closed.
+
+        Detects analyses marked as RUNNING and offers recovery options:
+        - Mark as failed (they were interrupted)
+        - Keep as is (for manual review)
+        """
+        try:
+            # Find analyses stuck in RUNNING state
+            interrupted_analyses = (
+                PfAnalysis.select()
+                .where(PfAnalysis.analysis_status == ANALYSIS_STATUS_RUNNING)
+                .order_by(PfAnalysis.start_datetime.desc())
+            )
+
+            interrupted_count = interrupted_analyses.count()
+
+            if interrupted_count == 0:
+                return
+
+            self.logger.warning(f"Found {interrupted_count} interrupted analysis(es)")
+
+            # Show recovery dialog
+            msg = QMessageBox(self)
+            msg.setWindowTitle("Interrupted Analyses Detected")
+            msg.setIcon(QMessageBox.Warning)
+
+            analysis_names = "\n".join([f"  • {a.analysis_name}" for a in interrupted_analyses])
+
+            msg.setText(
+                f"Found {interrupted_count} analysis(es) that were running when the application closed:\n\n"
+                f"{analysis_names}\n\n"
+                f"These analyses were likely interrupted."
+            )
+            msg.setInformativeText("How would you like to handle these analyses?")
+
+            mark_failed_btn = msg.addButton("Mark as Failed", QMessageBox.AcceptRole)
+            keep_as_is_btn = msg.addButton("Keep for Review", QMessageBox.RejectRole)
+
+            msg.setDefaultButton(mark_failed_btn)
+            msg.exec_()
+
+            if msg.clickedButton() == mark_failed_btn:
+                # Mark all as failed
+                for analysis in interrupted_analyses:
+                    analysis.analysis_status = ANALYSIS_STATUS_FAILED
+                    analysis.save()
+                    self.logger.info(f"Marked interrupted analysis as failed: {analysis.analysis_name}")
+
+                self.statusBar.showMessage(
+                    f"Marked {interrupted_count} interrupted analysis(es) as failed", 5000
+                )
+            else:
+                # Keep as is for manual review
+                self.logger.info("User chose to keep interrupted analyses for manual review")
+                self.statusBar.showMessage(
+                    f"Kept {interrupted_count} interrupted analysis(es) for review", 5000
+                )
+
+        except Exception as e:
+            self.logger.error(f"Error checking for interrupted analyses: {e}\n{traceback.format_exc()}")
+            # Don't show error dialog during startup - just log it
 
     def check_result_directory(self):
         """Check if default result directory exists and prompt user to create it."""
@@ -1282,21 +1464,77 @@ end;"""
         # self.edtAnalysisOutput.append(output)
 
     def onProcessFinished(self):
-        exitCode = self.process.exitCode()
-        self.logger.info(f"Process finished with exit code: {exitCode}")
-        # This method will be called when the external process finishes
-        # self.edtAnalysisOutput.append("\nProcess Finished\n")
-        # print("Process Finished")
-        # Here, you can also handle process exit code and status
-        self.analysis.analysis_status = ANALYSIS_STATUS_FINISHED
-        self.logger.info(f"Analysis status updated: {self.analysis.analysis_status}")
-        self.analysis.completion_percentage = 100
-        self.analysis.finish_datetime = datetime.datetime.now()
-        self.analysis.save()
-        self.generate_consensus_tree(self.analysis)
-        self.update_analysis_info(self.analysis)
+        try:
+            exitCode = self.process.exitCode()
+            self.logger.info(f"Process finished with exit code: {exitCode}")
 
-        self.startAnalysis()
+            # Check exit code for errors
+            if exitCode != 0:
+                self.logger.warning(f"Process exited with non-zero code: {exitCode}")
+                # Mark as failed if exit code indicates error
+                if exitCode < 0:  # Negative exit codes usually indicate crashes
+                    self.analysis.analysis_status = ANALYSIS_STATUS_FAILED
+                    self.analysis.save()
+                    self.update_analysis_info(self.analysis)
+                    QMessageBox.warning(
+                        self,
+                        "Analysis Warning",
+                        f"Analysis completed with errors (exit code: {exitCode})\n\n"
+                        f"Check the output log for details.",
+                    )
+                    self.startAnalysis()
+                    return
+
+            # Update analysis status
+            try:
+                self.analysis.analysis_status = ANALYSIS_STATUS_FINISHED
+                self.logger.info(f"Analysis status updated: {self.analysis.analysis_status}")
+                self.analysis.completion_percentage = 100
+                self.analysis.finish_datetime = datetime.datetime.now()
+                self.analysis.save()
+            except Exception as e:
+                self.logger.error(f"Failed to update analysis status: {e}\n{traceback.format_exc()}")
+                QMessageBox.warning(
+                    self, "Database Warning", f"Failed to update analysis status:\n{str(e)}"
+                )
+                # Continue anyway
+
+            # Generate consensus tree
+            try:
+                self.generate_consensus_tree(self.analysis)
+            except FileNotFoundError as e:
+                self.logger.warning(f"Tree file not found: {e}")
+                QMessageBox.warning(
+                    self,
+                    "Tree Generation Warning",
+                    f"Could not find output tree file.\n\n"
+                    f"The analysis may have completed but didn't produce expected output files.\n"
+                    f"Check the analysis log for details.",
+                )
+            except Exception as e:
+                self.logger.error(f"Failed to generate consensus tree: {e}\n{traceback.format_exc()}")
+                QMessageBox.warning(
+                    self, "Tree Generation Warning", f"Failed to generate consensus tree:\n{str(e)}"
+                )
+
+            # Update UI
+            try:
+                self.update_analysis_info(self.analysis)
+            except Exception as e:
+                self.logger.error(f"Failed to update analysis info: {e}\n{traceback.format_exc()}")
+                # Continue anyway
+
+            self.startAnalysis()
+
+        except Exception as e:
+            error_msg = f"Error processing analysis completion:\n{str(e)}"
+            self.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+            QMessageBox.critical(self, "Analysis Error", error_msg)
+            # Try to start next analysis anyway
+            try:
+                self.startAnalysis()
+            except Exception:
+                pass  # Avoid cascading errors
 
     def progress_check(self, output):
         total_step = 0
@@ -1681,69 +1919,106 @@ end;"""
 
     def on_action_delete_datamatrix_triggered(self):
         # print("delete datamatrix")
-        indexes = self.treeView.selectedIndexes()
-        index = indexes[0]
-        item1 = self.project_model.itemFromIndex(index)
-        dm = item1.data()
-        if isinstance(dm, PfDatamatrix):
-            # print("deleting datamatrix:", dm.datamatrix_name)
-            selected_project = dm.project
-            analysis_list = dm.analyses
-            if len(analysis_list) > 0:
-                for an in analysis_list:
-                    if self.empty_widget != self.hsplitter.widget(1):
-                        self.hsplitter.replaceWidget(1, self.empty_widget)
-                    self.data_storage["analysis"][an.id]["widget"].close()
-                    self.data_storage["analysis"][an.id]["object"] = None
-                    self.data_storage["analysis"][an.id]["widget"] = None
-                    self.data_storage["analysis"][an.id]["tree_item"] = None
-                    # remove self.data_storage['analysis'][an_id]
-                    del self.data_storage["analysis"][an.id]
-                    # an.delete_instance()
+        try:
+            indexes = self.treeView.selectedIndexes()
+            if not indexes:
+                return
+            index = indexes[0]
+            item1 = self.project_model.itemFromIndex(index)
+            dm = item1.data()
+            if isinstance(dm, PfDatamatrix):
+                # print("deleting datamatrix:", dm.datamatrix_name)
+                selected_project = dm.project
+                analysis_list = dm.analyses
 
-            dm.delete_instance()
-            self.load_treeview()
-            self.selected_project = selected_project
-            self.load_datamatrices(selected_project)
+                # Clean up analyses first
+                if len(analysis_list) > 0:
+                    for an in analysis_list:
+                        try:
+                            if self.empty_widget != self.hsplitter.widget(1):
+                                self.hsplitter.replaceWidget(1, self.empty_widget)
+                            if an.id in self.data_storage["analysis"]:
+                                self.data_storage["analysis"][an.id]["widget"].close()
+                                self.data_storage["analysis"][an.id]["object"] = None
+                                self.data_storage["analysis"][an.id]["widget"] = None
+                                self.data_storage["analysis"][an.id]["tree_item"] = None
+                                del self.data_storage["analysis"][an.id]
+                        except Exception as e:
+                            self.logger.warning(f"Error cleaning up analysis {an.id}: {e}")
+                            # Continue with other analyses
+
+                # Delete datamatrix from database
+                try:
+                    dm.delete_instance()
+                    self.logger.info(f"Deleted datamatrix: {dm.datamatrix_name}")
+                except Exception as e:
+                    error_msg = f"Failed to delete datamatrix from database:\n{str(e)}"
+                    self.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+                    QMessageBox.critical(self, "Delete Error", error_msg)
+                    return
+
+                self.load_treeview()
+                self.selected_project = selected_project
+                self.load_datamatrices(selected_project)
+        except Exception as e:
+            error_msg = f"Error deleting datamatrix:\n{str(e)}"
+            self.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+            QMessageBox.critical(self, "Delete Error", error_msg)
 
     def on_action_delete_analysis_triggered(self):
-        indexes = self.treeView.selectedIndexes()
-        index = indexes[0]
-        item1 = self.project_model.itemFromIndex(index)
-        analysis = item1.data()
-        if isinstance(analysis, PfAnalysis):
-            # print("deleting datamatrix:", dm.datamatrix_name)
-            self.selected_datamatrix = analysis.datamatrix
-            self.selected_project = self.selected_datamatrix.project
-            an_id = analysis.id
-            analysis.delete_instance()
-            self.load_treeview()
+        try:
+            indexes = self.treeView.selectedIndexes()
+            if not indexes:
+                return
+            index = indexes[0]
+            item1 = self.project_model.itemFromIndex(index)
+            analysis = item1.data()
+            if isinstance(analysis, PfAnalysis):
+                # print("deleting datamatrix:", dm.datamatrix_name)
+                self.selected_datamatrix = analysis.datamatrix
+                self.selected_project = self.selected_datamatrix.project
+                an_id = analysis.id
 
-            self.hsplitter.replaceWidget(1, self.empty_widget)
-            self.data_storage["analysis"][an_id]["widget"].close()
-            self.data_storage["analysis"][an_id]["object"] = None
-            self.data_storage["analysis"][an_id]["widget"] = None
-            self.data_storage["analysis"][an_id]["tree_item"] = None
-            # remove self.data_storage['analysis'][an_id]
-            del self.data_storage["analysis"][an_id]
-            # self.data_storage['analysis'].
-            # self.data_storage['datamatrix'][self.selected_datamatrix.id]['analyses'].remove(an_id)
-            return
+                # Delete from database
+                try:
+                    analysis.delete_instance()
+                    self.logger.info(f"Deleted analysis: {analysis.analysis_name}")
+                except Exception as e:
+                    error_msg = f"Failed to delete analysis from database:\n{str(e)}"
+                    self.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+                    QMessageBox.critical(self, "Delete Error", error_msg)
+                    return
 
-            # remove from treeview
-            parent_item = item1.parent()
-            self.project_model.removeRow(item1.row())
+                self.load_treeview()
 
-            self.selected_project = self.selected_datamatrix.project
-            if len(self.data_storage["datamatrix"][self.selected_datamatrix.id]["analyses"]) > 0:
-                an_id = self.data_storage["datamatrix"][self.selected_datamatrix.id]["analyses"][0]
-                self.selected_analysis = self.data_storage["analysis"][an_id]["object"]
-                self.hsplitter.replaceWidget(1, self.data_storage["analysis"][an_id]["widget"])
-            else:
-                # select parent item
-                self.treeView.setCurrentIndex(parent_item.index())
-                self.hsplitter.replaceWidget(1, self.empty_widget)
-            # self.selected_datamatrix = selected
+                # Clean up UI widgets
+                try:
+                    self.hsplitter.replaceWidget(1, self.empty_widget)
+                    if an_id in self.data_storage["analysis"]:
+                        self.data_storage["analysis"][an_id]["widget"].close()
+                        self.data_storage["analysis"][an_id]["object"] = None
+                        self.data_storage["analysis"][an_id]["widget"] = None
+                        self.data_storage["analysis"][an_id]["tree_item"] = None
+                        del self.data_storage["analysis"][an_id]
+                except Exception as e:
+                    self.logger.warning(f"Error cleaning up analysis widgets: {e}")
+                    # Continue anyway as database deletion was successful
+
+                return
+
+                # remove from treeview
+                parent_item = item1.parent()
+                self.project_model.removeRow(item1.row())
+
+                self.selected_project = self.selected_datamatrix.project
+                if len(self.data_storage["datamatrix"][self.selected_datamatrix.id]["analyses"]) > 0:
+                    an_id = self.data_storage["datamatrix"][self.selected_datamatrix.id]["analyses"][0]
+                    self.selected_analysis = self.data_storage["analysis"][an_id]["object"]
+                    self.hsplitter.replaceWidget(1, self.data_storage["analysis"][an_id]["widget"])
+        except Exception as e:
+            error_msg = f"Error deleting analysis:\n{str(e)}"
+            self.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+            QMessageBox.critical(self, "Delete Error", error_msg)
 
     def reset_views(self):
         self.reset_treeView()
@@ -1829,15 +2104,23 @@ end;"""
             """
 
             if source_datamatrix is not None:
-                new_datamatrix = source_datamatrix.copy()
-                new_datamatrix.project = target_project
-                datamatrix_name_list = [dm.datamatrix_name for dm in target_project.datamatrices]
-                new_datamatrix.datamatrix_name = pu.get_unique_name(
-                    source_datamatrix.datamatrix_name, datamatrix_name_list
-                )
-                new_datamatrix.save()
-                self.load_treeview()
-                self.select_project(target_project)
+                try:
+                    new_datamatrix = source_datamatrix.copy()
+                    new_datamatrix.project = target_project
+                    datamatrix_name_list = [dm.datamatrix_name for dm in target_project.datamatrices]
+                    new_datamatrix.datamatrix_name = pu.get_unique_name(
+                        source_datamatrix.datamatrix_name, datamatrix_name_list
+                    )
+                    new_datamatrix.save()
+                    self.logger.info(
+                        f"Copied datamatrix '{source_datamatrix.datamatrix_name}' to project '{target_project.project_name}'"
+                    )
+                    self.load_treeview()
+                    self.select_project(target_project)
+                except Exception as e:
+                    error_msg = f"Failed to copy datamatrix:\n{str(e)}"
+                    self.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+                    QMessageBox.critical(self, "Copy Error", error_msg)
         elif event.mimeData().hasUrls():
             # file import
             file_name_list = event.mimeData().text().strip().split("\n")
@@ -1884,33 +2167,82 @@ end;"""
         current_count = 0
 
         for file_name in file_name_list:
-            file_name = pu.process_dropped_file_name(file_name)
+            try:
+                file_name = pu.process_dropped_file_name(file_name)
 
-            # print("file_name:", file_name)
-            # get filename base
-            # check if the project exists
-            # if not, create a new project
-            if create_new_project:
-                project_name = os.path.basename(file_name)
-                project = PfProject()
-                project.project_name = project_name
-                project.save()
-                self.selected_project = project
-                # self.load_project()
-                create_new_project = False
-            dm = PfDatamatrix()
-            dm.project = self.selected_project
-            dm.datamatrix_name = os.path.basename(file_name)
-            # print current time
-            # print("importing file:", file_name, "at", datetime.datetime.now())
-            dm.import_file(file_name)
-            dm.save()
-            # if dm.taxa_list is not None and dm.project.taxa_str is None:
-            #    dm.project.taxa_str = ",".join(dm.taxa_list)
-            #    dm.project.save()
+                # Validate file path using new validation functions
+                try:
+                    # This validates file exists, is readable, and is not a directory
+                    validated_path = pu.validate_phylo_data_file(file_name)
+                    file_name = validated_path
+                except pu.FileOperationError as e:
+                    error_msg = str(e)
+                    self.logger.error(f"File validation failed: {error_msg}")
+                    QMessageBox.critical(self, "File Validation Error", error_msg)
+                    continue
 
-            if os.path.isdir(file_name):
-                self.statusBar.showMessage("Cannot process directory...", 2000)
+                # Create new project if needed
+                if create_new_project:
+                    try:
+                        project_name = os.path.basename(file_name)
+                        project = PfProject()
+                        project.project_name = project_name
+                        project.save()
+                        self.selected_project = project
+                        self.logger.info(f"Created new project: {project_name}")
+                        create_new_project = False
+                    except Exception as e:
+                        error_msg = f"Failed to create project: {e}"
+                        self.logger.error(error_msg)
+                        QMessageBox.critical(self, "Project Creation Error", error_msg)
+                        return
+
+                # Create datamatrix and import file
+                dm = PfDatamatrix()
+                dm.project = self.selected_project
+                dm.datamatrix_name = os.path.basename(file_name)
+
+                # Import file with error handling
+                try:
+                    dm.import_file(file_name)
+                    self.logger.info(f"Successfully imported: {file_name}")
+                except FileNotFoundError as e:
+                    error_msg = f"File not found during import:\n{file_name}"
+                    self.logger.error(f"{error_msg}\n{e}")
+                    QMessageBox.critical(self, "Import Error", error_msg)
+                    continue
+                except PermissionError as e:
+                    error_msg = f"Permission denied when reading:\n{file_name}\n\nPlease check file permissions."
+                    self.logger.error(f"{error_msg}\n{e}")
+                    QMessageBox.critical(self, "Import Error", error_msg)
+                    continue
+                except ValueError as e:
+                    error_msg = f"Invalid file format:\n{file_name}\n\n{str(e)}\n\nSupported formats: Nexus, Phylip, TNT"
+                    self.logger.error(f"{error_msg}\n{e}")
+                    QMessageBox.critical(self, "Import Error", error_msg)
+                    continue
+                except Exception as e:
+                    error_msg = f"Failed to import file:\n{file_name}\n\n{str(e)}"
+                    self.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+                    QMessageBox.critical(self, "Import Error", error_msg)
+                    continue
+
+                # Save to database with error handling
+                try:
+                    dm.save()
+                    self.logger.info(f"Saved datamatrix: {dm.datamatrix_name}")
+                except Exception as e:
+                    error_msg = f"Failed to save datamatrix to database:\n{str(e)}"
+                    self.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+                    QMessageBox.critical(self, "Database Error", error_msg)
+                    continue
+
+            except Exception as e:
+                # Catch-all for any unexpected errors
+                error_msg = f"Unexpected error processing file:\n{file_name}\n\n{str(e)}"
+                self.logger.error(f"{error_msg}\n{traceback.format_exc()}")
+                QMessageBox.critical(self, "Error", error_msg)
+                continue
 
         project = self.selected_project
         # print("load treeview:", file_name, "at", datetime.datetime.now())

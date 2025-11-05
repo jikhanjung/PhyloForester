@@ -1227,3 +1227,673 @@ def print_character_states(node, depth=0):
     )
     for child in node:
         print_character_states(child, depth + 1)
+
+
+# ============================================================================
+# File Path Validation Functions
+# ============================================================================
+
+
+def validate_file_path(filepath, must_exist=False, check_readable=False, check_writable=False):
+    """Validate file path for security and accessibility.
+
+    Performs comprehensive validation of file paths to ensure they are safe
+    and accessible for the requested operations. Checks for path traversal
+    attacks, null bytes, and file system permissions.
+
+    Args:
+        filepath: Path to validate (str or Path object).
+        must_exist: If True, file must exist. Defaults to False.
+        check_readable: If True, check file is readable. Defaults to False.
+        check_writable: If True, check file/directory is writable. Defaults to False.
+
+    Returns:
+        str: Normalized absolute path if valid.
+
+    Raises:
+        FileOperationError: If path is invalid, inaccessible, or unsafe.
+
+    Example:
+        >>> validate_file_path("/tmp/data.nex", must_exist=True, check_readable=True)
+        '/tmp/data.nex'
+
+        >>> validate_file_path("../../etc/passwd")  # Raises error for suspicious path
+    """
+    if not filepath:
+        raise FileOperationError("File path cannot be empty")
+
+    # Convert to string if Path object
+    filepath = str(filepath)
+
+    # Check for null bytes (security)
+    if "\x00" in filepath:
+        raise FileOperationError("File path contains null bytes")
+
+    # Normalize path to resolve .. and . components
+    try:
+        normalized_path = os.path.abspath(os.path.normpath(filepath))
+    except Exception as e:
+        raise FileOperationError(f"Invalid file path: {e}")
+
+    # Check for path traversal attempts (basic check)
+    if ".." in filepath:
+        logger.warning(f"Path contains '..' components: {filepath}")
+        # Allow but log - might be legitimate
+
+    # Check existence if required
+    if must_exist and not os.path.exists(normalized_path):
+        raise FileOperationError(f"File does not exist: {filepath}")
+
+    # Check readability
+    if check_readable:
+        if not os.path.exists(normalized_path):
+            raise FileOperationError(f"Cannot check readability - file does not exist: {filepath}")
+        if not os.path.isfile(normalized_path):  # noqa: PTH113
+            raise FileOperationError(f"Path is not a file: {filepath}")
+        if not os.access(normalized_path, os.R_OK):
+            raise FileOperationError(f"File is not readable: {filepath}")
+
+    # Check writability
+    if check_writable:
+        if os.path.exists(normalized_path):
+            # File exists - check if writable
+            if not os.access(normalized_path, os.W_OK):
+                raise FileOperationError(f"File is not writable: {filepath}")
+        else:
+            # File doesn't exist - check if parent directory is writable
+            parent_dir = os.path.dirname(normalized_path)
+            if not os.path.exists(parent_dir):
+                raise FileOperationError(f"Parent directory does not exist: {parent_dir}")
+            if not os.access(parent_dir, os.W_OK):
+                raise FileOperationError(f"Cannot write to directory: {parent_dir}")
+
+    return normalized_path
+
+
+def validate_directory_path(
+    dirpath, must_exist=False, check_writable=False, create_if_missing=False
+):
+    """Validate directory path for security and accessibility.
+
+    Args:
+        dirpath: Directory path to validate.
+        must_exist: If True, directory must exist. Defaults to False.
+        check_writable: If True, check directory is writable. Defaults to False.
+        create_if_missing: If True, create directory if it doesn't exist. Defaults to False.
+
+    Returns:
+        str: Normalized absolute directory path if valid.
+
+    Raises:
+        FileOperationError: If path is invalid or inaccessible.
+
+    Example:
+        >>> validate_directory_path("/tmp/results", create_if_missing=True)
+        '/tmp/results'
+    """
+    if not dirpath:
+        raise FileOperationError("Directory path cannot be empty")
+
+    dirpath = str(dirpath)
+
+    # Check for null bytes
+    if "\x00" in dirpath:
+        raise FileOperationError("Directory path contains null bytes")
+
+    # Normalize path
+    try:
+        normalized_path = os.path.abspath(os.path.normpath(dirpath))
+    except Exception as e:
+        raise FileOperationError(f"Invalid directory path: {e}")
+
+    # Check existence
+    if os.path.exists(normalized_path):
+        if not os.path.isdir(normalized_path):  # noqa: PTH112
+            raise FileOperationError(f"Path exists but is not a directory: {dirpath}")
+    elif must_exist:
+        raise FileOperationError(f"Directory does not exist: {dirpath}")
+    elif create_if_missing:
+        try:
+            os.makedirs(normalized_path, exist_ok=True)
+            logger.info(f"Created directory: {normalized_path}")
+        except Exception as e:
+            raise FileOperationError(f"Failed to create directory {dirpath}: {e}")
+
+    # Check writability
+    if check_writable and os.path.exists(normalized_path):
+        if not os.access(normalized_path, os.W_OK):
+            raise FileOperationError(f"Directory is not writable: {dirpath}")
+
+    return normalized_path
+
+
+def validate_file_extension(filepath, allowed_extensions):
+    """Validate file has an allowed extension.
+
+    Args:
+        filepath: Path to file to check.
+        allowed_extensions: List/tuple of allowed extensions (with or without dot).
+            Example: ['.nex', '.phy', '.tnt'] or ['nex', 'phy', 'tnt']
+
+    Returns:
+        bool: True if extension is allowed.
+
+    Raises:
+        FileOperationError: If extension is not allowed.
+
+    Example:
+        >>> validate_file_extension("data.nex", ['.nex', '.phy'])
+        True
+
+        >>> validate_file_extension("malware.exe", ['.nex', '.phy'])
+        # Raises FileOperationError
+    """
+    if not filepath:
+        raise FileOperationError("File path cannot be empty")
+
+    # Normalize extensions to include dot
+    normalized_extensions = []
+    for ext in allowed_extensions:
+        if not ext.startswith("."):
+            ext = "." + ext
+        normalized_extensions.append(ext.lower())
+
+    # Get file extension
+    _, file_ext = os.path.splitext(filepath)
+    file_ext = file_ext.lower()
+
+    if file_ext not in normalized_extensions:
+        raise FileOperationError(
+            f"File extension '{file_ext}' not allowed. "
+            f"Allowed extensions: {', '.join(normalized_extensions)}"
+        )
+
+    return True
+
+
+def validate_phylo_data_file(filepath):
+    """Validate phylogenetic data file path and extension.
+
+    Convenience function that validates a file is readable and has
+    a recognized phylogenetic data format extension.
+
+    Args:
+        filepath: Path to phylogenetic data file.
+
+    Returns:
+        str: Normalized absolute path if valid.
+
+    Raises:
+        FileOperationError: If file is invalid or has wrong extension.
+
+    Example:
+        >>> validate_phylo_data_file("data.nex")
+        '/absolute/path/to/data.nex'
+    """
+    # Validate path and readability
+    validated_path = validate_file_path(filepath, must_exist=True, check_readable=True)
+
+    # Check extension
+    allowed_extensions = [".nex", ".nexus", ".phy", ".phylip", ".tnt", ".ss", ".txt"]
+    try:
+        validate_file_extension(validated_path, allowed_extensions)
+    except FileOperationError as e:
+        logger.warning(f"File has non-standard extension but may still be valid: {e}")
+        # Don't raise - allow files with non-standard extensions
+        # The parser will determine if format is valid
+
+    return validated_path
+
+
+# ============================================================================
+# Datamatrix Validation Functions
+# ============================================================================
+
+
+def validate_taxa_names(taxa_list, allow_duplicates=False):
+    """Validate taxa names for consistency and uniqueness.
+
+    Args:
+        taxa_list: List of taxon names to validate.
+        allow_duplicates: If False, raise error on duplicate names. Defaults to False.
+
+    Returns:
+        bool: True if validation passes.
+
+    Raises:
+        DataParsingError: If taxa names are invalid.
+
+    Example:
+        >>> validate_taxa_names(['Taxon1', 'Taxon2', 'Taxon3'])
+        True
+
+        >>> validate_taxa_names(['Taxon1', 'Taxon1'])  # Raises error
+    """
+    if not taxa_list:
+        raise DataParsingError("Taxa list cannot be empty")
+
+    if not isinstance(taxa_list, (list, tuple)):
+        raise DataParsingError("Taxa list must be a list or tuple")
+
+    # Check for empty names
+    for i, taxon in enumerate(taxa_list):
+        if not taxon or not str(taxon).strip():
+            raise DataParsingError(f"Empty taxon name at position {i + 1}")
+
+    # Check for duplicates
+    if not allow_duplicates:
+        seen = set()
+        duplicates = []
+        for taxon in taxa_list:
+            taxon_normalized = str(taxon).strip().lower()
+            if taxon_normalized in seen:
+                duplicates.append(taxon)
+            seen.add(taxon_normalized)
+
+        if duplicates:
+            raise DataParsingError(
+                f"Duplicate taxon names found: {', '.join(set(duplicates))}\n"
+                f"Each taxon must have a unique name."
+            )
+
+    return True
+
+
+def validate_character_states(character_data, valid_states=None):
+    """Validate character state data for consistency.
+
+    Args:
+        character_data: List or string of character states.
+        valid_states: Optional set of valid character states.
+            If None, allows any alphanumeric characters. Defaults to None.
+
+    Returns:
+        bool: True if validation passes.
+
+    Raises:
+        DataParsingError: If character data is invalid.
+
+    Example:
+        >>> validate_character_states(['0', '1', '2'])
+        True
+
+        >>> validate_character_states(['0', '1', 'X'], valid_states={'0', '1', '2'})
+        # Raises error for invalid state 'X'
+    """
+    if character_data is None:
+        raise DataParsingError("Character data cannot be None")
+
+    # Convert to list if string
+    if isinstance(character_data, str):
+        character_data = list(character_data)
+
+    if not isinstance(character_data, (list, tuple)):
+        raise DataParsingError("Character data must be a list, tuple, or string")
+
+    # Check for empty data
+    if len(character_data) == 0:
+        raise DataParsingError("Character data cannot be empty")
+
+    # Validate individual states
+    if valid_states is not None:
+        valid_states = {str(s) for s in valid_states}
+        for i, state in enumerate(character_data):
+            # Handle polymorphic characters (lists)
+            if isinstance(state, (list, tuple)):
+                for poly_state in state:
+                    if str(poly_state) not in valid_states:
+                        raise DataParsingError(
+                            f"Invalid character state '{poly_state}' at position {i + 1}. "
+                            f"Valid states: {', '.join(sorted(valid_states))}"
+                        )
+            else:
+                if str(state) not in valid_states:
+                    raise DataParsingError(
+                        f"Invalid character state '{state}' at position {i + 1}. "
+                        f"Valid states: {', '.join(sorted(valid_states))}"
+                    )
+
+    return True
+
+
+def validate_datamatrix_dimensions(taxa_list, character_matrix):
+    """Validate datamatrix dimensions for consistency.
+
+    Ensures all taxa have the same number of characters and that
+    dimensions match expected values.
+
+    Args:
+        taxa_list: List of taxon names.
+        character_matrix: 2D list/array of character data (taxa x characters).
+
+    Returns:
+        tuple: (n_taxa, n_characters) dimensions if valid.
+
+    Raises:
+        DataParsingError: If dimensions are inconsistent.
+
+    Example:
+        >>> taxa = ['T1', 'T2', 'T3']
+        >>> matrix = [['0','1','2'], ['1','0','1'], ['2','1','0']]
+        >>> validate_datamatrix_dimensions(taxa, matrix)
+        (3, 3)
+    """
+    if not taxa_list:
+        raise DataParsingError("Taxa list cannot be empty")
+
+    if not character_matrix:
+        raise DataParsingError("Character matrix cannot be empty")
+
+    n_taxa = len(taxa_list)
+    n_matrix_rows = len(character_matrix)
+
+    # Check number of rows matches number of taxa
+    if n_taxa != n_matrix_rows:
+        raise DataParsingError(
+            f"Number of taxa ({n_taxa}) does not match number of matrix rows ({n_matrix_rows})"
+        )
+
+    # Check all rows have same length
+    char_lengths = [len(row) for row in character_matrix]
+    if len(set(char_lengths)) > 1:
+        # Find inconsistent rows
+        expected_length = char_lengths[0]
+        inconsistent_rows = []
+        for i, length in enumerate(char_lengths):
+            if length != expected_length:
+                inconsistent_rows.append(f"{taxa_list[i]}: {length} characters")
+
+        raise DataParsingError(
+            f"Inconsistent character counts across taxa.\n"
+            f"Expected {expected_length} characters per taxon.\n"
+            f"Inconsistent rows:\n" + "\n".join(inconsistent_rows)
+        )
+
+    n_characters = char_lengths[0] if char_lengths else 0
+
+    # Basic sanity checks
+    if n_taxa < 2:
+        raise DataParsingError(f"Datamatrix must have at least 2 taxa (found {n_taxa})")
+
+    if n_characters < 1:
+        raise DataParsingError(f"Datamatrix must have at least 1 character (found {n_characters})")
+
+    return (n_taxa, n_characters)
+
+
+def validate_complete_datamatrix(taxa_list, character_matrix, matrix_name="datamatrix"):
+    """Perform complete validation of a phylogenetic datamatrix.
+
+    Combines all datamatrix validation checks into a single function.
+
+    Args:
+        taxa_list: List of taxon names.
+        character_matrix: 2D list/array of character data.
+        matrix_name: Name of matrix for error messages. Defaults to "datamatrix".
+
+    Returns:
+        dict: Validation results with keys 'valid', 'n_taxa', 'n_characters', 'warnings'.
+
+    Raises:
+        DataParsingError: If validation fails critically.
+
+    Example:
+        >>> taxa = ['Taxon1', 'Taxon2']
+        >>> matrix = [['0','1'], ['1','0']]
+        >>> result = validate_complete_datamatrix(taxa, matrix)
+        >>> print(result)
+        {'valid': True, 'n_taxa': 2, 'n_characters': 2, 'warnings': []}
+    """
+    warnings = []
+
+    try:
+        # Validate taxa names
+        validate_taxa_names(taxa_list, allow_duplicates=False)
+    except DataParsingError as e:
+        raise DataParsingError(f"Taxa validation failed for {matrix_name}: {e}")
+
+    try:
+        # Validate dimensions
+        n_taxa, n_characters = validate_datamatrix_dimensions(taxa_list, character_matrix)
+    except DataParsingError as e:
+        raise DataParsingError(f"Dimension validation failed for {matrix_name}: {e}")
+
+    # Validate character data for each taxon
+    for _i, (taxon, char_data) in enumerate(zip(taxa_list, character_matrix)):
+        try:
+            validate_character_states(char_data, valid_states=None)
+        except DataParsingError as e:
+            raise DataParsingError(f"Character validation failed for taxon '{taxon}': {e}")
+
+    # Check for suspicious patterns (warnings only)
+    # Check for taxa with all missing data
+    for _i, (taxon, char_data) in enumerate(zip(taxa_list, character_matrix)):
+        missing_count = sum(1 for c in char_data if str(c) in ["?", "-", "N", "n"])
+        if missing_count == n_characters:
+            warnings.append(f"Taxon '{taxon}' has all missing data")
+        elif missing_count / n_characters > 0.8:
+            warnings.append(
+                f"Taxon '{taxon}' has {missing_count}/{n_characters} ({missing_count*100//n_characters}%) missing data"
+            )
+
+    return {
+        "valid": True,
+        "n_taxa": n_taxa,
+        "n_characters": n_characters,
+        "warnings": warnings,
+    }
+
+
+# ============================================================================
+# Database Backup and Recovery Functions
+# ============================================================================
+
+
+def backup_database(db_path, backup_dir=None, keep_n_backups=10):
+    """Create a timestamped backup of the database file.
+
+    Args:
+        db_path: Path to the database file to backup.
+        backup_dir: Directory to store backups. If None, uses db_path parent + '/backups'.
+            Defaults to None.
+        keep_n_backups: Number of backups to keep (oldest are deleted). Defaults to 10.
+
+    Returns:
+        str: Path to created backup file.
+
+    Raises:
+        FileOperationError: If backup fails.
+
+    Example:
+        >>> backup_database("/path/to/PhyloForester.db")
+        '/path/to/backups/PhyloForester.20250105_143022.db'
+    """
+    import shutil
+    from datetime import datetime
+
+    try:
+        # Validate source database exists
+        if not os.path.exists(db_path):
+            raise FileOperationError(f"Database file not found: {db_path}")
+
+        if not os.path.isfile(db_path):  # noqa: PTH113
+            raise FileOperationError(f"Database path is not a file: {db_path}")
+
+        # Determine backup directory
+        if backup_dir is None:
+            backup_dir = os.path.join(os.path.dirname(db_path), "backups")
+
+        # Create backup directory if needed
+        try:
+            os.makedirs(backup_dir, exist_ok=True)
+        except Exception as e:
+            raise FileOperationError(f"Failed to create backup directory: {e}")
+
+        # Generate backup filename with timestamp
+        db_name = os.path.basename(db_path)  # noqa: PTH119
+        db_name_without_ext = os.path.splitext(db_name)[0]
+        db_ext = os.path.splitext(db_name)[1]
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_filename = f"{db_name_without_ext}.{timestamp}{db_ext}"
+        backup_path = os.path.join(backup_dir, backup_filename)
+
+        # Copy database file
+        shutil.copy2(db_path, backup_path)
+        logger.info(f"Database backed up to: {backup_path}")
+
+        # Clean up old backups
+        try:
+            cleanup_old_backups(backup_dir, db_name_without_ext, keep_n_backups)
+        except Exception as e:
+            logger.warning(f"Failed to cleanup old backups: {e}")
+            # Don't raise - backup was successful
+
+        return backup_path
+
+    except FileOperationError:
+        raise
+    except Exception as e:
+        raise FileOperationError(f"Database backup failed: {e}")
+
+
+def cleanup_old_backups(backup_dir, db_name_prefix, keep_n_backups):
+    """Remove old backup files, keeping only the N most recent.
+
+    Args:
+        backup_dir: Directory containing backup files.
+        db_name_prefix: Prefix of backup files (e.g., 'PhyloForester').
+        keep_n_backups: Number of most recent backups to keep.
+
+    Returns:
+        int: Number of backups removed.
+
+    Example:
+        >>> cleanup_old_backups("/path/to/backups", "PhyloForester", 10)
+        3  # Removed 3 old backup files
+    """
+    try:
+        if not os.path.exists(backup_dir):
+            return 0
+
+        # Find all backup files matching pattern
+        backup_files = []
+        for filename in os.listdir(backup_dir):  # noqa: PTH208
+            if filename.startswith(db_name_prefix) and "." in filename:
+                filepath = os.path.join(backup_dir, filename)
+                if os.path.isfile(filepath):  # noqa: PTH113
+                    mtime = os.path.getmtime(filepath)  # noqa: PTH204
+                    backup_files.append((mtime, filepath))
+
+        # Sort by modification time (newest first)
+        backup_files.sort(reverse=True)
+
+        # Remove old backups beyond keep_n_backups
+        removed_count = 0
+        for i, (_mtime, filepath) in enumerate(backup_files):
+            if i >= keep_n_backups:
+                try:
+                    os.remove(filepath)
+                    logger.info(f"Removed old backup: {filepath}")
+                    removed_count += 1
+                except Exception as e:
+                    logger.warning(f"Failed to remove old backup {filepath}: {e}")
+
+        return removed_count
+
+    except Exception as e:
+        logger.error(f"Error during backup cleanup: {e}")
+        return 0
+
+
+def restore_database(backup_path, db_path, create_backup=True):
+    """Restore database from a backup file.
+
+    Args:
+        backup_path: Path to backup file to restore from.
+        db_path: Path where database should be restored.
+        create_backup: If True, backup current database before restoring. Defaults to True.
+
+    Returns:
+        bool: True if restore successful.
+
+    Raises:
+        FileOperationError: If restore fails.
+
+    Example:
+        >>> restore_database("/path/to/backup.db", "/path/to/PhyloForester.db")
+        True
+    """
+    import shutil
+
+    try:
+        # Validate backup file exists
+        if not os.path.exists(backup_path):
+            raise FileOperationError(f"Backup file not found: {backup_path}")
+
+        # Backup current database if requested
+        if create_backup and os.path.exists(db_path):
+            try:
+                backup_database(db_path)
+                logger.info("Created backup of current database before restore")
+            except Exception as e:
+                logger.warning(f"Failed to backup current database: {e}")
+                # Continue anyway - user may want to proceed
+
+        # Restore backup
+        shutil.copy2(backup_path, db_path)
+        logger.info(f"Database restored from: {backup_path}")
+
+        return True
+
+    except FileOperationError:
+        raise
+    except Exception as e:
+        raise FileOperationError(f"Database restore failed: {e}")
+
+
+def get_backup_list(backup_dir, db_name_prefix):
+    """Get list of available database backups.
+
+    Args:
+        backup_dir: Directory containing backup files.
+        db_name_prefix: Prefix of backup files to list.
+
+    Returns:
+        list: List of tuples (timestamp, filepath, size_bytes, age_days).
+            Sorted by timestamp (newest first).
+
+    Example:
+        >>> backups = get_backup_list("/path/to/backups", "PhyloForester")
+        >>> for timestamp, path, size, age in backups:
+        ...     print(f"{timestamp}: {size} bytes, {age} days old")
+    """
+    from datetime import datetime
+
+    backup_list = []
+
+    try:
+        if not os.path.exists(backup_dir):
+            return backup_list
+
+        current_time = datetime.now()
+
+        for filename in os.listdir(backup_dir):  # noqa: PTH208
+            if filename.startswith(db_name_prefix) and "." in filename:
+                filepath = os.path.join(backup_dir, filename)
+                if os.path.isfile(filepath):  # noqa: PTH113
+                    # Get file info
+                    mtime = os.path.getmtime(filepath)  # noqa: PTH204
+                    size = os.path.getsize(filepath)  # noqa: PTH202
+                    timestamp = datetime.fromtimestamp(mtime)
+                    age_days = (current_time - timestamp).days
+
+                    backup_list.append((timestamp, filepath, size, age_days))
+
+        # Sort by timestamp (newest first)
+        backup_list.sort(reverse=True)
+
+        return backup_list
+
+    except Exception as e:
+        logger.error(f"Error getting backup list: {e}")
+        return backup_list

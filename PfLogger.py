@@ -7,6 +7,7 @@ Provides centralized logging functionality for the application.
 from __future__ import annotations
 
 import logging
+import logging.handlers
 from datetime import datetime
 from pathlib import Path
 
@@ -20,6 +21,8 @@ if not log_dir.exists():
 
 def setup_logger(name: str, level: int = logging.INFO) -> logging.Logger:
     """Setup application logger with file and console handlers
+
+    Includes automatic log rotation to keep last 7 days of logs.
 
     Args:
         name: Logger name (usually __name__)
@@ -38,8 +41,11 @@ def setup_logger(name: str, level: int = logging.INFO) -> logging.Logger:
         "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
 
-    # File handler - logs everything at specified level and above
-    file_handler = logging.FileHandler(logfile_path, encoding="utf-8")
+    # File handler with rotation - keeps last 7 days of logs
+    # Using TimedRotatingFileHandler for automatic daily rotation
+    file_handler = logging.handlers.TimedRotatingFileHandler(
+        str(logfile_path), when="midnight", interval=1, backupCount=7, encoding="utf-8"
+    )
     file_handler.setFormatter(formatter)
     file_handler.setLevel(level)
 
