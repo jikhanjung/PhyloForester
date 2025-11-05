@@ -161,6 +161,137 @@ class TestPfDatamatrix:
         assert "matrix" in nexus_str
         assert "end;" in nexus_str
 
+    def test_as_nexus_format_with_command_hash(self, test_datamatrix):
+        """Test NEXUS format with nexus_command_hash set"""
+        # Set nexus_command_hash
+        test_datamatrix.nexus_command_hash = {
+            "dimensions": {"ntax": "3", "nchar": "3"},
+            "format": {"datatype": "standard", "gap": "-", "missing": "?"},
+        }
+        test_datamatrix.save()
+
+        nexus_str = test_datamatrix.as_nexus_format()
+        assert "#NEXUS" in nexus_str
+        assert "dimensions" in nexus_str
+        assert "format" in nexus_str
+
+    def test_get_taxa_timetable_json_error(self, test_datamatrix):
+        """Test get_taxa_timetable with invalid JSON"""
+        test_datamatrix.taxa_timetable_json = "invalid json {"
+        test_datamatrix.save()
+
+        timetable = test_datamatrix.get_taxa_timetable()
+        # Should return default [[0,0]] * n_taxa
+        assert len(timetable) == test_datamatrix.n_taxa
+        assert all(t == [0, 0] for t in timetable)
+
+    def test_get_taxa_timetable_none(self, test_datamatrix):
+        """Test get_taxa_timetable when None"""
+        test_datamatrix.taxa_timetable_json = None
+        test_datamatrix.save()
+
+        timetable = test_datamatrix.get_taxa_timetable()
+        # Should return default [[0,0]] * n_taxa
+        assert len(timetable) == test_datamatrix.n_taxa
+        assert all(t == [0, 0] for t in timetable)
+
+    def test_get_character_list_json_error(self, test_datamatrix):
+        """Test get_character_list with invalid JSON"""
+        test_datamatrix.character_list_json = "invalid json ["
+        test_datamatrix.save()
+
+        char_list = test_datamatrix.get_character_list()
+        # Should return empty strings for each character
+        assert len(char_list) == test_datamatrix.n_chars
+        assert all(c == "" for c in char_list)
+
+    def test_datamatrix_as_list_json_error(self, test_datamatrix):
+        """Test datamatrix_as_list with invalid JSON"""
+        test_datamatrix.datamatrix_json = "invalid json ["
+        test_datamatrix.save()
+
+        data = test_datamatrix.datamatrix_as_list()
+        # Should return empty list
+        assert data == []
+
+    def test_datamatrix_as_list_none(self, test_datamatrix):
+        """Test datamatrix_as_list when datamatrix_json is None"""
+        test_datamatrix.datamatrix_json = None
+        test_datamatrix.save()
+
+        data = test_datamatrix.datamatrix_as_list()
+        # Should return empty list
+        assert data == []
+
+    def test_get_taxa_list_json_error(self, test_datamatrix):
+        """Test get_taxa_list with invalid JSON"""
+        test_datamatrix.taxa_list_json = "invalid json ["
+        test_datamatrix.save()
+
+        taxa_list = test_datamatrix.get_taxa_list()
+        # Should return empty list
+        assert taxa_list == []
+
+    def test_get_taxa_list_none(self, test_datamatrix):
+        """Test get_taxa_list when taxa_list_json is None"""
+        test_datamatrix.taxa_list_json = None
+        test_datamatrix.save()
+
+        taxa_list = test_datamatrix.get_taxa_list()
+        # Should return empty list
+        assert taxa_list == []
+
+    def test_timetable_invalid_row_length(self, test_datamatrix):
+        """Test timetable validation with invalid row length"""
+        # Create timetable with invalid row (not length 2)
+        timetable = [[1.0, 2.0], [3.0], [0.0, 1.0]]  # Second row only has 1 element
+        test_datamatrix.taxa_timetable_json = json.dumps(timetable)
+        test_datamatrix.save()
+
+        # Should be invalid
+        assert not test_datamatrix.is_timetable_valid()
+
+    def test_matrix_as_string_with_polymorphic(self, test_project):
+        """Test matrix_as_string with polymorphic characters"""
+        # Create datamatrix with polymorphic characters (lists)
+        taxa = ["TaxonA", "TaxonB"]
+        matrix = [
+            ["0", ["0", "1"], "1"],  # Polymorphic second character
+            ["1", "0", ["1", "2"]],  # Polymorphic third character
+        ]
+        dm = pm.PfDatamatrix.create(
+            project=test_project,
+            datamatrix_name="Polymorphic Test",
+            n_taxa=2,
+            n_chars=3,
+            taxa_list_json=json.dumps(taxa),
+            datamatrix_json=json.dumps(matrix),
+        )
+
+        matrix_str = dm.matrix_as_string()
+        assert "TaxonA" in matrix_str
+        assert "TaxonB" in matrix_str
+
+    def test_as_phylip_format_with_polymorphic(self, test_project):
+        """Test PHYLIP format with polymorphic characters"""
+        taxa = ["TaxonA", "TaxonB"]
+        matrix = [
+            ["0", ["0", "1"], "1"],  # Polymorphic character
+            ["1", "0", "1"],
+        ]
+        dm = pm.PfDatamatrix.create(
+            project=test_project,
+            datamatrix_name="Poly PHYLIP",
+            n_taxa=2,
+            n_chars=3,
+            taxa_list_json=json.dumps(taxa),
+            datamatrix_json=json.dumps(matrix),
+        )
+
+        phylip_str = dm.as_phylip_format()
+        assert "2 3" in phylip_str  # dimensions
+        assert "TaxonA" in phylip_str
+
 
 class TestPfPackage:
     """Tests for PfPackage model"""
