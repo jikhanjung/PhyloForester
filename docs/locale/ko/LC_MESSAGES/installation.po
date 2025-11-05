@@ -1,0 +1,394 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2025, PhyloForester Contributors
+# This file is distributed under the same license as the PhyloForester
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PhyloForester \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-05 16:23+0900\n"
+"PO-Revision-Date: 2025-11-05 16:30+0900\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../installation.rst:2
+msgid "Installation"
+msgstr "설치"
+
+#: ../../installation.rst:4
+msgid ""
+"PhyloForester can be installed in several ways depending on your needs "
+"and platform."
+msgstr ""
+"PhyloForester는 필요와 플랫폼에 따라 여러 가지 방법으로 설치할 수 있어요."
+
+#: ../../installation.rst:7
+msgid "Installing Pre-built Binaries"
+msgstr "사전 빌드된 바이너리 설치"
+
+#: ../../installation.rst:9
+msgid ""
+"The easiest way to install PhyloForester is to download pre-built "
+"binaries from the GitHub releases page."
+msgstr ""
+"PhyloForester를 설치하는 가장 쉬운 방법은 GitHub 릴리스 페이지에서 사전 빌드된 "
+"바이너리를 다운로드하는 것이에요."
+
+#: ../../installation.rst:12
+msgid "Windows"
+msgstr "Windows"
+
+#: ../../installation.rst:14 ../../installation.rst:30
+#: ../../installation.rst:41
+msgid ""
+"Go to the `releases page "
+"<https://github.com/jikhanjung/PhyloForester/releases>`_"
+msgstr ""
+"`릴리스 페이지 <https://github.com/jikhanjung/PhyloForester/releases>`_ 로 이동하세요"
+
+#: ../../installation.rst:15
+msgid "Download the latest ``PhyloForester-Setup-vX.Y.Z.exe`` installer"
+msgstr "최신 ``PhyloForester-Setup-vX.Y.Z.exe`` 설치 프로그램을 다운로드하세요"
+
+#: ../../installation.rst:16
+msgid "Run the installer and follow the installation wizard"
+msgstr "설치 프로그램을 실행하고 설치 마법사를 따라 진행하세요"
+
+#: ../../installation.rst:17
+msgid "Launch PhyloForester from the Start Menu or Desktop shortcut"
+msgstr "시작 메뉴 또는 바탕화면 바로가기에서 PhyloForester를 실행하세요"
+
+#: ../../installation.rst:19
+msgid "**Portable Version:**"
+msgstr "**휴대용 버전:**"
+
+#: ../../installation.rst:21
+msgid ""
+"Alternatively, download the ZIP file (``PhyloForester-Windows-"
+"vX.Y.Z-buildN.zip``):"
+msgstr ""
+"또는 ZIP 파일(``PhyloForester-Windows-vX.Y.Z-buildN.zip``)을 다운로드할 수도 있어요:"
+
+#: ../../installation.rst:23
+msgid "Extract the ZIP to any folder"
+msgstr "ZIP 파일을 원하는 폴더에 압축 해제하세요"
+
+#: ../../installation.rst:24
+msgid "Run ``PhyloForester.exe`` from the extracted folder"
+msgstr "압축 해제한 폴더에서 ``PhyloForester.exe``를 실행하세요"
+
+#: ../../installation.rst:25
+msgid "No installation required - run from USB drives"
+msgstr "별도 설치가 필요 없으며 USB 드라이브에서 실행할 수 있어요"
+
+#: ../../installation.rst:28
+msgid "macOS"
+msgstr "macOS"
+
+#: ../../installation.rst:31
+msgid "Download the latest ``PhyloForester-macOS-vX.Y.Z-buildN.zip``"
+msgstr "최신 ``PhyloForester-macOS-vX.Y.Z-buildN.zip``을 다운로드하세요"
+
+#: ../../installation.rst:32
+msgid "Extract the ZIP file"
+msgstr "ZIP 파일을 압축 해제하세요"
+
+#: ../../installation.rst:33
+msgid "Drag ``PhyloForester`` to your Applications folder (optional)"
+msgstr "``PhyloForester``를 응용 프로그램 폴더로 드래그하세요 (선택 사항)"
+
+#: ../../installation.rst:34
+msgid "Double-click to run"
+msgstr "더블클릭하여 실행하세요"
+
+#: ../../installation.rst:36
+msgid ""
+"**Note:** On first launch, you may need to right-click → Open to bypass "
+"Gatekeeper."
+msgstr ""
+"**참고:** 처음 실행 시 Gatekeeper를 우회하기 위해 마우스 오른쪽 버튼 클릭 → 열기를 "
+"선택해야 할 수 있어요."
+
+#: ../../installation.rst:39
+msgid "Linux"
+msgstr "Linux"
+
+#: ../../installation.rst:42
+msgid "Download the latest ``PhyloForester-Linux-vX.Y.Z-buildN.tar.gz``"
+msgstr "최신 ``PhyloForester-Linux-vX.Y.Z-buildN.tar.gz``를 다운로드하세요"
+
+#: ../../installation.rst:43
+msgid "Extract the tarball:"
+msgstr "압축 파일을 해제하세요:"
+
+#: ../../installation.rst:50
+msgid "Run the application:"
+msgstr "애플리케이션을 실행하세요:"
+
+#: ../../installation.rst:56
+msgid "**System Dependencies:**"
+msgstr "**시스템 의존성:**"
+
+#: ../../installation.rst:58
+msgid "On some Linux distributions, you may need to install Qt5 libraries:"
+msgstr "일부 Linux 배포판에서는 Qt5 라이브러리를 설치해야 할 수 있어요:"
+
+#: ../../installation.rst:69
+msgid "Installing from Source"
+msgstr "소스에서 설치"
+
+#: ../../installation.rst:72
+msgid "Prerequisites"
+msgstr "사전 요구사항"
+
+#: ../../installation.rst:74
+msgid "Python 3.9 or higher"
+msgstr "Python 3.9 이상"
+
+#: ../../installation.rst:75
+msgid "pip (Python package manager)"
+msgstr "pip (Python 패키지 매니저)"
+
+#: ../../installation.rst:76
+msgid "Git (optional, for cloning repository)"
+msgstr "Git (선택 사항, 저장소 복제용)"
+
+#: ../../installation.rst:79
+msgid "Steps"
+msgstr "단계"
+
+#: ../../installation.rst:81
+msgid "**Clone or Download the Repository**"
+msgstr "**저장소 복제 또는 다운로드**"
+
+#: ../../installation.rst:88
+msgid "Or download and extract the ZIP from GitHub."
+msgstr "또는 GitHub에서 ZIP 파일을 다운로드하고 압축을 해제하세요."
+
+#: ../../installation.rst:90
+msgid "**Create a Virtual Environment (Recommended)**"
+msgstr "**가상 환경 생성 (권장)**"
+
+#: ../../installation.rst:102
+msgid "**Install Dependencies**"
+msgstr "**의존성 설치**"
+
+#: ../../installation.rst:108
+msgid "**Run PhyloForester**"
+msgstr "**PhyloForester 실행**"
+
+#: ../../installation.rst:115
+msgid "Development Installation"
+msgstr "개발용 설치"
+
+#: ../../installation.rst:117
+msgid "For development, install additional dependencies:"
+msgstr "개발을 위해서는 추가 의존성을 설치하세요:"
+
+#: ../../installation.rst:123
+msgid ""
+"This includes testing tools (pytest, pytest-qt) and code quality tools "
+"(ruff)."
+msgstr ""
+"여기에는 테스트 도구(pytest, pytest-qt)와 코드 품질 도구(ruff)가 포함되어 있어요."
+
+#: ../../installation.rst:126
+msgid "Installing External Analysis Software"
+msgstr "외부 분석 소프트웨어 설치"
+
+#: ../../installation.rst:128
+msgid ""
+"PhyloForester integrates with external phylogenetic software for "
+"analysis. These are optional but required for their respective analysis "
+"types."
+msgstr ""
+"PhyloForester는 분석을 위해 외부 계통발생 소프트웨어와 통합되어요. 이들은 선택 "
+"사항이지만 각 분석 유형에는 필수예요."
+
+#: ../../installation.rst:131
+msgid "TNT (Parsimony Analysis)"
+msgstr "TNT (절약법 분석)"
+
+#: ../../installation.rst:133
+msgid "Download TNT from http://www.lillo.org.ar/phylogeny/tnt/"
+msgstr "http://www.lillo.org.ar/phylogeny/tnt/ 에서 TNT를 다운로드하세요"
+
+#: ../../installation.rst:134 ../../installation.rst:142
+msgid "Extract the executable"
+msgstr "실행 파일을 압축 해제하세요"
+
+#: ../../installation.rst:135 ../../installation.rst:143
+#: ../../installation.rst:151
+msgid "In PhyloForester, go to **Edit → Preferences**"
+msgstr "PhyloForester에서 **편집 → 환경설정**으로 이동하세요"
+
+#: ../../installation.rst:136
+msgid "Set the path to the TNT executable"
+msgstr "TNT 실행 파일의 경로를 설정하세요"
+
+#: ../../installation.rst:139
+msgid "IQTree (Maximum Likelihood)"
+msgstr "IQTree (최대 우도법)"
+
+#: ../../installation.rst:141
+msgid "Download IQTree from http://www.iqtree.org/"
+msgstr "http://www.iqtree.org/ 에서 IQTree를 다운로드하세요"
+
+#: ../../installation.rst:144
+msgid "Set the path to the IQTree executable"
+msgstr "IQTree 실행 파일의 경로를 설정하세요"
+
+#: ../../installation.rst:147
+msgid "MrBayes (Bayesian Inference)"
+msgstr "MrBayes (베이지안 추론)"
+
+#: ../../installation.rst:149
+msgid "Download MrBayes from https://nbisweden.github.io/MrBayes/"
+msgstr "https://nbisweden.github.io/MrBayes/ 에서 MrBayes를 다운로드하세요"
+
+#: ../../installation.rst:150
+msgid "Install following the platform-specific instructions"
+msgstr "플랫폼별 지침에 따라 설치하세요"
+
+#: ../../installation.rst:152
+msgid "Set the path to the MrBayes executable"
+msgstr "MrBayes 실행 파일의 경로를 설정하세요"
+
+#: ../../installation.rst:155
+msgid "Verifying Installation"
+msgstr "설치 확인"
+
+#: ../../installation.rst:157
+msgid "To verify PhyloForester is installed correctly:"
+msgstr "PhyloForester가 올바르게 설치되었는지 확인하려면:"
+
+#: ../../installation.rst:159
+msgid "Launch the application"
+msgstr "애플리케이션을 실행하세요"
+
+#: ../../installation.rst:160
+msgid "The main window should appear with an empty project tree"
+msgstr "빈 프로젝트 트리가 있는 메인 창이 나타나야 해요"
+
+#: ../../installation.rst:161
+msgid "Check **Help → About** to see the version number"
+msgstr "**도움말 → 정보**를 확인하여 버전 번호를 확인하세요"
+
+#: ../../installation.rst:162
+msgid "Try creating a new project (Ctrl+N)"
+msgstr "새 프로젝트 생성을 시도해보세요 (Ctrl+N)"
+
+#: ../../installation.rst:164
+msgid "If you encounter issues, see the :doc:`troubleshooting` guide."
+msgstr "문제가 발생하면 :doc:`troubleshooting` 가이드를 참조하세요."
+
+#: ../../installation.rst:167
+msgid "Updating PhyloForester"
+msgstr "PhyloForester 업데이트"
+
+#: ../../installation.rst:170
+msgid "Binary Installation"
+msgstr "바이너리 설치"
+
+#: ../../installation.rst:172
+msgid "Download the latest version from the releases page"
+msgstr "릴리스 페이지에서 최신 버전을 다운로드하세요"
+
+#: ../../installation.rst:173
+msgid "Install over the existing installation (Windows installer)"
+msgstr "기존 설치에 덮어쓰기 설치하세요 (Windows 설치 프로그램)"
+
+#: ../../installation.rst:174
+msgid "Or replace the old files with the new ones (portable/macOS/Linux)"
+msgstr "또는 이전 파일을 새 파일로 교체하세요 (휴대용/macOS/Linux)"
+
+#: ../../installation.rst:176
+msgid ""
+"Your data is stored in a separate database location and will not be "
+"affected:"
+msgstr ""
+"데이터는 별도의 데이터베이스 위치에 저장되므로 영향을 받지 않아요:"
+
+#: ../../installation.rst:178
+msgid ""
+"**Windows**: "
+"``C:\\\\Users\\\\<username>\\\\PaleoBytes\\\\PhyloForester\\\\PhyloForester.db``"
+msgstr ""
+"**Windows**: "
+"``C:\\\\Users\\\\<username>\\\\PaleoBytes\\\\PhyloForester\\\\PhyloForester.db``"
+
+#: ../../installation.rst:179
+msgid "**macOS/Linux**: ``~/PaleoBytes/PhyloForester/PhyloForester.db``"
+msgstr "**macOS/Linux**: ``~/PaleoBytes/PhyloForester/PhyloForester.db``"
+
+#: ../../installation.rst:182
+msgid "Source Installation"
+msgstr "소스 설치"
+
+#: ../../installation.rst:191
+msgid "Uninstalling"
+msgstr "제거"
+
+#: ../../installation.rst:194
+msgid "Windows (Installer)"
+msgstr "Windows (설치 프로그램)"
+
+#: ../../installation.rst:196
+msgid "Go to **Settings → Apps → Installed Apps**"
+msgstr "**설정 → 앱 → 설치된 앱**으로 이동하세요"
+
+#: ../../installation.rst:197
+msgid "Find \"PhyloForester\""
+msgstr "\"PhyloForester\"를 찾으세요"
+
+#: ../../installation.rst:198
+msgid "Click **Uninstall**"
+msgstr "**제거**를 클릭하세요"
+
+#: ../../installation.rst:201
+msgid "Windows (Portable) / macOS / Linux"
+msgstr "Windows (휴대용) / macOS / Linux"
+
+#: ../../installation.rst:203
+msgid "Simply delete the PhyloForester folder."
+msgstr "PhyloForester 폴더를 삭제하면 되요."
+
+#: ../../installation.rst:205
+msgid "**Removing User Data:**"
+msgstr "**사용자 데이터 제거:**"
+
+#: ../../installation.rst:207
+msgid "If you want to completely remove all PhyloForester data:"
+msgstr "모든 PhyloForester 데이터를 완전히 제거하려면:"
+
+#: ../../installation.rst:209
+msgid "**Windows**: Delete ``C:\\\\Users\\\\<username>\\\\PaleoBytes``"
+msgstr "**Windows**: ``C:\\\\Users\\\\<username>\\\\PaleoBytes`` 삭제"
+
+#: ../../installation.rst:210
+msgid "**macOS/Linux**: Delete ``~/PaleoBytes``"
+msgstr "**macOS/Linux**: ``~/PaleoBytes`` 삭제"
+
+#: ../../installation.rst:212
+msgid "This will remove all projects, datamatrices, and analyses."
+msgstr "이렇게 하면 모든 프로젝트, 데이터 행렬, 분석이 제거되요."
+
+#: ../../installation.rst:215
+msgid "Next Steps"
+msgstr "다음 단계"
+
+#: ../../installation.rst:217
+msgid ""
+"After installation, see the :doc:`user_guide` to get started with your "
+"first phylogenetic analysis."
+msgstr ""
+"설치 후 :doc:`user_guide` 를 참조하여 첫 번째 계통발생 분석을 시작하세요."

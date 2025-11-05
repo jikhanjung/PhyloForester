@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="0; url=en/index.html">
+    <title>PhyloForester Documentation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        p {
+            font-size: 1.2em;
+            margin: 20px 0;
+        }
+        .language-links {
+            margin-top: 30px;
+        }
+        .language-links a {
+            display: inline-block;
+            margin: 10px 15px;
+            padding: 15px 30px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .language-links a:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            background: #f8f9fa;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <script>
+        // Auto-detect browser language and redirect
+        window.onload = function() {
+            var userLang = navigator.language || navigator.userLanguage;
+            var targetLang = userLang.startsWith('ko') ? 'ko' : 'en';
+
+            // Add a small delay to show the page before redirecting
+            setTimeout(function() {
+                window.location.href = targetLang + '/index.html';
+            }, 1500);
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>🌳 PhyloForester</h1>
+        <p>Phylogenetic Analysis Application</p>
+
+        <div class="spinner"></div>
+
+        <p>Redirecting to documentation...</p>
+        <p style="font-size: 0.9em; opacity: 0.8;">
+            문서로 리디렉션 중...
+        </p>
+
+        <div class="language-links">
+            <a href="en/index.html">📖 English Documentation</a>
+            <a href="ko/index.html">📖 한국어 문서</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,980 @@
+# Korean translation for PhyloForester Analysis Guide
+# Copyright (C) 2024-2025, PhyloForester Contributors
+# This file is distributed under the same license as the PhyloForester
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PhyloForester \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-05 16:23+0900\n"
+"PO-Revision-Date: 2025-11-05 16:30+0900\n"
+"Last-Translator: Claude <noreply@anthropic.com>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../analysis_guide.rst:2
+msgid "Analysis Guide"
+msgstr "분석 가이드"
+
+#: ../../analysis_guide.rst:4
+msgid ""
+"This guide provides detailed workflows for running phylogenetic analyses "
+"in PhyloForester."
+msgstr "이 가이드는 PhyloForester에서 계통발생 분석을 수행하는 자세한 작업 흐름을 제공해요."
+
+#: ../../analysis_guide.rst:7
+msgid "Overview"
+msgstr "개요"
+
+#: ../../analysis_guide.rst:9
+msgid ""
+"PhyloForester supports three main approaches to phylogenetic tree "
+"reconstruction:"
+msgstr "PhyloForester는 계통수 재구성을 위한 세 가지 주요 접근 방식을 지원해요:"
+
+#: ../../analysis_guide.rst:11
+msgid "**Parsimony**: Finds trees minimizing character state changes"
+msgstr "**절약법 (Parsimony)**: 형질 상태 변화를 최소화하는 계통수를 찾아요"
+
+#: ../../analysis_guide.rst:12
+msgid ""
+"**Maximum Likelihood**: Finds trees maximizing probability of observed "
+"data"
+msgstr "**최대우도법 (Maximum Likelihood)**: 관찰된 데이터의 확률을 최대화하는 계통수를 찾아요"
+
+#: ../../analysis_guide.rst:13
+msgid ""
+"**Bayesian Inference**: Estimates posterior probability distribution of "
+"trees"
+msgstr "**베이지안 추론 (Bayesian Inference)**: 계통수의 사후 확률 분포를 추정해요"
+
+#: ../../analysis_guide.rst:15
+msgid ""
+"Each method has strengths and is suited for different datasets and "
+"research questions."
+msgstr "각 방법은 고유한 장점이 있으며 서로 다른 데이터셋과 연구 질문에 적합해요."
+
+#: ../../analysis_guide.rst:18
+msgid "Choosing an Analysis Method"
+msgstr "분석 방법 선택하기"
+
+#: ../../analysis_guide.rst:21
+msgid "Parsimony"
+msgstr "절약법 (Parsimony)"
+
+#: ../../analysis_guide.rst:23 ../../analysis_guide.rst:45
+#: ../../analysis_guide.rst:66
+msgid "**Best for:**"
+msgstr "**적합한 경우:**"
+
+#: ../../analysis_guide.rst:25
+msgid "Morphological data"
+msgstr "형태학적 데이터"
+
+#: ../../analysis_guide.rst:26
+msgid "Small to medium datasets (<100 taxa)"
+msgstr "소규모에서 중규모 데이터셋 (분류군 100개 미만)"
+
+#: ../../analysis_guide.rst:27
+msgid "Discrete character states"
+msgstr "불연속 형질 상태"
+
+#: ../../analysis_guide.rst:28
+msgid "Pedagogical purposes"
+msgstr "교육 목적"
+
+#: ../../analysis_guide.rst:30 ../../analysis_guide.rst:51
+#: ../../analysis_guide.rst:72
+msgid "**Advantages:**"
+msgstr "**장점:**"
+
+#: ../../analysis_guide.rst:32
+msgid "Fast computation"
+msgstr "빠른 계산 속도"
+
+#: ../../analysis_guide.rst:33
+msgid "No model assumptions"
+msgstr "모델 가정이 필요 없음"
+
+#: ../../analysis_guide.rst:34
+msgid "Easy to interpret"
+msgstr "해석이 쉬움"
+
+#: ../../analysis_guide.rst:36 ../../analysis_guide.rst:57
+#: ../../analysis_guide.rst:78
+msgid "**Limitations:**"
+msgstr "**한계:**"
+
+#: ../../analysis_guide.rst:38
+msgid "Assumes equal rates across branches"
+msgstr "가지 (branch)마다 동일한 진화 속도를 가정함"
+
+#: ../../analysis_guide.rst:39
+msgid "Can be inconsistent with long branches"
+msgstr "긴 가지에서 비일관적일 수 있음"
+
+#: ../../analysis_guide.rst:40
+msgid "No statistical framework for support"
+msgstr "지지도를 위한 통계적 프레임워크가 없음"
+
+#: ../../analysis_guide.rst:43
+msgid "Maximum Likelihood"
+msgstr "최대우도법 (Maximum Likelihood)"
+
+#: ../../analysis_guide.rst:47
+msgid "Molecular data (DNA/protein sequences)"
+msgstr "분자 데이터 (DNA/단백질 서열)"
+
+#: ../../analysis_guide.rst:48
+msgid "Large datasets (100+ taxa)"
+msgstr "대규모 데이터셋 (분류군 100개 이상)"
+
+#: ../../analysis_guide.rst:49
+msgid "Model-based inference"
+msgstr "모델 기반 추론"
+
+#: ../../analysis_guide.rst:53
+msgid "Statistical framework"
+msgstr "통계적 프레임워크"
+
+#: ../../analysis_guide.rst:54
+msgid "Model flexibility"
+msgstr "모델의 유연성"
+
+#: ../../analysis_guide.rst:55
+msgid "Bootstrap support values"
+msgstr "부트스트랩 지지도 값"
+
+#: ../../analysis_guide.rst:59
+msgid "Computationally intensive"
+msgstr "계산 집약적"
+
+#: ../../analysis_guide.rst:60
+msgid "Requires model selection"
+msgstr "모델 선택이 필요함"
+
+#: ../../analysis_guide.rst:61
+msgid "Less suited for morphology"
+msgstr "형태학에 덜 적합함"
+
+#: ../../analysis_guide.rst:64
+msgid "Bayesian Inference"
+msgstr "베이지안 추론 (Bayesian Inference)"
+
+#: ../../analysis_guide.rst:68
+msgid "Complex evolutionary models"
+msgstr "복잡한 진화 모델"
+
+#: ../../analysis_guide.rst:69
+msgid "Integrating prior information"
+msgstr "사전 정보 통합"
+
+#: ../../analysis_guide.rst:70
+msgid "Uncertainty quantification"
+msgstr "불확실성 정량화"
+
+#: ../../analysis_guide.rst:74
+msgid "Full probabilistic framework"
+msgstr "완전한 확률론적 프레임워크"
+
+#: ../../analysis_guide.rst:75
+msgid "Posterior probabilities"
+msgstr "사후 확률"
+
+#: ../../analysis_guide.rst:76
+msgid "Handles complex models well"
+msgstr "복잡한 모델을 잘 처리함"
+
+#: ../../analysis_guide.rst:80
+msgid "Very computationally intensive"
+msgstr "매우 계산 집약적"
+
+#: ../../analysis_guide.rst:81
+msgid "Convergence assessment required"
+msgstr "수렴 평가가 필요함"
+
+#: ../../analysis_guide.rst:82
+msgid "Prior specification needed"
+msgstr "사전 분포 명시가 필요함"
+
+#: ../../analysis_guide.rst:85
+msgid "Parsimony Workflow"
+msgstr "절약법 작업 흐름"
+
+#: ../../analysis_guide.rst:88 ../../analysis_guide.rst:137
+#: ../../analysis_guide.rst:201
+msgid "Step 1: Prepare Data"
+msgstr "1단계: 데이터 준비"
+
+#: ../../analysis_guide.rst:90
+msgid "Ensure your datamatrix:"
+msgstr "데이터 행렬이 다음을 충족하는지 확인하세요:"
+
+#: ../../analysis_guide.rst:92
+msgid "Has clear character definitions"
+msgstr "명확한 형질 정의가 있음"
+
+#: ../../analysis_guide.rst:93
+msgid "Minimal missing data (``?``)"
+msgstr "최소한의 결측 데이터 (``?``)"
+
+#: ../../analysis_guide.rst:94
+msgid "Proper inapplicable coding (``-``)"
+msgstr "적절한 비적용 코딩 (``-``)"
+
+#: ../../analysis_guide.rst:97
+msgid "Step 2: Create Parsimony Analysis"
+msgstr "2단계: 절약법 분석 만들기"
+
+#: ../../analysis_guide.rst:99
+msgid "Right-click datamatrix → **New Analysis** → **Parsimony**"
+msgstr "데이터 행렬을 마우스 오른쪽 버튼 클릭 → **새 분석** → **Parsimony**"
+
+#: ../../analysis_guide.rst:100
+msgid "Configure parameters:"
+msgstr "매개변수를 설정하세요:"
+
+#: ../../analysis_guide.rst:110
+msgid "Step 3: Run Analysis"
+msgstr "3단계: 분석 실행"
+
+#: ../../analysis_guide.rst:112 ../../analysis_guide.rst:176
+#: ../../analysis_guide.rst:260
+msgid "Click **Start Analysis**"
+msgstr "**분석 시작**을 클릭하세요"
+
+#: ../../analysis_guide.rst:113
+msgid "TNT performs heuristic search"
+msgstr "TNT가 휴리스틱 탐색을 수행해요"
+
+#: ../../analysis_guide.rst:114
+msgid "Progress shown as percentage"
+msgstr "진행률이 백분율로 표시돼요"
+
+#: ../../analysis_guide.rst:115
+msgid "Typical runtime: seconds to minutes"
+msgstr "일반적인 실행 시간: 수 초에서 수 분"
+
+#: ../../analysis_guide.rst:118
+msgid "Step 4: Examine Results"
+msgstr "4단계: 결과 검토"
+
+#: ../../analysis_guide.rst:120
+msgid "Check the **Log** tab for:"
+msgstr "**로그** 탭에서 다음을 확인하세요:"
+
+#: ../../analysis_guide.rst:122
+msgid "Number of trees found"
+msgstr "발견된 계통수의 개수"
+
+#: ../../analysis_guide.rst:123
+msgid "Tree length (total character changes)"
+msgstr "계통수 길이 (총 형질 변화 수)"
+
+#: ../../analysis_guide.rst:124
+msgid "Consistency Index (CI)"
+msgstr "일관성 지수 (Consistency Index, CI)"
+
+#: ../../analysis_guide.rst:125
+msgid "Retention Index (RI)"
+msgstr "유지 지수 (Retention Index, RI)"
+
+#: ../../analysis_guide.rst:127
+msgid "**Trees Tab:**"
+msgstr "**계통수 탭:**"
+
+#: ../../analysis_guide.rst:129
+msgid "Strict consensus tree shown"
+msgstr "엄격 합의 계통수 (strict consensus tree) 표시"
+
+#: ../../analysis_guide.rst:130
+msgid "Bootstrap values (if requested)"
+msgstr "부트스트랩 값 (요청한 경우)"
+
+#: ../../analysis_guide.rst:131
+msgid "Branch lengths (steps)"
+msgstr "가지 길이 (단계 수)"
+
+#: ../../analysis_guide.rst:134
+msgid "Maximum Likelihood Workflow"
+msgstr "최대우도법 작업 흐름"
+
+#: ../../analysis_guide.rst:139
+msgid "For DNA sequences:"
+msgstr "DNA 서열의 경우:"
+
+#: ../../analysis_guide.rst:141
+msgid "Aligned sequences required"
+msgstr "정렬된 서열이 필요함"
+
+#: ../../analysis_guide.rst:142
+msgid "IUPAC ambiguity codes supported"
+msgstr "IUPAC 모호성 코드 지원"
+
+#: ../../analysis_guide.rst:143
+msgid "Gap coding as missing (``?``) or 5th state"
+msgstr "간격을 결측 (``?``) 또는 5번째 상태로 코딩"
+
+#: ../../analysis_guide.rst:146
+msgid "Step 2: Model Selection"
+msgstr "2단계: 모델 선택"
+
+#: ../../analysis_guide.rst:148
+msgid "IQTree can auto-detect best model:"
+msgstr "IQTree가 최적 모델을 자동으로 감지할 수 있어요:"
+
+#: ../../analysis_guide.rst:150
+msgid "Enable **Auto-detect model**"
+msgstr "**모델 자동 감지** 활성화"
+
+#: ../../analysis_guide.rst:151
+msgid "IQTree tests all standard models"
+msgstr "IQTree가 모든 표준 모델을 테스트해요"
+
+#: ../../analysis_guide.rst:152
+msgid "Best model selected by AIC/BIC"
+msgstr "AIC/BIC로 최적 모델이 선택돼요"
+
+#: ../../analysis_guide.rst:154
+msgid "Or specify model manually:"
+msgstr "또는 모델을 수동으로 지정하세요:"
+
+#: ../../analysis_guide.rst:156
+msgid "**JC69**: Jukes-Cantor (equal rates)"
+msgstr "**JC69**: Jukes-Cantor (동일한 속도)"
+
+#: ../../analysis_guide.rst:157
+msgid "**K80/K2P**: Kimura 2-parameter (transitions/transversions)"
+msgstr "**K80/K2P**: Kimura 2-parameter (전이/전환)"
+
+#: ../../analysis_guide.rst:158
+msgid "**HKY**: Has​egawa-Kishino-Yano"
+msgstr "**HKY**: Hasegawa-Kishino-Yano"
+
+#: ../../analysis_guide.rst:159
+msgid "**GTR**: General time reversible (most parameters)"
+msgstr "**GTR**: General time reversible (매개변수가 가장 많음)"
+
+#: ../../analysis_guide.rst:162
+msgid "Step 3: Create ML Analysis"
+msgstr "3단계: 최대우도법 분석 만들기"
+
+#: ../../analysis_guide.rst:164
+msgid "Right-click datamatrix → **New Analysis** → **Maximum Likelihood**"
+msgstr "데이터 행렬을 마우스 오른쪽 버튼 클릭 → **새 분석** → **Maximum Likelihood**"
+
+#: ../../analysis_guide.rst:165
+msgid "Configure:"
+msgstr "설정하세요:"
+
+#: ../../analysis_guide.rst:174 ../../analysis_guide.rst:258
+msgid "Step 4: Run Analysis"
+msgstr "4단계: 분석 실행"
+
+#: ../../analysis_guide.rst:177
+msgid "Model testing phase (if auto-detect)"
+msgstr "모델 테스트 단계 (자동 감지인 경우)"
+
+#: ../../analysis_guide.rst:178
+msgid "Tree search phase"
+msgstr "계통수 탐색 단계"
+
+#: ../../analysis_guide.rst:179
+msgid "Bootstrap phase (if enabled)"
+msgstr "부트스트랩 단계 (활성화된 경우)"
+
+#: ../../analysis_guide.rst:180
+msgid "Typical runtime: minutes to hours"
+msgstr "일반적인 실행 시간: 수 분에서 수 시간"
+
+#: ../../analysis_guide.rst:183
+msgid "Step 5: Interpret Results"
+msgstr "5단계: 결과 해석"
+
+#: ../../analysis_guide.rst:185
+msgid "**Best Tree:**"
+msgstr "**최적 계통수:**"
+
+#: ../../analysis_guide.rst:187
+msgid "Maximum likelihood tree topology"
+msgstr "최대우도법 계통수 위상"
+
+#: ../../analysis_guide.rst:188
+msgid "Branch lengths (substitutions/site)"
+msgstr "가지 길이 (염기 자리당 치환 수)"
+
+#: ../../analysis_guide.rst:189
+msgid "Log-likelihood score"
+msgstr "로그 우도 점수"
+
+#: ../../analysis_guide.rst:191
+msgid "**Bootstrap Support:**"
+msgstr "**부트스트랩 지지도:**"
+
+#: ../../analysis_guide.rst:193
+msgid "Values 0-100 on nodes"
+msgstr "마디 (node)에 0-100의 값"
+
+#: ../../analysis_guide.rst:194
+msgid "≥70 generally considered significant"
+msgstr "≥70은 일반적으로 유의미한 것으로 간주돼요"
+
+#: ../../analysis_guide.rst:195
+msgid "≥95 strong support"
+msgstr "≥95는 강한 지지도"
+
+#: ../../analysis_guide.rst:198
+msgid "Bayesian Workflow"
+msgstr "베이지안 작업 흐름"
+
+#: ../../analysis_guide.rst:203
+msgid "Similar to ML, but Bayesian is more flexible:"
+msgstr "최대우도법과 유사하지만 베이지안이 더 유연해요:"
+
+#: ../../analysis_guide.rst:205
+msgid "Can handle complex partitions"
+msgstr "복잡한 파티션을 처리할 수 있음"
+
+#: ../../analysis_guide.rst:206
+msgid "Morphology + molecules combined"
+msgstr "형태학 + 분자 데이터 결합"
+
+#: ../../analysis_guide.rst:207
+msgid "Clock models for dating"
+msgstr "연대 측정을 위한 시계 모델"
+
+#: ../../analysis_guide.rst:210
+msgid "Step 2: Set Priors"
+msgstr "2단계: 사전 분포 설정"
+
+#: ../../analysis_guide.rst:212
+msgid "**Substitution Model:**"
+msgstr "**치환 모델:**"
+
+#: ../../analysis_guide.rst:214
+msgid "Often use GTR+Γ for DNA"
+msgstr "DNA의 경우 주로 GTR+Γ 사용"
+
+#: ../../analysis_guide.rst:215
+msgid "Mk model for morphology"
+msgstr "형태학의 경우 Mk 모델"
+
+#: ../../analysis_guide.rst:217
+msgid "**Tree Prior:**"
+msgstr "**계통수 사전 분포:**"
+
+#: ../../analysis_guide.rst:219
+msgid "Uniform (default)"
+msgstr "균등 분포 (기본값)"
+
+#: ../../analysis_guide.rst:220
+msgid "Birth-death process"
+msgstr "출생-사망 과정 (birth-death process)"
+
+#: ../../analysis_guide.rst:221
+msgid "Yule model"
+msgstr "Yule 모델"
+
+#: ../../analysis_guide.rst:223
+msgid "**Branch Length Prior:**"
+msgstr "**가지 길이 사전 분포:**"
+
+#: ../../analysis_guide.rst:225
+msgid "Exponential distribution"
+msgstr "지수 분포"
+
+#: ../../analysis_guide.rst:226
+msgid "Compound Dirichlet"
+msgstr "복합 디리클레 분포"
+
+#: ../../analysis_guide.rst:229
+msgid "Step 3: Configure MCMC"
+msgstr "3단계: MCMC 설정"
+
+#: ../../analysis_guide.rst:231
+msgid "Right-click datamatrix → **New Analysis** → **Bayesian**"
+msgstr "데이터 행렬을 마우스 오른쪽 버튼 클릭 → **새 분석** → **Bayesian**"
+
+#: ../../analysis_guide.rst:232
+msgid "Set parameters:"
+msgstr "매개변수를 설정하세요:"
+
+#: ../../analysis_guide.rst:241
+msgid "**Short run for testing:**"
+msgstr "**테스트용 짧은 실행:**"
+
+#: ../../analysis_guide.rst:249
+msgid "**Standard run:**"
+msgstr "**표준 실행:**"
+
+#: ../../analysis_guide.rst:261
+msgid "MrBayes runs MCMC chains"
+msgstr "MrBayes가 MCMC 체인을 실행해요"
+
+#: ../../analysis_guide.rst:262
+msgid ""
+"Monitor: - Average standard deviation of split frequencies (should "
+"approach 0.01) - Potential Scale Reduction Factor (should approach 1.0)"
+msgstr "모니터링: - 분할 빈도의 평균 표준 편차 (0.01에 접근해야 함) - 잠재적 척도 감소 인자 (1.0에 접근해야 함)"
+
+#: ../../analysis_guide.rst:265
+msgid "Typical runtime: hours to days"
+msgstr "일반적인 실행 시간: 수 시간에서 수 일"
+
+#: ../../analysis_guide.rst:268
+msgid "Step 5: Assess Convergence"
+msgstr "5단계: 수렴 평가"
+
+#: ../../analysis_guide.rst:270
+msgid "Check the **Log** for:"
+msgstr "**로그**에서 다음을 확인하세요:"
+
+#: ../../analysis_guide.rst:272
+msgid "**ASDSF < 0.01**: Chains converged"
+msgstr "**ASDSF < 0.01**: 체인이 수렴함"
+
+#: ../../analysis_guide.rst:273
+msgid "**ESS > 200**: Sufficient sampling"
+msgstr "**ESS > 200**: 충분한 샘플링"
+
+#: ../../analysis_guide.rst:274
+msgid "Stable log-likelihood traces"
+msgstr "안정적인 로그 우도 추적"
+
+#: ../../analysis_guide.rst:276
+msgid "If not converged:"
+msgstr "수렴하지 않은 경우:"
+
+#: ../../analysis_guide.rst:278
+msgid "Run more generations"
+msgstr "더 많은 세대 실행"
+
+#: ../../analysis_guide.rst:279
+msgid "Increase sample frequency"
+msgstr "샘플 빈도 증가"
+
+#: ../../analysis_guide.rst:280
+msgid "Simplify model"
+msgstr "모델 단순화"
+
+#: ../../analysis_guide.rst:283
+msgid "Step 6: Examine Posterior"
+msgstr "6단계: 사후 분포 검토"
+
+#: ../../analysis_guide.rst:285
+msgid "**Consensus Tree:**"
+msgstr "**합의 계통수:**"
+
+#: ../../analysis_guide.rst:287
+msgid "50% majority rule consensus"
+msgstr "50% 다수결 합의"
+
+#: ../../analysis_guide.rst:288
+msgid "Posterior probabilities on nodes"
+msgstr "마디 (node)의 사후 확률"
+
+#: ../../analysis_guide.rst:289
+msgid "≥0.95 generally considered strong support"
+msgstr "≥0.95는 일반적으로 강한 지지도로 간주돼요"
+
+#: ../../analysis_guide.rst:291
+msgid "**Credible Sets:**"
+msgstr "**신뢰 집합:**"
+
+#: ../../analysis_guide.rst:293
+#, python-format
+msgid "95% credible set of trees"
+msgstr "95% 신뢰 계통수 집합"
+
+#: ../../analysis_guide.rst:294
+msgid "Topology uncertainty quantified"
+msgstr "위상 불확실성 정량화"
+
+#: ../../analysis_guide.rst:297
+msgid "Character Mapping"
+msgstr "형질 매핑"
+
+#: ../../analysis_guide.rst:299
+msgid "After obtaining trees, map characters to visualize evolution."
+msgstr "계통수를 얻은 후 형질을 매핑하여 진화를 시각화하세요."
+
+#: ../../analysis_guide.rst:302
+msgid "Fitch Parsimony Mapping"
+msgstr "Fitch 절약법 매핑"
+
+#: ../../analysis_guide.rst:304
+msgid "PhyloForester uses Fitch's algorithm for ancestral state reconstruction."
+msgstr "PhyloForester는 조상 상태 재구성을 위해 Fitch 알고리즘을 사용해요."
+
+#: ../../analysis_guide.rst:306
+msgid "Open analysis with trees"
+msgstr "계통수가 있는 분석을 열어요"
+
+#: ../../analysis_guide.rst:307
+msgid "Select a tree in **Trees** tab"
+msgstr "**계통수** 탭에서 계통수를 선택하세요"
+
+#: ../../analysis_guide.rst:308
+msgid "Click **Map Character**"
+msgstr "**형질 매핑**을 클릭하세요"
+
+#: ../../analysis_guide.rst:309
+msgid "Select character from list"
+msgstr "목록에서 형질을 선택하세요"
+
+#: ../../analysis_guide.rst:310
+msgid ""
+"Tree shows: - Ancestral states at nodes - State changes on branches "
+"(synapomorphies) - Colored by state"
+msgstr "계통수에 표시됨: - 마디 (node)의 조상 상태 - 가지 (branch)의 상태 변화 (공유 파생 형질, synapomorphy) - 상태별 색상"
+
+#: ../../analysis_guide.rst:316
+msgid "Interpreting Mapped Trees"
+msgstr "매핑된 계통수 해석"
+
+#: ../../analysis_guide.rst:318
+msgid "**Node labels**: Reconstructed ancestral states"
+msgstr "**마디 (node) 레이블**: 재구성된 조상 상태"
+
+#: ../../analysis_guide.rst:319
+msgid "**Branch annotations**: Character changes"
+msgstr "**가지 (branch) 주석**: 형질 변화"
+
+#: ../../analysis_guide.rst:320
+msgid "**Colors**: Different states"
+msgstr "**색상**: 다른 상태"
+
+#: ../../analysis_guide.rst:321
+msgid "**Ambiguous**: Multiple optimal reconstructions shown"
+msgstr "**모호함**: 여러 최적 재구성이 표시됨"
+
+#: ../../analysis_guide.rst:323
+msgid "Use cases:"
+msgstr "사용 사례:"
+
+#: ../../analysis_guide.rst:325
+msgid "Identify evolutionary transitions"
+msgstr "진화적 전환 확인"
+
+#: ../../analysis_guide.rst:326
+msgid "Locate homoplasy (parallel/convergent evolution)"
+msgstr "상동성 (평행/수렴 진화) 위치 파악"
+
+#: ../../analysis_guide.rst:327
+msgid "Support morphological hypotheses"
+msgstr "형태학적 가설 지원"
+
+#: ../../analysis_guide.rst:330
+msgid "Comparing Analyses"
+msgstr "분석 비교"
+
+#: ../../analysis_guide.rst:332
+msgid "It's valuable to compare results across methods."
+msgstr "방법 간 결과를 비교하는 것이 유용해요."
+
+#: ../../analysis_guide.rst:335
+msgid "Topology Comparison"
+msgstr "위상 비교"
+
+#: ../../analysis_guide.rst:337
+msgid "Run multiple analysis types on same datamatrix"
+msgstr "동일한 데이터 행렬에 여러 분석 유형 실행"
+
+#: ../../analysis_guide.rst:338
+msgid "Compare tree topologies visually"
+msgstr "계통수 위상을 시각적으로 비교"
+
+#: ../../analysis_guide.rst:339
+msgid "Note areas of agreement/disagreement"
+msgstr "일치/불일치 영역 기록"
+
+#: ../../analysis_guide.rst:341
+msgid "Key questions:"
+msgstr "주요 질문:"
+
+#: ../../analysis_guide.rst:343
+msgid "Do methods agree on major clades?"
+msgstr "방법들이 주요 분지군 (clade)에서 일치하나요?"
+
+#: ../../analysis_guide.rst:344
+msgid "Where do topologies differ?"
+msgstr "위상이 어디에서 다른가요?"
+
+#: ../../analysis_guide.rst:345
+msgid "Are differences in weakly supported regions?"
+msgstr "차이가 약하게 지지되는 영역에 있나요?"
+
+#: ../../analysis_guide.rst:348
+msgid "Support Value Comparison"
+msgstr "지지도 값 비교"
+
+#: ../../analysis_guide.rst:350
+msgid "**Parsimony**: Bootstrap (if run)"
+msgstr "**절약법**: 부트스트랩 (실행한 경우)"
+
+#: ../../analysis_guide.rst:351
+msgid "**ML**: Bootstrap percentages"
+msgstr "**최대우도법**: 부트스트랩 백분율"
+
+#: ../../analysis_guide.rst:352
+msgid "**Bayesian**: Posterior probabilities"
+msgstr "**베이지안**: 사후 확률"
+
+#: ../../analysis_guide.rst:354
+msgid "Generally:"
+msgstr "일반적으로:"
+
+#: ../../analysis_guide.rst:356
+msgid "Bayesian PP ≥ 0.95 ≈ ML bootstrap ≥ 70%"
+msgstr "베이지안 사후 확률 ≥ 0.95 ≈ 최대우도법 부트스트랩 ≥ 70%"
+
+#: ../../analysis_guide.rst:357
+msgid "Bayesian tends to give higher values"
+msgstr "베이지안은 더 높은 값을 주는 경향이 있어요"
+
+#: ../../analysis_guide.rst:358
+msgid "ML bootstrap more conservative"
+msgstr "최대우도법 부트스트랩이 더 보수적이에요"
+
+#: ../../analysis_guide.rst:361
+msgid "Troubleshooting Analyses"
+msgstr "분석 문제 해결"
+
+#: ../../analysis_guide.rst:364
+msgid "Analysis Won't Start"
+msgstr "분석이 시작되지 않음"
+
+#: ../../analysis_guide.rst:366 ../../analysis_guide.rst:376
+msgid "**Check:**"
+msgstr "**확인 사항:**"
+
+#: ../../analysis_guide.rst:368
+msgid "External software path set correctly (Preferences)"
+msgstr "외부 소프트웨어 경로가 올바르게 설정됨 (환경설정)"
+
+#: ../../analysis_guide.rst:369
+msgid "Software executable has permissions"
+msgstr "소프트웨어 실행 파일에 권한이 있음"
+
+#: ../../analysis_guide.rst:370
+msgid "Datamatrix not empty"
+msgstr "데이터 행렬이 비어있지 않음"
+
+#: ../../analysis_guide.rst:371
+msgid "No special characters in names"
+msgstr "이름에 특수 문자가 없음"
+
+#: ../../analysis_guide.rst:374
+msgid "Analysis Fails Immediately"
+msgstr "분석이 즉시 실패함"
+
+#: ../../analysis_guide.rst:378
+msgid "Log tab for error messages"
+msgstr "오류 메시지에 대한 로그 탭"
+
+#: ../../analysis_guide.rst:379
+msgid "Datamatrix format correct"
+msgstr "데이터 행렬 형식이 올바름"
+
+#: ../../analysis_guide.rst:380
+msgid "Missing data not excessive"
+msgstr "결측 데이터가 과도하지 않음"
+
+#: ../../analysis_guide.rst:381
+msgid "Character definitions valid"
+msgstr "형질 정의가 유효함"
+
+#: ../../analysis_guide.rst:384
+msgid "Analysis Runs Forever"
+msgstr "분석이 계속 실행됨"
+
+#: ../../analysis_guide.rst:386
+msgid "**For Bayesian:**"
+msgstr "**베이지안의 경우:**"
+
+#: ../../analysis_guide.rst:388
+msgid "May take days - check convergence diagnostics"
+msgstr "며칠이 걸릴 수 있음 - 수렴 진단을 확인하세요"
+
+#: ../../analysis_guide.rst:389
+msgid "Consider reducing generations for testing"
+msgstr "테스트를 위해 세대 수를 줄이는 것을 고려하세요"
+
+#: ../../analysis_guide.rst:391
+msgid "**For ML:**"
+msgstr "**최대우도법의 경우:**"
+
+#: ../../analysis_guide.rst:393
+msgid "Large datasets take time"
+msgstr "대규모 데이터셋은 시간이 걸려요"
+
+#: ../../analysis_guide.rst:394
+msgid "Consider reducing bootstrap replicates temporarily"
+msgstr "임시로 부트스트랩 반복 수를 줄이는 것을 고려하세요"
+
+#: ../../analysis_guide.rst:396
+msgid "**For Parsimony:**"
+msgstr "**절약법의 경우:**"
+
+#: ../../analysis_guide.rst:398
+msgid "Usually fast; if slow, reduce Hold parameter"
+msgstr "일반적으로 빠름; 느린 경우 Hold 매개변수를 줄이세요"
+
+#: ../../analysis_guide.rst:401
+msgid "Poor Support Values"
+msgstr "낮은 지지도 값"
+
+#: ../../analysis_guide.rst:403
+msgid "Common reasons:"
+msgstr "일반적인 이유:"
+
+#: ../../analysis_guide.rst:405
+msgid "Insufficient data"
+msgstr "데이터 부족"
+
+#: ../../analysis_guide.rst:406
+msgid "Conflicting signal"
+msgstr "상충하는 신호"
+
+#: ../../analysis_guide.rst:407
+msgid "Model misspecification"
+msgstr "모델 오지정"
+
+#: ../../analysis_guide.rst:408
+msgid "Need more bootstrap replicates"
+msgstr "더 많은 부트스트랩 반복이 필요함"
+
+#: ../../analysis_guide.rst:410
+msgid "Solutions:"
+msgstr "해결 방법:"
+
+#: ../../analysis_guide.rst:412
+msgid "Add more characters/taxa"
+msgstr "더 많은 형질/분류군 추가"
+
+#: ../../analysis_guide.rst:413
+msgid "Try different models"
+msgstr "다른 모델 시도"
+
+#: ../../analysis_guide.rst:414
+msgid "Increase replicates"
+msgstr "반복 수 증가"
+
+#: ../../analysis_guide.rst:415
+msgid "Partition data"
+msgstr "데이터 분할"
+
+#: ../../analysis_guide.rst:418
+msgid "Best Practices"
+msgstr "모범 사례"
+
+#: ../../analysis_guide.rst:421
+msgid "Data Preparation"
+msgstr "데이터 준비"
+
+#: ../../analysis_guide.rst:423
+msgid "Carefully define characters"
+msgstr "형질을 신중하게 정의하세요"
+
+#: ../../analysis_guide.rst:424
+msgid "Minimize missing data"
+msgstr "결측 데이터를 최소화하세요"
+
+#: ../../analysis_guide.rst:425
+msgid "Check for typos in taxon names"
+msgstr "분류군 이름의 오타를 확인하세요"
+
+#: ../../analysis_guide.rst:426
+msgid "Validate alignment (for sequences)"
+msgstr "정렬을 검증하세요 (서열의 경우)"
+
+#: ../../analysis_guide.rst:429
+msgid "Parameter Selection"
+msgstr "매개변수 선택"
+
+#: ../../analysis_guide.rst:431
+msgid "Start with default/recommended values"
+msgstr "기본값/권장값으로 시작하세요"
+
+#: ../../analysis_guide.rst:432
+msgid "Do quick test runs first"
+msgstr "먼저 빠른 테스트 실행을 하세요"
+
+#: ../../analysis_guide.rst:433
+msgid "Increase rigor for final analyses"
+msgstr "최종 분석에서는 엄격성을 높이세요"
+
+#: ../../analysis_guide.rst:434
+msgid "Document all parameters used"
+msgstr "사용된 모든 매개변수를 문서화하세요"
+
+#: ../../analysis_guide.rst:437
+msgid "Quality Control"
+msgstr "품질 관리"
+
+#: ../../analysis_guide.rst:439
+msgid "Always check log files"
+msgstr "항상 로그 파일을 확인하세요"
+
+#: ../../analysis_guide.rst:440
+msgid "Verify convergence (Bayesian)"
+msgstr "수렴을 확인하세요 (베이지안)"
+
+#: ../../analysis_guide.rst:441
+msgid "Compare multiple runs"
+msgstr "여러 실행을 비교하세요"
+
+#: ../../analysis_guide.rst:442
+msgid "Examine support values critically"
+msgstr "지지도 값을 비판적으로 검토하세요"
+
+#: ../../analysis_guide.rst:445
+msgid "Publication"
+msgstr "출판"
+
+#: ../../analysis_guide.rst:447
+msgid "When publishing, report:"
+msgstr "출판할 때 다음을 보고하세요:"
+
+#: ../../analysis_guide.rst:449
+msgid "Software versions"
+msgstr "소프트웨어 버전"
+
+#: ../../analysis_guide.rst:450
+msgid "All parameter settings"
+msgstr "모든 매개변수 설정"
+
+#: ../../analysis_guide.rst:451
+msgid "Run statistics (length, likelihood, etc.)"
+msgstr "실행 통계 (길이, 우도 등)"
+
+#: ../../analysis_guide.rst:452
+msgid "Support measures"
+msgstr "지지도 측정값"
+
+#: ../../analysis_guide.rst:453
+msgid "Convergence diagnostics (Bayesian)"
+msgstr "수렴 진단 (베이지안)"
+
+#: ../../analysis_guide.rst:456
+msgid "Next Steps"
+msgstr "다음 단계"
+
+#: ../../analysis_guide.rst:458
+msgid "See :doc:`user_guide` for general PhyloForester usage"
+msgstr "일반적인 PhyloForester 사용법은 :doc:`user_guide`를 참고하세요"
+
+#: ../../analysis_guide.rst:459
+msgid "See :doc:`troubleshooting` for specific issues"
+msgstr "특정 문제는 :doc:`troubleshooting`을 참고하세요"
+
+#: ../../analysis_guide.rst:460
+msgid "See :doc:`developer_guide` for advanced customization"
+msgstr "고급 사용자 정의는 :doc:`developer_guide`를 참고하세요"

@@ -1,0 +1,811 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2025, PhyloForester Contributors
+# This file is distributed under the same license as the PhyloForester
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PhyloForester \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-05 16:23+0900\n"
+"PO-Revision-Date: 2025-11-05 16:30+0900\n"
+"Last-Translator: Claude <noreply@anthropic.com>\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../troubleshooting.rst:2
+msgid "Troubleshooting"
+msgstr "문제 해결"
+
+#: ../../troubleshooting.rst:4
+msgid "This guide helps resolve common issues with PhyloForester."
+msgstr "이 가이드는 PhyloForester의 일반적인 문제를 해결하는 데 도움을 줘요."
+
+#: ../../troubleshooting.rst:7
+msgid "Installation Issues"
+msgstr "설치 문제"
+
+#: ../../troubleshooting.rst:10
+msgid "Application Won't Start"
+msgstr "애플리케이션이 시작되지 않음"
+
+#: ../../troubleshooting.rst:12 ../../troubleshooting.rst:235
+msgid "**Windows:**"
+msgstr "**Windows:**"
+
+#: ../../troubleshooting.rst:14
+msgid "Error: \"VCRUNTIME140.dll is missing\""
+msgstr "오류: \"VCRUNTIME140.dll is missing\""
+
+#: ../../troubleshooting.rst:16
+msgid "Solution: Install Visual C++ Redistributable from Microsoft"
+msgstr "해결 방법: Microsoft에서 Visual C++ Redistributable을 설치하세요"
+
+#: ../../troubleshooting.rst:18
+msgid "Error: \"Application failed to start\""
+msgstr "오류: \"Application failed to start\""
+
+#: ../../troubleshooting.rst:20
+msgid "Solution: Run as Administrator, check antivirus isn't blocking"
+msgstr "해결 방법: 관리자 권한으로 실행하고, 백신 프로그램이 차단하지 않는지 확인하세요"
+
+#: ../../troubleshooting.rst:22 ../../troubleshooting.rst:238
+#: ../../troubleshooting.rst:253
+msgid "**macOS:**"
+msgstr "**macOS:**"
+
+#: ../../troubleshooting.rst:24
+msgid "Error: \"App is damaged and can't be opened\""
+msgstr "오류: \"App is damaged and can't be opened\""
+
+#: ../../troubleshooting.rst:26
+msgid "Solution: Run ``xattr -cr /path/to/PhyloForester.app``"
+msgstr "해결 방법: ``xattr -cr /path/to/PhyloForester.app``을 실행하세요"
+
+#: ../../troubleshooting.rst:28
+msgid "Error: \"Cannot verify developer\""
+msgstr "오류: \"Cannot verify developer\""
+
+#: ../../troubleshooting.rst:30
+msgid "Solution: Right-click → Open (bypass Gatekeeper)"
+msgstr "해결 방법: 오른쪽 클릭 → 열기 (Gatekeeper 우회)"
+
+#: ../../troubleshooting.rst:32 ../../troubleshooting.rst:241
+msgid "**Linux:**"
+msgstr "**Linux:**"
+
+#: ../../troubleshooting.rst:34
+msgid "Error: \"error while loading shared libraries: libQt5Core.so.5\""
+msgstr "오류: \"error while loading shared libraries: libQt5Core.so.5\""
+
+#: ../../troubleshooting.rst:36
+msgid "Solution: Install Qt5 libraries (see :doc:`installation`)"
+msgstr "해결 방법: Qt5 라이브러리를 설치하세요 (:doc:`installation` 참조)"
+
+#: ../../troubleshooting.rst:39
+msgid "Python Source Installation Fails"
+msgstr "Python 소스 설치 실패"
+
+#: ../../troubleshooting.rst:41
+msgid "Error: \"No module named 'PyQt5'\""
+msgstr "오류: \"No module named 'PyQt5'\""
+
+#: ../../troubleshooting.rst:43
+msgid "Solution: ``pip install PyQt5``"
+msgstr "해결 방법: ``pip install PyQt5``"
+
+#: ../../troubleshooting.rst:45
+msgid "Error: \"Microsoft Visual C++ 14.0 is required\" (Windows)"
+msgstr "오류: \"Microsoft Visual C++ 14.0 is required\" (Windows)"
+
+#: ../../troubleshooting.rst:47
+msgid "Solution: Install Visual Studio Build Tools"
+msgstr "해결 방법: Visual Studio Build Tools를 설치하세요"
+
+#: ../../troubleshooting.rst:50
+msgid "Data Management Issues"
+msgstr "데이터 관리 문제"
+
+#: ../../troubleshooting.rst:53
+msgid "Can't Open Database"
+msgstr "데이터베이스를 열 수 없음"
+
+#: ../../troubleshooting.rst:55
+msgid "**Symptoms:** \"Failed to open database\" error"
+msgstr "**증상:** \"Failed to open database\" 오류"
+
+#: ../../troubleshooting.rst:57 ../../troubleshooting.rst:110
+#: ../../troubleshooting.rst:119 ../../troubleshooting.rst:134
+#: ../../troubleshooting.rst:223 ../../troubleshooting.rst:337
+#: ../../troubleshooting.rst:348 ../../troubleshooting.rst:360
+#: ../../troubleshooting.rst:372
+msgid "**Solutions:**"
+msgstr "**해결 방법:**"
+
+#: ../../troubleshooting.rst:59
+msgid "Check file permissions (read/write access)"
+msgstr "파일 권한을 확인하세요 (읽기/쓰기 권한)"
+
+#: ../../troubleshooting.rst:60
+msgid ""
+"Verify database file isn't corrupted: - Try opening in SQLite browser - "
+"Restore from backup"
+msgstr "데이터베이스 파일이 손상되지 않았는지 확인하세요: - SQLite 브라우저에서 열어보세요 - 백업에서 복원하세요"
+
+#: ../../troubleshooting.rst:63
+msgid "Check disk space (database needs room to grow)"
+msgstr "디스크 공간을 확인하세요 (데이터베이스가 커질 공간이 필요해요)"
+
+#: ../../troubleshooting.rst:66
+msgid "Database Corruption"
+msgstr "데이터베이스 손상"
+
+#: ../../troubleshooting.rst:68
+msgid "**Symptoms:** Application crashes, data missing, errors on save"
+msgstr "**증상:** 애플리케이션 충돌, 데이터 누락, 저장 시 오류"
+
+#: ../../troubleshooting.rst:70
+msgid "**Recovery:**"
+msgstr "**복구:**"
+
+#: ../../troubleshooting.rst:72 ../../troubleshooting.rst:213
+msgid "Close PhyloForester"
+msgstr "PhyloForester를 종료하세요"
+
+#: ../../troubleshooting.rst:73
+msgid ""
+"Locate database file: - Windows: "
+"``C:\\\\Users\\\\<name>\\\\PaleoBytes\\\\PhyloForester\\\\PhyloForester.db``"
+" - macOS/Linux: ``~/PaleoBytes/PhyloForester/PhyloForester.db``"
+msgstr "데이터베이스 파일을 찾으세요: - Windows: ``C:\\\\Users\\\\<name>\\\\PaleoBytes\\\\PhyloForester\\\\PhyloForester.db`` - macOS/Linux: ``~/PaleoBytes/PhyloForester/PhyloForester.db``"
+
+#: ../../troubleshooting.rst:76
+msgid "Try SQLite recovery:"
+msgstr "SQLite 복구를 시도하세요:"
+
+#: ../../troubleshooting.rst:82
+msgid "If corrupted, restore from backup"
+msgstr "손상된 경우 백업에서 복원하세요"
+
+#: ../../troubleshooting.rst:84
+msgid "**Prevention:**"
+msgstr "**예방:**"
+
+#: ../../troubleshooting.rst:86
+msgid "Regular backups (copy .db file)"
+msgstr "정기적으로 백업하세요 (.db 파일 복사)"
+
+#: ../../troubleshooting.rst:87
+msgid "Don't force-quit during saves"
+msgstr "저장 중 강제 종료하지 마세요"
+
+#: ../../troubleshooting.rst:88
+msgid "Ensure sufficient disk space"
+msgstr "충분한 디스크 공간을 확보하세요"
+
+#: ../../troubleshooting.rst:91
+msgid "Import/Export Problems"
+msgstr "가져오기/내보내기 문제"
+
+#: ../../troubleshooting.rst:94
+msgid "File Won't Import"
+msgstr "파일을 가져올 수 없음"
+
+#: ../../troubleshooting.rst:96
+msgid "**Common causes:**"
+msgstr "**일반적인 원인:**"
+
+#: ../../troubleshooting.rst:98
+msgid "**Unsupported format**"
+msgstr "**지원되지 않는 형식**"
+
+#: ../../troubleshooting.rst:100
+msgid "Check file extension (.nex, .phy, .tnt)"
+msgstr "파일 확장자를 확인하세요 (.nex, .phy, .tnt)"
+
+#: ../../troubleshooting.rst:102
+msgid "**Malformed file**"
+msgstr "**잘못된 파일 형식**"
+
+#: ../../troubleshooting.rst:104
+msgid "Validate format with text editor"
+msgstr "텍스트 편집기에서 형식을 검증하세요"
+
+#: ../../troubleshooting.rst:106
+msgid "**Encoding issues**"
+msgstr "**인코딩 문제**"
+
+#: ../../troubleshooting.rst:108
+msgid "Try UTF-8 or ASCII encoding"
+msgstr "UTF-8 또는 ASCII 인코딩을 시도하세요"
+
+#: ../../troubleshooting.rst:112
+msgid "Check log messages for specific errors"
+msgstr "로그 메시지에서 구체적인 오류를 확인하세요"
+
+#: ../../troubleshooting.rst:113
+msgid "Try opening file in text editor"
+msgstr "텍스트 편집기에서 파일을 열어보세요"
+
+#: ../../troubleshooting.rst:114
+msgid "Convert to Nexus format (most robust)"
+msgstr "Nexus 형식으로 변환하세요 (가장 안정적)"
+
+#: ../../troubleshooting.rst:117
+msgid "Export Fails"
+msgstr "내보내기 실패"
+
+#: ../../troubleshooting.rst:121
+msgid "Check write permissions in destination folder"
+msgstr "대상 폴더의 쓰기 권한을 확인하세요"
+
+#: ../../troubleshooting.rst:122
+msgid "Verify disk space available"
+msgstr "사용 가능한 디스크 공간을 확인하세요"
+
+#: ../../troubleshooting.rst:123
+msgid "Try different export format"
+msgstr "다른 내보내기 형식을 시도하세요"
+
+#: ../../troubleshooting.rst:124
+msgid "Use simpler filename (no special characters)"
+msgstr "간단한 파일명을 사용하세요 (특수 문자 없이)"
+
+#: ../../troubleshooting.rst:127
+msgid "Analysis Issues"
+msgstr "분석 문제"
+
+#: ../../troubleshooting.rst:130
+msgid "External Software Not Found"
+msgstr "외부 소프트웨어를 찾을 수 없음"
+
+#: ../../troubleshooting.rst:132
+msgid "**Symptoms:** \"TNT not found\" or similar error"
+msgstr "**증상:** \"TNT not found\" 또는 유사한 오류"
+
+#: ../../troubleshooting.rst:136
+msgid ""
+"**Set software path:** - Edit → Preferences - Browse to executable "
+"location - Click OK"
+msgstr "**소프트웨어 경로 설정:** - 편집 → 환경설정 - 실행 파일 위치로 이동 - 확인 클릭"
+
+#: ../../troubleshooting.rst:141
+msgid ""
+"**Verify executable:** - Run software from command line - Check file "
+"permissions (execute bit on Linux/macOS)"
+msgstr "**실행 파일 확인:** - 명령줄에서 소프트웨어를 실행해보세요 - 파일 권한을 확인하세요 (Linux/macOS에서 실행 권한)"
+
+#: ../../troubleshooting.rst:145
+msgid ""
+"**Check spelling:** - Windows: ``tnt.exe`` - Linux/macOS: ``tnt`` (no "
+"extension)"
+msgstr "**철자 확인:** - Windows: ``tnt.exe`` - Linux/macOS: ``tnt`` (확장자 없음)"
+
+#: ../../troubleshooting.rst:150
+msgid "Analysis Fails to Start"
+msgstr "분석 시작 실패"
+
+#: ../../troubleshooting.rst:152 ../../troubleshooting.rst:247
+#: ../../troubleshooting.rst:262 ../../troubleshooting.rst:285
+msgid "**Check:**"
+msgstr "**확인 사항:**"
+
+#: ../../troubleshooting.rst:154
+msgid "Datamatrix has data (not empty)"
+msgstr "데이터매트릭스에 데이터가 있는지 (비어있지 않음)"
+
+#: ../../troubleshooting.rst:155
+msgid "External software path correct"
+msgstr "외부 소프트웨어 경로가 올바른지"
+
+#: ../../troubleshooting.rst:156
+msgid "No special characters in project/datamatrix names"
+msgstr "프로젝트/데이터매트릭스 이름에 특수 문자가 없는지"
+
+#: ../../troubleshooting.rst:157
+msgid "Sufficient disk space for output files"
+msgstr "출력 파일을 위한 충분한 디스크 공간이 있는지"
+
+#: ../../troubleshooting.rst:159
+msgid "**Look in Log tab for error messages**"
+msgstr "**로그 탭에서 오류 메시지를 확인하세요**"
+
+#: ../../troubleshooting.rst:162
+msgid "Analysis Runs but No Results"
+msgstr "분석이 실행되지만 결과가 없음"
+
+#: ../../troubleshooting.rst:164
+msgid "**Possible causes:**"
+msgstr "**가능한 원인:**"
+
+#: ../../troubleshooting.rst:166
+msgid ""
+"**No trees found** (parsimony) - Data may be too homogeneous - Try more "
+"replicates"
+msgstr "**트리를 찾을 수 없음** (parsimony) - 데이터가 너무 동질적일 수 있어요 - 더 많은 반복 시도를 해보세요"
+
+#: ../../troubleshooting.rst:170
+msgid ""
+"**Analysis stopped prematurely** - Check if you clicked Stop - Check "
+"system resources"
+msgstr "**분석이 조기 종료됨** - 중지 버튼을 클릭했는지 확인하세요 - 시스템 리소스를 확인하세요"
+
+#: ../../troubleshooting.rst:174
+msgid ""
+"**Output parsing failed** - Check Log tab for raw output - May need "
+"software update"
+msgstr "**출력 파싱 실패** - 로그 탭에서 원본 출력을 확인하세요 - 소프트웨어 업데이트가 필요할 수 있어요"
+
+#: ../../troubleshooting.rst:179
+msgid "Analysis Takes Too Long"
+msgstr "분석 시간이 너무 오래 걸림"
+
+#: ../../troubleshooting.rst:181
+msgid "**For Parsimony:**"
+msgstr "**Parsimony의 경우:**"
+
+#: ../../troubleshooting.rst:183
+msgid "Should complete in seconds-minutes"
+msgstr "몇 초에서 몇 분 안에 완료되어야 해요"
+
+#: ../../troubleshooting.rst:184
+msgid "If stuck, reduce Hold parameter"
+msgstr "멈춘 경우 Hold 매개변수를 줄이세요"
+
+#: ../../troubleshooting.rst:186
+msgid "**For Maximum Likelihood:**"
+msgstr "**Maximum Likelihood의 경우:**"
+
+#: ../../troubleshooting.rst:188
+msgid "Can take minutes-hours"
+msgstr "몇 분에서 몇 시간 걸릴 수 있어요"
+
+#: ../../troubleshooting.rst:189
+msgid "Reduce bootstrap replicates for testing"
+msgstr "테스트를 위해 부트스트랩 반복 횟수를 줄이세요"
+
+#: ../../troubleshooting.rst:190
+msgid "Use \"Fast\" algorithm option"
+msgstr "\"Fast\" 알고리즘 옵션을 사용하세요"
+
+#: ../../troubleshooting.rst:192
+msgid "**For Bayesian:**"
+msgstr "**Bayesian의 경우:**"
+
+#: ../../troubleshooting.rst:194
+msgid "Expected to take hours-days"
+msgstr "몇 시간에서 며칠 걸릴 것으로 예상돼요"
+
+#: ../../troubleshooting.rst:195
+msgid "Check convergence periodically"
+msgstr "주기적으로 수렴을 확인하세요"
+
+#: ../../troubleshooting.rst:196
+msgid "Can stop and resume (in MrBayes directly)"
+msgstr "중지하고 재개할 수 있어요 (MrBayes에서 직접)"
+
+#: ../../troubleshooting.rst:198
+msgid "Solutions:"
+msgstr "해결 방법:"
+
+#: ../../troubleshooting.rst:200
+msgid "Reduce dataset size for testing"
+msgstr "테스트를 위해 데이터셋 크기를 줄이세요"
+
+#: ../../troubleshooting.rst:201
+msgid "Use faster computer"
+msgstr "더 빠른 컴퓨터를 사용하세요"
+
+#: ../../troubleshooting.rst:202
+msgid "Run overnight"
+msgstr "밤새 실행하세요"
+
+#: ../../troubleshooting.rst:203
+msgid "Consider cloud computing for large datasets"
+msgstr "대용량 데이터셋의 경우 클라우드 컴퓨팅을 고려하세요"
+
+#: ../../troubleshooting.rst:206
+msgid "UI and Display Issues"
+msgstr "UI 및 화면 표시 문제"
+
+#: ../../troubleshooting.rst:209
+msgid "Window Layout Broken"
+msgstr "창 레이아웃 손상"
+
+#: ../../troubleshooting.rst:211
+msgid "Reset window geometry:"
+msgstr "창 크기 및 위치 초기화:"
+
+#: ../../troubleshooting.rst:214
+msgid ""
+"Delete settings file: - Windows: "
+"``C:\\\\Users\\\\<name>\\\\AppData\\\\Roaming\\\\PaleoBytes\\\\PhyloForester``"
+" - macOS: ``~/Library/Preferences/com.paleobytes.PhyloForester.plist`` - "
+"Linux: ``~/.config/PaleoBytes/PhyloForester.conf``"
+msgstr "설정 파일을 삭제하세요: - Windows: ``C:\\\\Users\\\\<name>\\\\AppData\\\\Roaming\\\\PaleoBytes\\\\PhyloForester`` - macOS: ``~/Library/Preferences/com.paleobytes.PhyloForester.plist`` - Linux: ``~/.config/PaleoBytes/PhyloForester.conf``"
+
+#: ../../troubleshooting.rst:218
+msgid "Restart PhyloForester"
+msgstr "PhyloForester를 재시작하세요"
+
+#: ../../troubleshooting.rst:221
+msgid "Trees Not Displaying"
+msgstr "트리가 표시되지 않음"
+
+#: ../../troubleshooting.rst:225
+msgid "Check if tree data exists (look in Log)"
+msgstr "트리 데이터가 존재하는지 확인하세요 (로그에서 확인)"
+
+#: ../../troubleshooting.rst:226
+msgid "Try different tree from list"
+msgstr "목록에서 다른 트리를 시도하세요"
+
+#: ../../troubleshooting.rst:227
+msgid "Export tree as Newick, verify it's valid"
+msgstr "트리를 Newick으로 내보내고 유효한지 확인하세요"
+
+#: ../../troubleshooting.rst:228 ../../troubleshooting.rst:280
+msgid "Restart application"
+msgstr "애플리케이션을 재시작하세요"
+
+#: ../../troubleshooting.rst:231
+msgid "Text Too Small/Large"
+msgstr "텍스트가 너무 작거나 큼"
+
+#: ../../troubleshooting.rst:233
+msgid "Adjust with system DPI settings:"
+msgstr "시스템 DPI 설정으로 조정하세요:"
+
+#: ../../troubleshooting.rst:236
+msgid "Settings → Display → Scale"
+msgstr "설정 → 디스플레이 → 배율"
+
+#: ../../troubleshooting.rst:239
+msgid "System Preferences → Displays → Resolution"
+msgstr "시스템 환경설정 → 디스플레이 → 해상도"
+
+#: ../../troubleshooting.rst:242
+msgid "Desktop environment settings"
+msgstr "데스크톱 환경 설정"
+
+#: ../../troubleshooting.rst:245
+msgid "Keyboard Shortcuts Not Working"
+msgstr "키보드 단축키가 작동하지 않음"
+
+#: ../../troubleshooting.rst:249
+msgid "Focus is in correct window/widget"
+msgstr "포커스가 올바른 창/위젯에 있는지"
+
+#: ../../troubleshooting.rst:250
+msgid "No conflicting OS shortcuts"
+msgstr "OS 단축키와 충돌하지 않는지"
+
+#: ../../troubleshooting.rst:251
+msgid "NumLock state (if using numpad)"
+msgstr "NumLock 상태 (넘패드 사용 시)"
+
+#: ../../troubleshooting.rst:254
+msgid "Ctrl shortcuts may need Cmd instead"
+msgstr "Ctrl 단축키 대신 Cmd를 사용해야 할 수 있어요"
+
+#: ../../troubleshooting.rst:257
+msgid "Datamatrix Editor Issues"
+msgstr "데이터매트릭스 편집기 문제"
+
+#: ../../troubleshooting.rst:260
+msgid "Can't Edit Cells"
+msgstr "셀을 편집할 수 없음"
+
+#: ../../troubleshooting.rst:264
+msgid "Datamatrix is open in edit mode (not view-only)"
+msgstr "데이터매트릭스가 편집 모드로 열려있는지 (읽기 전용이 아님)"
+
+#: ../../troubleshooting.rst:265
+msgid "Cell is selected (click once to select)"
+msgstr "셀이 선택되어 있는지 (한 번 클릭하여 선택)"
+
+#: ../../troubleshooting.rst:266
+msgid "No dialog box hidden behind"
+msgstr "뒤에 숨겨진 대화 상자가 없는지"
+
+#: ../../troubleshooting.rst:269
+msgid "Undo/Redo Not Working"
+msgstr "실행 취소/다시 실행이 작동하지 않음"
+
+#: ../../troubleshooting.rst:271
+msgid "**Limitations:**"
+msgstr "**제한 사항:**"
+
+#: ../../troubleshooting.rst:273
+msgid "Only works within a single editing session"
+msgstr "단일 편집 세션 내에서만 작동해요"
+
+#: ../../troubleshooting.rst:274
+msgid "Closing editor clears undo history"
+msgstr "편집기를 닫으면 실행 취소 기록이 지워져요"
+
+#: ../../troubleshooting.rst:275
+msgid "Max undo stack size: 50 operations"
+msgstr "최대 실행 취소 스택 크기: 50개 작업"
+
+#: ../../troubleshooting.rst:277
+msgid "**If broken:**"
+msgstr "**작동하지 않는 경우:**"
+
+#: ../../troubleshooting.rst:279
+msgid "Save and reopen editor"
+msgstr "저장하고 편집기를 다시 여세요"
+
+#: ../../troubleshooting.rst:283
+msgid "Copy/Paste Not Working"
+msgstr "복사/붙여넣기가 작동하지 않음"
+
+#: ../../troubleshooting.rst:287
+msgid "Cells are selected (should be highlighted)"
+msgstr "셀이 선택되어 있는지 (강조 표시되어야 함)"
+
+#: ../../troubleshooting.rst:288
+msgid "Clipboard has data (paste elsewhere to verify)"
+msgstr "클립보드에 데이터가 있는지 (다른 곳에 붙여넣어 확인)"
+
+#: ../../troubleshooting.rst:289
+msgid "Format is compatible (tab-delimited for cross-app)"
+msgstr "형식이 호환되는지 (앱 간 전송은 탭 구분)"
+
+#: ../../troubleshooting.rst:291
+msgid "**Workaround:**"
+msgstr "**해결책:**"
+
+#: ../../troubleshooting.rst:293
+msgid "Use Export/Import for large data transfers"
+msgstr "대용량 데이터 전송은 내보내기/가져오기를 사용하세요"
+
+#: ../../troubleshooting.rst:294
+msgid "Copy through external text editor"
+msgstr "외부 텍스트 편집기를 통해 복사하세요"
+
+#: ../../troubleshooting.rst:297
+msgid "Performance Issues"
+msgstr "성능 문제"
+
+#: ../../troubleshooting.rst:300
+msgid "Application Slow"
+msgstr "애플리케이션이 느림"
+
+#: ../../troubleshooting.rst:302
+msgid "**Causes and solutions:**"
+msgstr "**원인 및 해결 방법:**"
+
+#: ../../troubleshooting.rst:304
+msgid "**Large database** - Archive old projects - Split into multiple databases"
+msgstr "**대용량 데이터베이스** - 오래된 프로젝트를 보관하세요 - 여러 데이터베이스로 분할하세요"
+
+#: ../../troubleshooting.rst:308
+msgid ""
+"**Many trees in analysis** - Limit trees saved (Hold parameter) - Delete "
+"old analyses"
+msgstr "**분석에 트리가 많음** - 저장되는 트리 수를 제한하세요 (Hold 매개변수) - 오래된 분석을 삭제하세요"
+
+#: ../../troubleshooting.rst:312
+msgid "**Insufficient RAM** - Close other applications - Upgrade hardware"
+msgstr "**RAM 부족** - 다른 애플리케이션을 종료하세요 - 하드웨어를 업그레이드하세요"
+
+#: ../../troubleshooting.rst:316
+msgid "**Slow disk** - Move database to SSD - Defragment disk (Windows)"
+msgstr "**느린 디스크** - 데이터베이스를 SSD로 이동하세요 - 디스크 조각 모음 (Windows)"
+
+#: ../../troubleshooting.rst:321
+msgid "Tree Rendering Slow"
+msgstr "트리 렌더링이 느림"
+
+#: ../../troubleshooting.rst:323
+msgid "**For large trees (>100 taxa):**"
+msgstr "**큰 트리의 경우 (>100 분류군):**"
+
+#: ../../troubleshooting.rst:325
+msgid "Disable character mapping temporarily"
+msgstr "일시적으로 형질 매핑을 비활성화하세요"
+
+#: ../../troubleshooting.rst:326
+msgid "Export as Newick, view in specialized viewer"
+msgstr "Newick으로 내보내고 전문 뷰어에서 보세요"
+
+#: ../../troubleshooting.rst:327
+msgid "Use summary trees (consensus) instead of all trees"
+msgstr "모든 트리 대신 요약 트리(합의 트리)를 사용하세요"
+
+#: ../../troubleshooting.rst:330
+msgid "Error Messages"
+msgstr "오류 메시지"
+
+#: ../../troubleshooting.rst:333
+msgid "\"Permission Denied\""
+msgstr "\"Permission Denied\""
+
+#: ../../troubleshooting.rst:335
+msgid "**Cause:** Insufficient file system permissions"
+msgstr "**원인:** 파일 시스템 권한 부족"
+
+#: ../../troubleshooting.rst:339
+msgid "Run PhyloForester with elevated permissions"
+msgstr "상승된 권한으로 PhyloForester를 실행하세요"
+
+#: ../../troubleshooting.rst:340
+msgid "Move database to folder with write access"
+msgstr "쓰기 권한이 있는 폴더로 데이터베이스를 이동하세요"
+
+#: ../../troubleshooting.rst:341
+msgid "Check file isn't open in another program"
+msgstr "파일이 다른 프로그램에서 열려있지 않은지 확인하세요"
+
+#: ../../troubleshooting.rst:344
+msgid "\"Out of Memory\""
+msgstr "\"Out of Memory\""
+
+#: ../../troubleshooting.rst:346
+msgid "**Cause:** Not enough RAM for operation"
+msgstr "**원인:** 작업을 수행하기에 RAM이 부족함"
+
+#: ../../troubleshooting.rst:350
+msgid "Close other applications"
+msgstr "다른 애플리케이션을 종료하세요"
+
+#: ../../troubleshooting.rst:351
+msgid "Reduce dataset size"
+msgstr "데이터셋 크기를 줄이세요"
+
+#: ../../troubleshooting.rst:352
+msgid "Increase virtual memory/swap"
+msgstr "가상 메모리/스왑을 늘리세요"
+
+#: ../../troubleshooting.rst:353
+msgid "Use 64-bit version (if available)"
+msgstr "64비트 버전을 사용하세요 (사용 가능한 경우)"
+
+#: ../../troubleshooting.rst:356
+msgid "\"Database Locked\""
+msgstr "\"Database Locked\""
+
+#: ../../troubleshooting.rst:358
+msgid "**Cause:** Another process accessing database"
+msgstr "**원인:** 다른 프로세스가 데이터베이스에 접근 중"
+
+#: ../../troubleshooting.rst:362
+msgid "Close all PhyloForester instances"
+msgstr "모든 PhyloForester 인스턴스를 종료하세요"
+
+#: ../../troubleshooting.rst:363
+msgid "Kill zombie processes"
+msgstr "좀비 프로세스를 종료하세요"
+
+#: ../../troubleshooting.rst:364
+msgid "Restart computer"
+msgstr "컴퓨터를 재시작하세요"
+
+#: ../../troubleshooting.rst:365
+msgid "Copy database to new location"
+msgstr "데이터베이스를 새 위치로 복사하세요"
+
+#: ../../troubleshooting.rst:368
+msgid "\"Invalid Datamatrix\""
+msgstr "\"Invalid Datamatrix\""
+
+#: ../../troubleshooting.rst:370
+msgid "**Cause:** Data format issue"
+msgstr "**원인:** 데이터 형식 문제"
+
+#: ../../troubleshooting.rst:374
+msgid ""
+"Check for: - Inconsistent row lengths - Invalid characters - Missing "
+"taxa/character names"
+msgstr "확인 사항: - 일관되지 않은 행 길이 - 유효하지 않은 문자 - 누락된 분류군/형질 이름"
+
+#: ../../troubleshooting.rst:378
+msgid "Re-import from original file"
+msgstr "원본 파일에서 다시 가져오세요"
+
+#: ../../troubleshooting.rst:379
+msgid "Recreate datamatrix manually"
+msgstr "데이터매트릭스를 수동으로 다시 생성하세요"
+
+#: ../../troubleshooting.rst:382
+msgid "Reporting Bugs"
+msgstr "버그 보고"
+
+#: ../../troubleshooting.rst:384
+msgid "If you encounter a persistent issue:"
+msgstr "지속적인 문제가 발생하는 경우:"
+
+#: ../../troubleshooting.rst:386
+msgid ""
+"Check if issue is already reported: "
+"https://github.com/jikhanjung/PhyloForester/issues"
+msgstr "문제가 이미 보고되었는지 확인하세요: https://github.com/jikhanjung/PhyloForester/issues"
+
+#: ../../troubleshooting.rst:387
+msgid ""
+"Create new issue with: - PhyloForester version (Help → About) - Operating"
+" system and version - Steps to reproduce - Error messages (exact text) - "
+"Log files (if available) - Screenshots"
+msgstr "다음 정보와 함께 새 이슈를 생성하세요: - PhyloForester 버전 (도움말 → 정보) - 운영 체제 및 버전 - 재현 단계 - 오류 메시지 (정확한 텍스트) - 로그 파일 (가능한 경우) - 스크린샷"
+
+#: ../../troubleshooting.rst:395
+msgid "**Logs location:**"
+msgstr "**로그 위치:**"
+
+#: ../../troubleshooting.rst:397
+msgid ""
+"Windows: "
+"``C:\\\\Users\\\\<name>\\\\AppData\\\\Local\\\\PaleoBytes\\\\PhyloForester\\\\Logs``"
+msgstr "Windows: ``C:\\\\Users\\\\<name>\\\\AppData\\\\Local\\\\PaleoBytes\\\\PhyloForester\\\\Logs``"
+
+#: ../../troubleshooting.rst:398
+msgid "macOS/Linux: ``~/.local/share/PaleoBytes/PhyloForester/Logs``"
+msgstr "macOS/Linux: ``~/.local/share/PaleoBytes/PhyloForester/Logs``"
+
+#: ../../troubleshooting.rst:401
+msgid "Getting Help"
+msgstr "도움 받기"
+
+#: ../../troubleshooting.rst:403
+msgid "**Documentation**: https://jikhanjung.github.io/PhyloForester/"
+msgstr "**문서**: https://jikhanjung.github.io/PhyloForester/"
+
+#: ../../troubleshooting.rst:404
+msgid "**Issues**: https://github.com/jikhanjung/PhyloForester/issues"
+msgstr "**이슈**: https://github.com/jikhanjung/PhyloForester/issues"
+
+#: ../../troubleshooting.rst:405
+msgid "**Email**: (if provided by maintainers)"
+msgstr "**이메일**: (관리자가 제공하는 경우)"
+
+#: ../../troubleshooting.rst:407
+msgid "When asking for help, include:"
+msgstr "도움을 요청할 때 다음 정보를 포함하세요:"
+
+#: ../../troubleshooting.rst:409
+msgid "What you were trying to do"
+msgstr "무엇을 하려고 했는지"
+
+#: ../../troubleshooting.rst:410
+msgid "What you expected to happen"
+msgstr "어떤 일이 일어날 것으로 예상했는지"
+
+#: ../../troubleshooting.rst:411
+msgid "What actually happened"
+msgstr "실제로 어떤 일이 일어났는지"
+
+#: ../../troubleshooting.rst:412
+msgid "Error messages"
+msgstr "오류 메시지"
+
+#: ../../troubleshooting.rst:413
+msgid "PhyloForester version"
+msgstr "PhyloForester 버전"
+
+#: ../../troubleshooting.rst:414
+msgid "Operating system"
+msgstr "운영 체제"
+
+#: ../../troubleshooting.rst:417
+msgid "Next Steps"
+msgstr "다음 단계"
+
+#: ../../troubleshooting.rst:419
+msgid "Return to :doc:`user_guide` for general usage"
+msgstr "일반적인 사용법은 :doc:`user_guide`를 참조하세요"
+
+#: ../../troubleshooting.rst:420
+msgid "See :doc:`analysis_guide` for analysis-specific help"
+msgstr "분석 관련 도움말은 :doc:`analysis_guide`를 참조하세요"
+
+#: ../../troubleshooting.rst:421
+msgid "See :doc:`developer_guide` for advanced troubleshooting"
+msgstr "고급 문제 해결은 :doc:`developer_guide`를 참조하세요"

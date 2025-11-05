@@ -1,0 +1,900 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2024-2025, PhyloForester Contributors
+# This file is distributed under the same license as the PhyloForester
+# package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PhyloForester \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-05 16:23+0900\n"
+"PO-Revision-Date: 2025-11-05 16:30+0900\n"
+"Last-Translator: PhyloForester Contributors\n"
+"Language: ko\n"
+"Language-Team: ko <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: ../../user_guide.rst:2
+msgid "User Guide"
+msgstr "사용자 가이드"
+
+#: ../../user_guide.rst:4
+msgid ""
+"This guide provides a comprehensive overview of using PhyloForester for "
+"phylogenetic analysis."
+msgstr "이 가이드는 PhyloForester를 사용한 계통학적 분석에 대한 포괄적인 개요를 제공해요."
+
+#: ../../user_guide.rst:7
+msgid "Getting Started"
+msgstr "시작하기"
+
+#: ../../user_guide.rst:10
+msgid "Main Window Overview"
+msgstr "메인 창 개요"
+
+#: ../../user_guide.rst:12
+msgid "When you launch PhyloForester, you'll see:"
+msgstr "PhyloForester를 실행하면 다음이 표시돼요:"
+
+#: ../../user_guide.rst:14
+msgid "**Menu Bar**: File, Edit, View, Tools, Help menus"
+msgstr "**메뉴 바**: File, Edit, View, Tools, Help 메뉴"
+
+#: ../../user_guide.rst:15
+msgid "**Toolbar**: Quick access to common operations"
+msgstr "**도구 모음**: 일반 작업에 빠르게 접근할 수 있어요"
+
+#: ../../user_guide.rst:16
+msgid ""
+"**Tree View** (Left): Hierarchical view of projects, datamatrices, and "
+"analyses"
+msgstr "**트리 뷰** (왼쪽): 프로젝트, 데이터 행렬, 분석의 계층적 뷰"
+
+#: ../../user_guide.rst:17
+msgid "**Content Area** (Right): Display area for selected items"
+msgstr "**콘텐츠 영역** (오른쪽): 선택한 항목의 표시 영역"
+
+#: ../../user_guide.rst:18
+msgid "**Status Bar** (Bottom): Current status and messages"
+msgstr "**상태 바** (하단): 현재 상태와 메시지"
+
+#: ../../user_guide.rst:21
+msgid "Working with Projects"
+msgstr "프로젝트 작업하기"
+
+#: ../../user_guide.rst:24
+msgid "Creating a Project"
+msgstr "프로젝트 만들기"
+
+#: ../../user_guide.rst:26
+msgid "Projects organize your phylogenetic studies."
+msgstr "프로젝트는 계통학적 연구를 구성해요."
+
+#: ../../user_guide.rst:28
+msgid "Click **File → New Project** or press ``Ctrl+N``"
+msgstr "**File → New Project**를 클릭하거나 ``Ctrl+N``을 누르세요"
+
+#: ../../user_guide.rst:29
+msgid "Enter a project name"
+msgstr "프로젝트 이름을 입력하세요"
+
+#: ../../user_guide.rst:30
+msgid "Optionally add a description"
+msgstr "선택적으로 설명을 추가하세요"
+
+#: ../../user_guide.rst:31 ../../user_guide.rst:41 ../../user_guide.rst:67
+#: ../../user_guide.rst:177
+msgid "Click **OK**"
+msgstr "**OK**를 클릭하세요"
+
+#: ../../user_guide.rst:33
+msgid "The project appears in the tree view with a folder icon."
+msgstr "프로젝트가 폴더 아이콘과 함께 트리 뷰에 나타나요."
+
+#: ../../user_guide.rst:36
+msgid "Editing Project Properties"
+msgstr "프로젝트 속성 편집하기"
+
+#: ../../user_guide.rst:38
+msgid "Right-click the project in the tree view"
+msgstr "트리 뷰에서 프로젝트를 마우스 오른쪽 버튼으로 클릭하세요"
+
+#: ../../user_guide.rst:39
+msgid "Select **Edit Project**"
+msgstr "**Edit Project**를 선택하세요"
+
+#: ../../user_guide.rst:40
+msgid "Modify name or description"
+msgstr "이름 또는 설명을 수정하세요"
+
+#: ../../user_guide.rst:44
+msgid "Deleting a Project"
+msgstr "프로젝트 삭제하기"
+
+#: ../../user_guide.rst:46
+msgid "Right-click the project"
+msgstr "프로젝트를 마우스 오른쪽 버튼으로 클릭하세요"
+
+#: ../../user_guide.rst:47
+msgid "Select **Delete Project**"
+msgstr "**Delete Project**를 선택하세요"
+
+#: ../../user_guide.rst:48
+msgid "Confirm deletion"
+msgstr "삭제를 확인하세요"
+
+#: ../../user_guide.rst:51
+msgid ""
+"Deleting a project removes all associated datamatrices and analyses "
+"permanently."
+msgstr "프로젝트를 삭제하면 관련된 모든 데이터 행렬과 분석이 영구적으로 제거돼요."
+
+#: ../../user_guide.rst:54
+msgid "Working with Datamatrices"
+msgstr "데이터 행렬 작업하기"
+
+#: ../../user_guide.rst:56
+msgid "A datamatrix contains your character data (taxa × characters matrix)."
+msgstr "데이터 행렬은 형질 데이터(분류군 × 형질 행렬)를 포함해요."
+
+#: ../../user_guide.rst:59
+msgid "Creating a New Datamatrix"
+msgstr "새 데이터 행렬 만들기"
+
+#: ../../user_guide.rst:61 ../../user_guide.rst:84
+msgid "Right-click a project"
+msgstr "프로젝트를 마우스 오른쪽 버튼으로 클릭하세요"
+
+#: ../../user_guide.rst:62
+msgid "Select **New Datamatrix**"
+msgstr "**New Datamatrix**를 선택하세요"
+
+#: ../../user_guide.rst:63
+msgid "Enter: - Datamatrix name - Number of taxa - Number of characters"
+msgstr "다음을 입력하세요: - 데이터 행렬 이름 - 분류군 수 - 형질 수"
+
+#: ../../user_guide.rst:69
+msgid "The datamatrix editor opens automatically."
+msgstr "데이터 행렬 편집기가 자동으로 열려요."
+
+#: ../../user_guide.rst:72
+msgid "Importing a Datamatrix"
+msgstr "데이터 행렬 가져오기"
+
+#: ../../user_guide.rst:74
+msgid "PhyloForester supports multiple file formats:"
+msgstr "PhyloForester는 여러 파일 형식을 지원해요:"
+
+#: ../../user_guide.rst:76
+msgid "**Drag and Drop:**"
+msgstr "**드래그 앤 드롭:**"
+
+#: ../../user_guide.rst:78
+msgid "Drag a file from your file manager"
+msgstr "파일 관리자에서 파일을 드래그하세요"
+
+#: ../../user_guide.rst:79
+msgid "Drop it onto a project in the tree view"
+msgstr "트리 뷰의 프로젝트에 드롭하세요"
+
+#: ../../user_guide.rst:80
+msgid "PhyloForester auto-detects the format"
+msgstr "PhyloForester가 형식을 자동으로 감지해요"
+
+#: ../../user_guide.rst:82
+msgid "**File Menu:**"
+msgstr "**파일 메뉴:**"
+
+#: ../../user_guide.rst:85
+msgid "Select **Import Datamatrix**"
+msgstr "**Import Datamatrix**를 선택하세요"
+
+#: ../../user_guide.rst:86
+msgid "Choose file format (Nexus, Phylip, TNT)"
+msgstr "파일 형식을 선택하세요 (Nexus, Phylip, TNT)"
+
+#: ../../user_guide.rst:87
+msgid "Select the file"
+msgstr "파일을 선택하세요"
+
+#: ../../user_guide.rst:88
+msgid "Click **Open**"
+msgstr "**Open**을 클릭하세요"
+
+#: ../../user_guide.rst:90
+msgid "**Supported Formats:**"
+msgstr "**지원되는 형식:**"
+
+#: ../../user_guide.rst:92
+msgid "**Nexus (.nex, .nexus)**: Standard phylogenetic format"
+msgstr "**Nexus (.nex, .nexus)**: 표준 계통학적 형식"
+
+#: ../../user_guide.rst:93
+msgid "**Phylip (.phy, .phylip)**: Sequential or interleaved"
+msgstr "**Phylip (.phy, .phylip)**: 순차 또는 인터리브 형식"
+
+#: ../../user_guide.rst:94
+msgid "**TNT (.tnt)**: TNT's xread format"
+msgstr "**TNT (.tnt)**: TNT의 xread 형식"
+
+#: ../../user_guide.rst:97
+msgid "Editing a Datamatrix"
+msgstr "데이터 행렬 편집하기"
+
+#: ../../user_guide.rst:99
+msgid "Double-click a datamatrix in the tree view"
+msgstr "트리 뷰에서 데이터 행렬을 더블 클릭하세요"
+
+#: ../../user_guide.rst:100
+msgid "The datamatrix editor dialog opens"
+msgstr "데이터 행렬 편집기 대화상자가 열려요"
+
+#: ../../user_guide.rst:102
+msgid "The editor has three main areas:"
+msgstr "편집기에는 세 가지 주요 영역이 있어요:"
+
+#: ../../user_guide.rst:104
+msgid "**Character List** (Left): All defined characters"
+msgstr "**형질 목록** (왼쪽): 정의된 모든 형질"
+
+#: ../../user_guide.rst:105
+msgid "**Taxa List** (Right): All taxa in the study"
+msgstr "**분류군 목록** (오른쪽): 연구에 포함된 모든 분류군"
+
+#: ../../user_guide.rst:106
+msgid "**Data Table** (Center): Character states for each taxon"
+msgstr "**데이터 테이블** (중앙): 각 분류군의 형질 상태"
+
+#: ../../user_guide.rst:108
+msgid "**Adding Taxa:**"
+msgstr "**분류군 추가하기:**"
+
+#: ../../user_guide.rst:110
+msgid "Type taxon name in the input field"
+msgstr "입력 필드에 분류군 이름을 입력하세요"
+
+#: ../../user_guide.rst:111 ../../user_guide.rst:117
+msgid "Click **Add** button (or press Enter)"
+msgstr "**Add** 버튼을 클릭하세요 (또는 Enter를 누르세요)"
+
+#: ../../user_guide.rst:112
+msgid "The taxon appears in the list and table"
+msgstr "분류군이 목록과 테이블에 나타나요"
+
+#: ../../user_guide.rst:114
+msgid "**Adding Characters:**"
+msgstr "**형질 추가하기:**"
+
+#: ../../user_guide.rst:116
+msgid "Type character name in the input field"
+msgstr "입력 필드에 형질 이름을 입력하세요"
+
+#: ../../user_guide.rst:118
+msgid "A new column appears in the table"
+msgstr "테이블에 새 열이 나타나요"
+
+#: ../../user_guide.rst:120
+msgid "**Editing Cell Values:**"
+msgstr "**셀 값 편집하기:**"
+
+#: ../../user_guide.rst:122
+msgid "Click a cell in the table"
+msgstr "테이블의 셀을 클릭하세요"
+
+#: ../../user_guide.rst:123
+msgid ""
+"Type the character state: - ``0``, ``1``, ``2``, etc. - discrete states -"
+" ``?`` - missing data - ``-`` - inapplicable - Multiple states: separate "
+"with spaces (e.g., ``0 1``)"
+msgstr "형질 상태를 입력하세요: - ``0``, ``1``, ``2`` 등 - 이산 상태 - ``?`` - 결측 데이터 - ``-`` - 적용 불가 - 다중 상태: 공백으로 구분 (예: ``0 1``)"
+
+#: ../../user_guide.rst:129
+msgid "**Excel-Style Editing:**"
+msgstr "**Excel 스타일 편집:**"
+
+#: ../../user_guide.rst:131
+msgid "**Copy**: Select cells → ``Ctrl+C``"
+msgstr "**복사**: 셀 선택 → ``Ctrl+C``"
+
+#: ../../user_guide.rst:132
+msgid "**Paste**: Select destination → ``Ctrl+V``"
+msgstr "**붙여넣기**: 대상 선택 → ``Ctrl+V``"
+
+#: ../../user_guide.rst:133
+msgid "**Clear**: Select cells → ``Delete``"
+msgstr "**지우기**: 셀 선택 → ``Delete``"
+
+#: ../../user_guide.rst:134
+msgid "**Fill**: Select cells → Right-click → Fill"
+msgstr "**채우기**: 셀 선택 → 마우스 오른쪽 버튼 클릭 → Fill"
+
+#: ../../user_guide.rst:135
+msgid "**Undo**: ``Ctrl+Z``"
+msgstr "**실행 취소**: ``Ctrl+Z``"
+
+#: ../../user_guide.rst:136
+msgid "**Redo**: ``Ctrl+Y``"
+msgstr "**다시 실행**: ``Ctrl+Y``"
+
+#: ../../user_guide.rst:138
+msgid "**Reordering:**"
+msgstr "**순서 변경하기:**"
+
+#: ../../user_guide.rst:140 ../../user_guide.rst:145
+msgid "Select a taxon/character"
+msgstr "분류군/형질을 선택하세요"
+
+#: ../../user_guide.rst:141
+msgid "Click **↑** or **↓** buttons to move"
+msgstr "**↑** 또는 **↓** 버튼을 클릭하여 이동하세요"
+
+#: ../../user_guide.rst:143
+msgid "**Removing:**"
+msgstr "**제거하기:**"
+
+#: ../../user_guide.rst:146
+msgid "Click **Remove** button"
+msgstr "**Remove** 버튼을 클릭하세요"
+
+#: ../../user_guide.rst:148
+msgid "**Saving Changes:**"
+msgstr "**변경 사항 저장하기:**"
+
+#: ../../user_guide.rst:150
+msgid "Click **Save** button in the editor"
+msgstr "편집기에서 **Save** 버튼을 클릭하세요"
+
+#: ../../user_guide.rst:151
+msgid "Or click **OK** to save and close"
+msgstr "또는 **OK**를 클릭하여 저장하고 닫으세요"
+
+#: ../../user_guide.rst:154
+msgid "Exporting a Datamatrix"
+msgstr "데이터 행렬 내보내기"
+
+#: ../../user_guide.rst:156 ../../user_guide.rst:170 ../../user_guide.rst:296
+msgid "Right-click a datamatrix"
+msgstr "데이터 행렬을 마우스 오른쪽 버튼으로 클릭하세요"
+
+#: ../../user_guide.rst:157
+msgid "Select **Export**"
+msgstr "**Export**를 선택하세요"
+
+#: ../../user_guide.rst:158
+msgid "Choose format (Nexus, Phylip, TNT)"
+msgstr "형식을 선택하세요 (Nexus, Phylip, TNT)"
+
+#: ../../user_guide.rst:159
+msgid "Select destination"
+msgstr "대상을 선택하세요"
+
+#: ../../user_guide.rst:160
+msgid "Click **Save**"
+msgstr "**Save**를 클릭하세요"
+
+#: ../../user_guide.rst:163
+msgid "Running Analyses"
+msgstr "분석 실행하기"
+
+#: ../../user_guide.rst:165
+msgid "PhyloForester supports three types of phylogenetic analyses."
+msgstr "PhyloForester는 세 가지 유형의 계통학적 분석을 지원해요."
+
+#: ../../user_guide.rst:168
+msgid "Creating an Analysis"
+msgstr "분석 만들기"
+
+#: ../../user_guide.rst:171
+msgid "Select **New Analysis**"
+msgstr "**New Analysis**를 선택하세요"
+
+#: ../../user_guide.rst:172
+msgid ""
+"Choose analysis type: - **Parsimony** (requires TNT) - **Maximum "
+"Likelihood** (requires IQTree) - **Bayesian** (requires MrBayes)"
+msgstr "분석 유형을 선택하세요: - **Parsimony** (TNT 필요) - **Maximum Likelihood** (IQTree 필요) - **Bayesian** (MrBayes 필요)"
+
+#: ../../user_guide.rst:176
+msgid "Configure analysis parameters"
+msgstr "분석 매개변수를 구성하세요"
+
+#: ../../user_guide.rst:180
+msgid "Parsimony Analysis (TNT)"
+msgstr "최대 간결성 분석 (TNT)"
+
+#: ../../user_guide.rst:182 ../../user_guide.rst:205 ../../user_guide.rst:223
+msgid "**Parameters:**"
+msgstr "**매개변수:**"
+
+#: ../../user_guide.rst:184
+msgid "**Number of replicates**: Wagner trees to build"
+msgstr "**Number of replicates**: 구성할 Wagner 계통수"
+
+#: ../../user_guide.rst:185
+msgid "**Hold**: Maximum trees to keep in memory"
+msgstr "**Hold**: 메모리에 유지할 최대 계통수"
+
+#: ../../user_guide.rst:186
+msgid "**TBR**: Tree bisection-reconnection"
+msgstr "**TBR**: 계통수 이분-재연결"
+
+#: ../../user_guide.rst:187
+msgid "**Mult**: Number of random addition sequences"
+msgstr "**Mult**: 무작위 추가 시퀀스 수"
+
+#: ../../user_guide.rst:189
+msgid "**Common Settings:**"
+msgstr "**일반 설정:**"
+
+#: ../../user_guide.rst:191
+msgid "Quick analysis: 10 replicates, Hold 100"
+msgstr "빠른 분석: 10 replicates, Hold 100"
+
+#: ../../user_guide.rst:192
+msgid "Standard: 100 replicates, Hold 1000"
+msgstr "표준: 100 replicates, Hold 1000"
+
+#: ../../user_guide.rst:193
+msgid "Thorough: 1000 replicates, Hold 10000"
+msgstr "철저한 분석: 1000 replicates, Hold 10000"
+
+#: ../../user_guide.rst:195 ../../user_guide.rst:211 ../../user_guide.rst:230
+msgid "**Running:**"
+msgstr "**실행하기:**"
+
+#: ../../user_guide.rst:197 ../../user_guide.rst:213 ../../user_guide.rst:232
+msgid "Configure parameters"
+msgstr "매개변수를 구성하세요"
+
+#: ../../user_guide.rst:198 ../../user_guide.rst:214 ../../user_guide.rst:233
+msgid "Click **Start Analysis**"
+msgstr "**Start Analysis**를 클릭하세요"
+
+#: ../../user_guide.rst:199
+msgid "Monitor progress (percentage shown)"
+msgstr "진행 상황을 모니터링하세요 (백분율 표시)"
+
+#: ../../user_guide.rst:200
+msgid "Analysis completes → consensus tree generated"
+msgstr "분석 완료 → 합의 계통수 생성됨"
+
+#: ../../user_guide.rst:203
+msgid "Maximum Likelihood (IQTree)"
+msgstr "최대 우도법 (IQTree)"
+
+#: ../../user_guide.rst:207
+msgid "**Substitution model**: Auto-detect or specify (GTR, JC, K2P, etc.)"
+msgstr "**Substitution model**: 자동 감지 또는 지정 (GTR, JC, K2P 등)"
+
+#: ../../user_guide.rst:208
+msgid "**Bootstrap replicates**: 0 (none), 1000 (standard), or more"
+msgstr "**Bootstrap replicates**: 0 (없음), 1000 (표준), 또는 그 이상"
+
+#: ../../user_guide.rst:209
+msgid "**Search algorithm**: Standard or fast"
+msgstr "**Search algorithm**: 표준 또는 빠른 방법"
+
+#: ../../user_guide.rst:215
+msgid "IQTree tests models (if auto-detect)"
+msgstr "IQTree가 모델을 테스트해요 (자동 감지인 경우)"
+
+#: ../../user_guide.rst:216
+msgid "Tree search begins"
+msgstr "계통수 검색이 시작돼요"
+
+#: ../../user_guide.rst:217
+msgid "Bootstrap analysis (if specified)"
+msgstr "부트스트랩 분석 (지정된 경우)"
+
+#: ../../user_guide.rst:218
+msgid "Best tree saved"
+msgstr "최적 계통수가 저장돼요"
+
+#: ../../user_guide.rst:221
+msgid "Bayesian Analysis (MrBayes)"
+msgstr "베이지안 분석 (MrBayes)"
+
+#: ../../user_guide.rst:225
+msgid "**Generations**: MCMC chain length (1M - 10M typical)"
+msgstr "**Generations**: MCMC 체인 길이 (일반적으로 1M - 10M)"
+
+#: ../../user_guide.rst:226
+msgid "**Sample frequency**: Save trees every N generations"
+msgstr "**Sample frequency**: N 세대마다 계통수 저장"
+
+#: ../../user_guide.rst:227
+msgid "**Burnin**: Proportion to discard (0.25 = 25%)"
+msgstr "**Burnin**: 폐기할 비율 (0.25 = 25%)"
+
+#: ../../user_guide.rst:228
+msgid "**Priors**: Model parameters"
+msgstr "**Priors**: 모델 매개변수"
+
+#: ../../user_guide.rst:234
+msgid "MCMC chains run (can take hours/days)"
+msgstr "MCMC 체인 실행 (몇 시간/며칠 소요될 수 있어요)"
+
+#: ../../user_guide.rst:235
+msgid "Convergence diagnostics shown"
+msgstr "수렴 진단이 표시돼요"
+
+#: ../../user_guide.rst:236
+msgid "Consensus tree generated"
+msgstr "합의 계통수가 생성돼요"
+
+#: ../../user_guide.rst:239
+msgid "Stopping an Analysis"
+msgstr "분석 중지하기"
+
+#: ../../user_guide.rst:241
+msgid "If an analysis is running:"
+msgstr "분석이 실행 중인 경우:"
+
+#: ../../user_guide.rst:243
+msgid "Click **Stop Analysis** button"
+msgstr "**Stop Analysis** 버튼을 클릭하세요"
+
+#: ../../user_guide.rst:244
+msgid "Partial results are saved"
+msgstr "부분 결과가 저장돼요"
+
+#: ../../user_guide.rst:245
+msgid "Status changes to \"Stopped\""
+msgstr "상태가 \"Stopped\"로 변경돼요"
+
+#: ../../user_guide.rst:248
+msgid "Viewing Results"
+msgstr "결과 보기"
+
+#: ../../user_guide.rst:251
+msgid "Analysis Output"
+msgstr "분석 출력"
+
+#: ../../user_guide.rst:253
+msgid "Double-click an analysis in the tree view"
+msgstr "트리 뷰에서 분석을 더블 클릭하세요"
+
+#: ../../user_guide.rst:254
+msgid ""
+"The Analysis Viewer opens with tabs: - **Info**: Analysis parameters and "
+"status - **Log**: Real-time output from software - **Trees**: "
+"Phylogenetic trees found"
+msgstr "분석 뷰어가 다음 탭과 함께 열려요: - **Info**: 분석 매개변수 및 상태 - **Log**: 소프트웨어의 실시간 출력 - **Trees**: 발견된 계통수"
+
+#: ../../user_guide.rst:260
+msgid "Tree Visualization"
+msgstr "계통수 시각화"
+
+#: ../../user_guide.rst:262
+msgid "In the **Trees** tab:"
+msgstr "**Trees** 탭에서:"
+
+#: ../../user_guide.rst:264
+msgid "**Tree List**: All trees from the analysis"
+msgstr "**Tree List**: 분석의 모든 계통수"
+
+#: ../../user_guide.rst:265
+msgid "**Tree View**: SVG rendering of selected tree"
+msgstr "**Tree View**: 선택한 계통수의 SVG 렌더링"
+
+#: ../../user_guide.rst:266
+msgid "**Controls**: - Zoom in/out - Export as SVG/PNG - Map characters"
+msgstr "**컨트롤**: - 확대/축소 - SVG/PNG로 내보내기 - 형질 매핑"
+
+#: ../../user_guide.rst:272
+msgid "Character Mapping"
+msgstr "형질 매핑"
+
+#: ../../user_guide.rst:274
+msgid "To visualize character evolution:"
+msgstr "형질 진화를 시각화하려면:"
+
+#: ../../user_guide.rst:276
+msgid "Open an analysis with trees"
+msgstr "계통수가 있는 분석을 여세요"
+
+#: ../../user_guide.rst:277
+msgid "Select a tree"
+msgstr "계통수를 선택하세요"
+
+#: ../../user_guide.rst:278
+msgid "Click **Map Characters**"
+msgstr "**Map Characters**를 클릭하세요"
+
+#: ../../user_guide.rst:279
+msgid "Choose character to map"
+msgstr "매핑할 형질을 선택하세요"
+
+#: ../../user_guide.rst:280
+msgid "Character states appear on branches"
+msgstr "형질 상태가 가지에 나타나요"
+
+#: ../../user_guide.rst:282
+msgid "The visualization shows:"
+msgstr "시각화는 다음을 보여줘요:"
+
+#: ../../user_guide.rst:284
+msgid "**Nodes**: Ancestral states (reconstructed)"
+msgstr "**노드**: 조상 상태 (재구성됨)"
+
+#: ../../user_guide.rst:285
+msgid "**Branches**: State changes (synapomorphies)"
+msgstr "**가지**: 상태 변화 (공유파생형질)"
+
+#: ../../user_guide.rst:286
+msgid "**Terminal nodes**: Observed states"
+msgstr "**말단 노드**: 관찰된 상태"
+
+#: ../../user_guide.rst:289
+msgid "Advanced Features"
+msgstr "고급 기능"
+
+#: ../../user_guide.rst:292
+msgid "Batch Operations"
+msgstr "일괄 작업"
+
+#: ../../user_guide.rst:294
+msgid "Copy Datamatrix:"
+msgstr "데이터 행렬 복사:"
+
+#: ../../user_guide.rst:297
+msgid "Select **Copy**"
+msgstr "**Copy**를 선택하세요"
+
+#: ../../user_guide.rst:298
+msgid "Right-click destination project"
+msgstr "대상 프로젝트를 마우스 오른쪽 버튼으로 클릭하세요"
+
+#: ../../user_guide.rst:299
+msgid "Select **Paste**"
+msgstr "**Paste**를 선택하세요"
+
+#: ../../user_guide.rst:301
+msgid "Duplicate Analysis:"
+msgstr "분석 복제:"
+
+#: ../../user_guide.rst:303
+msgid "Right-click an analysis"
+msgstr "분석을 마우스 오른쪽 버튼으로 클릭하세요"
+
+#: ../../user_guide.rst:304
+msgid "Select **Duplicate**"
+msgstr "**Duplicate**를 선택하세요"
+
+#: ../../user_guide.rst:305
+msgid "Modify parameters"
+msgstr "매개변수를 수정하세요"
+
+#: ../../user_guide.rst:306
+msgid "Run comparison study"
+msgstr "비교 연구를 실행하세요"
+
+#: ../../user_guide.rst:309
+msgid "Database Management"
+msgstr "데이터베이스 관리"
+
+#: ../../user_guide.rst:311
+msgid "**Location:**"
+msgstr "**위치:**"
+
+#: ../../user_guide.rst:313
+msgid "Windows: ``C:\\\\Users\\\\<username>\\\\PaleoBytes\\\\PhyloForester``"
+msgstr "Windows: ``C:\\\\Users\\\\<username>\\\\PaleoBytes\\\\PhyloForester``"
+
+#: ../../user_guide.rst:314
+msgid "macOS/Linux: ``~/PaleoBytes/PhyloForester``"
+msgstr "macOS/Linux: ``~/PaleoBytes/PhyloForester``"
+
+#: ../../user_guide.rst:316
+msgid "**Backup:**"
+msgstr "**백업:**"
+
+#: ../../user_guide.rst:318
+msgid "Close PhyloForester"
+msgstr "PhyloForester를 닫으세요"
+
+#: ../../user_guide.rst:319
+msgid "Copy ``PhyloForester.db`` to safe location"
+msgstr "``PhyloForester.db``를 안전한 위치에 복사하세요"
+
+#: ../../user_guide.rst:320
+msgid "Restore by replacing the file"
+msgstr "파일을 교체하여 복원하세요"
+
+#: ../../user_guide.rst:322
+msgid "**Opening Different Database:**"
+msgstr "**다른 데이터베이스 열기:**"
+
+#: ../../user_guide.rst:324
+msgid "**File → Open Database**"
+msgstr "**File → Open Database**"
+
+#: ../../user_guide.rst:325
+msgid "Select ``.db`` file"
+msgstr "``.db`` 파일을 선택하세요"
+
+#: ../../user_guide.rst:326
+msgid "Database loads (previous one closes)"
+msgstr "데이터베이스가 로드돼요 (이전 데이터베이스는 닫힘)"
+
+#: ../../user_guide.rst:329
+msgid "Preferences"
+msgstr "환경설정"
+
+#: ../../user_guide.rst:331
+msgid "**Edit → Preferences** allows you to set:"
+msgstr "**Edit → Preferences**에서 다음을 설정할 수 있어요:"
+
+#: ../../user_guide.rst:333
+msgid "External software paths (TNT, IQTree, MrBayes)"
+msgstr "외부 소프트웨어 경로 (TNT, IQTree, MrBayes)"
+
+#: ../../user_guide.rst:334
+msgid "Default parameters for analyses"
+msgstr "분석의 기본 매개변수"
+
+#: ../../user_guide.rst:335
+msgid "UI preferences"
+msgstr "UI 환경설정"
+
+#: ../../user_guide.rst:338
+msgid "Keyboard Shortcuts"
+msgstr "키보드 단축키"
+
+#: ../../user_guide.rst:340
+msgid "**General:**"
+msgstr "**일반:**"
+
+#: ../../user_guide.rst:342
+msgid "``Ctrl+N`` - New Project"
+msgstr "``Ctrl+N`` - 새 프로젝트"
+
+#: ../../user_guide.rst:343
+msgid "``Ctrl+O`` - Open Database"
+msgstr "``Ctrl+O`` - 데이터베이스 열기"
+
+#: ../../user_guide.rst:344
+msgid "``Ctrl+S`` - Save Changes"
+msgstr "``Ctrl+S`` - 변경 사항 저장"
+
+#: ../../user_guide.rst:345
+msgid "``Ctrl+W`` - Close Window"
+msgstr "``Ctrl+W`` - 창 닫기"
+
+#: ../../user_guide.rst:346
+msgid "``Ctrl+Q`` - Quit Application"
+msgstr "``Ctrl+Q`` - 애플리케이션 종료"
+
+#: ../../user_guide.rst:348
+msgid "**Editing:**"
+msgstr "**편집:**"
+
+#: ../../user_guide.rst:350
+msgid "``Ctrl+Z`` - Undo"
+msgstr "``Ctrl+Z`` - 실행 취소"
+
+#: ../../user_guide.rst:351
+msgid "``Ctrl+Y`` - Redo"
+msgstr "``Ctrl+Y`` - 다시 실행"
+
+#: ../../user_guide.rst:352
+msgid "``Ctrl+C`` - Copy"
+msgstr "``Ctrl+C`` - 복사"
+
+#: ../../user_guide.rst:353
+msgid "``Ctrl+V`` - Paste"
+msgstr "``Ctrl+V`` - 붙여넣기"
+
+#: ../../user_guide.rst:354
+msgid "``Ctrl+X`` - Cut"
+msgstr "``Ctrl+X`` - 잘라내기"
+
+#: ../../user_guide.rst:355
+msgid "``Delete`` - Delete/Clear"
+msgstr "``Delete`` - 삭제/지우기"
+
+#: ../../user_guide.rst:357
+msgid "**Navigation:**"
+msgstr "**탐색:**"
+
+#: ../../user_guide.rst:359
+msgid "``Ctrl+Tab`` - Next Tab"
+msgstr "``Ctrl+Tab`` - 다음 탭"
+
+#: ../../user_guide.rst:360
+msgid "``Ctrl+Shift+Tab`` - Previous Tab"
+msgstr "``Ctrl+Shift+Tab`` - 이전 탭"
+
+#: ../../user_guide.rst:361
+msgid "``F5`` - Refresh"
+msgstr "``F5`` - 새로고침"
+
+#: ../../user_guide.rst:364
+msgid "Tips and Best Practices"
+msgstr "팁과 모범 사례"
+
+#: ../../user_guide.rst:367
+msgid "Organizing Projects"
+msgstr "프로젝트 구성하기"
+
+#: ../../user_guide.rst:369
+msgid "Use descriptive project names (e.g., \"Mammal_Phylogeny_2024\")"
+msgstr "설명적인 프로젝트 이름을 사용하세요 (예: \"Mammal_Phylogeny_2024\")"
+
+#: ../../user_guide.rst:370
+msgid "Group related analyses in the same project"
+msgstr "관련 분석을 동일한 프로젝트에 그룹화하세요"
+
+#: ../../user_guide.rst:371
+msgid "Keep separate projects for different studies"
+msgstr "다른 연구는 별도의 프로젝트로 유지하세요"
+
+#: ../../user_guide.rst:374
+msgid "Data Quality"
+msgstr "데이터 품질"
+
+#: ../../user_guide.rst:376
+msgid "Check for missing data (``?``) before analysis"
+msgstr "분석 전에 결측 데이터(``?``)를 확인하세요"
+
+#: ../../user_guide.rst:377
+msgid "Verify character coding consistency"
+msgstr "형질 코딩 일관성을 확인하세요"
+
+#: ../../user_guide.rst:378
+msgid "Use inapplicable (``-``) for logically impossible states"
+msgstr "논리적으로 불가능한 상태에는 적용 불가(``-``)를 사용하세요"
+
+#: ../../user_guide.rst:381
+msgid "Analysis Settings"
+msgstr "분석 설정"
+
+#: ../../user_guide.rst:383
+msgid "Start with quick settings for initial exploration"
+msgstr "초기 탐색을 위해 빠른 설정으로 시작하세요"
+
+#: ../../user_guide.rst:384
+msgid "Use thorough settings for publication-quality results"
+msgstr "출판 수준의 결과를 위해 철저한 설정을 사용하세요"
+
+#: ../../user_guide.rst:385
+msgid "Always check convergence for Bayesian analyses"
+msgstr "베이지안 분석에서는 항상 수렴을 확인하세요"
+
+#: ../../user_guide.rst:388
+msgid "File Management"
+msgstr "파일 관리"
+
+#: ../../user_guide.rst:390
+msgid "Back up database regularly"
+msgstr "정기적으로 데이터베이스를 백업하세요"
+
+#: ../../user_guide.rst:391
+msgid "Export important datamatrices in multiple formats"
+msgstr "중요한 데이터 행렬을 여러 형식으로 내보내세요"
+
+#: ../../user_guide.rst:392
+msgid "Keep original data files separate"
+msgstr "원본 데이터 파일을 별도로 보관하세요"
+
+#: ../../user_guide.rst:395
+msgid "Next Steps"
+msgstr "다음 단계"
+
+#: ../../user_guide.rst:397
+msgid "See :doc:`analysis_guide` for detailed analysis workflows"
+msgstr "자세한 분석 워크플로우는 :doc:`analysis_guide`를 참조하세요"
+
+#: ../../user_guide.rst:398
+msgid "See :doc:`troubleshooting` if you encounter problems"
+msgstr "문제가 발생하면 :doc:`troubleshooting`을 참조하세요"
+
+#: ../../user_guide.rst:399
+msgid "See :doc:`developer_guide` for customization and scripting"
+msgstr "커스터마이징 및 스크립팅은 :doc:`developer_guide`를 참조하세요"

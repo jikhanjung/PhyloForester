@@ -36,10 +36,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r docs/requirements.txt
 
-      - name: Build documentation
+      - name: Build multi-language documentation
         run: |
           cd docs
-          sphinx-build -b html . _build/html
+          python build_all_languages.py
+
+      - name: Create index redirect page
+        run: |
+          cp docs/index_redirect.html docs/_build/html/index.html
 
       - name: Create .nojekyll file
         run: |
